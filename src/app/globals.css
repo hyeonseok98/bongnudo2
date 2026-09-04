@@ -22,6 +22,18 @@
 }
 
 @theme {
+  --duration-fast: 100ms;
+  --duration-default: 150ms;
+  --duration-slow: 250ms;
+  --z-index-base: 0;
+  --z-index-dropdown: 100;
+  --z-index-sticky: 200;
+  --z-index-header: 300;
+  --z-index-overlay: 400;
+  --z-index-modal: 500;
+  --z-index-popover: 600;
+  --z-index-toast: 700;
+  --z-index-tooltip: 800;
   --text-caption: 0.75rem;
   --text-caption--line-height: 1rem;
   --text-body-sm: 0.875rem;
@@ -131,10 +143,62 @@
   border-color: var(--border-control);
 }
 
+@utility duration-fast {
+  transition-duration: var(--duration-fast);
+}
+
+@utility duration-default {
+  transition-duration: var(--duration-default);
+}
+
+@utility duration-slow {
+  transition-duration: var(--duration-slow);
+}
+
+@utility z-base {
+  z-index: var(--z-index-base);
+}
+
+@utility z-dropdown {
+  z-index: var(--z-index-dropdown);
+}
+
+@utility z-sticky {
+  z-index: var(--z-index-sticky);
+}
+
+@utility z-header {
+  z-index: var(--z-index-header);
+}
+
+@utility z-overlay {
+  z-index: var(--z-index-overlay);
+}
+
+@utility z-modal {
+  z-index: var(--z-index-modal);
+}
+
+@utility z-popover {
+  z-index: var(--z-index-popover);
+}
+
+@utility z-toast {
+  z-index: var(--z-index-toast);
+}
+
+@utility z-tooltip {
+  z-index: var(--z-index-tooltip);
+}
+
 @layer base {
   * {
     @apply border-default;
-    outline-color: var(--focus-ring);
+  }
+
+  :focus-visible {
+    outline: 2px solid var(--focus-ring);
+    outline-offset: 2px;
   }
 
   body {
