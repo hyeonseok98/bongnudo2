@@ -45,6 +45,7 @@ next-env.d.ts
 
 # agent
 .codex
+/scripts
 
 # server
 supabase/migrations/
