@@ -1,5 +1,5 @@
 import { ThemePreview } from "@/components/theme-preview";
 
-export default function Home() {
+export default function HomePage() {
   return <ThemePreview />;
 }

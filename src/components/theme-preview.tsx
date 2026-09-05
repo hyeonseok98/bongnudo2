@@ -16,23 +16,23 @@ export function ThemePreview() {
           </p>
         </div>
 
-        <div className="flex flex-wrap gap-3" aria-label="테마 선택">
+        <div className="flex flex-wrap gap-3">
           <button
-            className="rounded-md border border-default bg-surface px-4 py-2 text-sm font-medium text-primary"
+            className="cursor-pointer rounded-md border border-default bg-surface px-4 py-2 text-sm font-medium text-primary"
             onClick={() => setTheme("light")}
             type="button"
           >
             Light
           </button>
           <button
-            className="rounded-md border border-default bg-surface px-4 py-2 text-sm font-medium text-primary"
+            className="cursor-pointer rounded-md border border-default bg-surface px-4 py-2 text-sm font-medium text-primary"
             onClick={() => setTheme("dark")}
             type="button"
           >
             Dark
           </button>
           <button
-            className="rounded-md border border-default bg-surface px-4 py-2 text-sm font-medium text-primary"
+            className="cursor-pointer rounded-md border border-default bg-surface px-4 py-2 text-sm font-medium text-primary"
             onClick={() => setTheme("system")}
             type="button"
           >
