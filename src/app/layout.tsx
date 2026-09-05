@@ -38,11 +38,11 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
         <ThemeProvider>
           <TooltipProvider>
             <SidebarProvider initialIsOpen={initialIsOpen}>
-              <div className="flex min-h-dvh flex-col bg-background">
+              <div className="flex h-dvh flex-col overflow-hidden bg-background">
                 <Header />
                 <div className="flex min-h-0 flex-1">
                   <Sidebar />
-                  <div className="flex min-w-0 flex-1 flex-col">
+                  <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-y-auto bg-background">
                     <NuqsAdapter>
                       <QueryProvider>{children}</QueryProvider>
                     </NuqsAdapter>

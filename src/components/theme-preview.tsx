@@ -18,21 +18,21 @@ export function ThemePreview() {
 
         <div className="flex flex-wrap gap-3">
           <button
-            className="cursor-pointer rounded-md border border-default bg-surface px-4 py-2 text-sm font-medium text-primary"
+            className="cursor-pointer rounded-md border border-default bg-background px-4 py-2 text-sm font-medium text-primary"
             onClick={() => setTheme("light")}
             type="button"
           >
             Light
           </button>
           <button
-            className="cursor-pointer rounded-md border border-default bg-surface px-4 py-2 text-sm font-medium text-primary"
+            className="cursor-pointer rounded-md border border-default bg-background px-4 py-2 text-sm font-medium text-primary"
             onClick={() => setTheme("dark")}
             type="button"
           >
             Dark
           </button>
           <button
-            className="cursor-pointer rounded-md border border-default bg-surface px-4 py-2 text-sm font-medium text-primary"
+            className="cursor-pointer rounded-md border border-default bg-background px-4 py-2 text-sm font-medium text-primary"
             onClick={() => setTheme("system")}
             type="button"
           >
@@ -41,7 +41,7 @@ export function ThemePreview() {
         </div>
 
         <div className="grid gap-4 sm:grid-cols-2">
-          <article className="rounded-lg border border-default bg-surface p-5">
+          <article className="rounded-lg border border-default bg-background p-5">
             <p className="text-sm text-secondary">Surface</p>
             <h2 className="mt-2 text-xl font-semibold">기본 텍스트</h2>
             <p className="mt-2 text-tertiary">
