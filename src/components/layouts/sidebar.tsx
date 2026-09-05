@@ -90,7 +90,7 @@ function SidebarNavigation({ isOpen, onNavigate }: SidebarNavigationProps) {
       {SIDEBAR_NAV.map((group, index) => (
         <div key={group.label ?? "홈"}>
           {index > 0 ? (
-            <Separator className="mx-3 my-3 h-px bg-border-default" />
+            <Separator className="my-3 h-px bg-border-default" />
           ) : null}
           {group.label && isOpen ? (
             <p className="mb-1 px-3 text-body-sm font-medium text-secondary">
@@ -128,19 +128,16 @@ function NavigationItem({
     "transition-[background-color,color] duration-default motion-reduce:transition-none",
     isOpen ? "h-10 w-full gap-3 px-3" : "mx-auto size-10 justify-center",
     isActive
-      ? "bg-surface-selected"
-      : "hover:bg-surface-muted hover:text-primary",
+      ? "bg-surface-selected text-primary"
+      : "text-secondary dark:text-[#AAAAAA] hover:bg-surface-muted hover:text-primary",
   );
 
   const navigationItemContent = (
     <>
-      <Icon
-        aria-hidden="true"
-        className="size-5 shrink-0 text-secondary"
-      />
+      <Icon aria-hidden="true" className="size-5 shrink-0 text-secondary" />
       <span
         className={cn(
-          "overflow-hidden whitespace-nowrap text-primary",
+          "overflow-hidden whitespace-nowrap text-body-sm",
           "transition-[max-width,opacity,transform] duration-default motion-reduce:transition-none",
           isOpen
             ? "max-w-40 translate-x-0 opacity-100"
@@ -176,7 +173,9 @@ function NavigationItem({
   return (
     <Tooltip>
       <TooltipTrigger render={navigationItemLink} />
-      <TooltipContent side="right">{item.label}</TooltipContent>
+      <TooltipContent className="!text-body-sm" side="right">
+        {item.label}
+      </TooltipContent>
     </Tooltip>
   );
 }
