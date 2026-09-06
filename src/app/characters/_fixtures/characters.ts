@@ -40,7 +40,7 @@ export const CHARACTER_FIXTURES: CharacterListItem[] = [
     id: "fixture-gangji",
     slug: "gangji",
     streamerName: "강지",
-    rpName: null,
+    rpName: "정감자",
     profileImageUrl: null,
     group: getGroup("stellive"),
     affiliations: [
@@ -58,7 +58,14 @@ export const CHARACTER_FIXTURES: CharacterListItem[] = [
     profileImageUrl: null,
     group: getGroup("enchant"),
     affiliations: [
-      createAffiliation("police", "경찰", "public-service", "경찰청장", true, true),
+      createAffiliation(
+        "police",
+        "경찰",
+        "public-service",
+        "경찰청장",
+        true,
+        true,
+      ),
     ],
   },
   {
@@ -87,7 +94,14 @@ export const CHARACTER_FIXTURES: CharacterListItem[] = [
     profileImageUrl: null,
     group: getGroup("injeongmo-network"),
     affiliations: [
-      createAffiliation("press", "언론", "public-service", "방송국장", true, true),
+      createAffiliation(
+        "press",
+        "언론",
+        "public-service",
+        "방송국장",
+        true,
+        true,
+      ),
     ],
   },
   {
@@ -98,7 +112,14 @@ export const CHARACTER_FIXTURES: CharacterListItem[] = [
     profileImageUrl: null,
     group: null,
     affiliations: [
-      createAffiliation("city-hall", "시청", "public-service", "시장", true, true),
+      createAffiliation(
+        "city-hall",
+        "시청",
+        "public-service",
+        "시장",
+        true,
+        true,
+      ),
     ],
   },
   {

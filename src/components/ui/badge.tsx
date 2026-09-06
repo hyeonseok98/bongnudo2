@@ -18,7 +18,7 @@ export function Badge({
       className={cn(
         "inline-flex min-h-6 items-center rounded-md px-2 text-caption font-medium whitespace-nowrap",
         variant === "neutral"
-          ? "bg-surface-selected text-primary"
+          ? "bg-surface-muted text-primary"
           : "border border-default text-secondary",
         className,
       )}
