@@ -1,4 +1,5 @@
 import { Header } from "@/components/layouts/header";
+import { MainContainer } from "@/components/layouts/main-container";
 import { Sidebar } from "@/components/layouts/sidebar";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { SIDEBAR_COOKIE_NAME } from "@/constants/sidebar";
@@ -44,7 +45,9 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
                   <Sidebar />
                   <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-y-auto bg-background">
                     <NuqsAdapter>
-                      <QueryProvider>{children}</QueryProvider>
+                      <QueryProvider>
+                        <MainContainer>{children}</MainContainer>
+                      </QueryProvider>
                     </NuqsAdapter>
                   </div>
                 </div>
