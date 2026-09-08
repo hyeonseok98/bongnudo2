@@ -2,18 +2,16 @@
 
 import { Select } from "@/components/ui/select";
 import { CHARACTER_AFFILIATION_CATEGORIES } from "@/constants/character-affiliations";
-import { CHARACTER_GROUPS } from "@/constants/character-groups";
 import { isCharacterSort } from "@/constants/character-list";
 
-import { CHARACTER_FIXTURES } from "../_fixtures/characters";
 import { useCharacterDirectory } from "../_hooks/use-character-directory";
 import { useCharacters } from "../_hooks/use-characters";
 import {
   filterCharacters,
   getAvailableAffiliations,
+  getAvailableGroups,
   sortCharacters,
 } from "../_utils/character-directory";
-import { mergeCharactersWithFixtures } from "../_utils/merge-character-fixtures";
 import { CharacterFilters } from "./character-filters";
 import { CharacterGrid } from "./character-grid";
 import { CharacterList } from "./character-list";
@@ -23,22 +21,21 @@ import { SelectedFilterSummary } from "./selected-filter-summary";
 export function CharactersContent() {
   const directory = useCharacterDirectory();
   const charactersQuery = useCharacters();
-  const characters = charactersQuery.data
-    ? mergeCharactersWithFixtures(
-        charactersQuery.data,
-        CHARACTER_FIXTURES,
-      )
-    : CHARACTER_FIXTURES;
+  const characters = charactersQuery.data ?? [];
   const availableAffiliations = getAvailableAffiliations(
     characters,
     directory.affiliationType,
+  );
+  const availableGroups = getAvailableGroups(characters);
+  const activeGroupIds = directory.selectedGroupIds.filter((groupId) =>
+    availableGroups.some((group) => group.slug === groupId),
   );
   const selectedAffiliation =
     availableAffiliations.find(
       (affiliation) => affiliation.slug === directory.affiliation,
     ) ?? null;
-  const selectedGroups = CHARACTER_GROUPS.filter((group) =>
-    directory.selectedGroupIds.includes(group.slug),
+  const selectedGroups = availableGroups.filter((group) =>
+    activeGroupIds.includes(group.slug),
   );
   const affiliationCategory =
     CHARACTER_AFFILIATION_CATEGORIES.find(
@@ -48,7 +45,7 @@ export function CharactersContent() {
     query: directory.q,
     affiliationType: directory.affiliationType,
     affiliationSlug: selectedAffiliation?.slug ?? null,
-    selectedGroupIds: directory.selectedGroupIds,
+    selectedGroupIds: activeGroupIds,
   });
   const sortedCharacters = sortCharacters(
     filteredCharacters,
@@ -70,7 +67,7 @@ export function CharactersContent() {
         </p>
       ) : charactersQuery.isError ? (
         <p className="text-body-sm text-destructive" role="alert">
-          인물 정보를 불러오지 못했습니다. 임시 데이터를 표시합니다.
+          인물 정보를 불러오지 못했습니다.
         </p>
       ) : null}
 
@@ -78,8 +75,9 @@ export function CharactersContent() {
         affiliation={selectedAffiliation?.slug ?? null}
         affiliationType={directory.affiliationType}
         affiliations={availableAffiliations}
+        groups={availableGroups}
         query={directory.q}
-        selectedGroupIds={directory.selectedGroupIds}
+        selectedGroupIds={activeGroupIds}
         onAffiliationChange={directory.selectAffiliation}
         onAffiliationTypeChange={directory.selectAffiliationType}
         onClearGroups={directory.clearGroups}

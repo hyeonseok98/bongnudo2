@@ -10,29 +10,19 @@ import {
   CHARACTER_AFFILIATION_CATEGORIES,
   type CharacterAffiliationCategoryFilter,
 } from "@/constants/character-affiliations";
-import {
-  CHARACTER_GROUPS,
-  FEATURED_CHARACTER_GROUP_SLUGS,
-} from "@/constants/character-groups";
-import type { CharacterAffiliation } from "@/features/characters/character";
+import type {
+  CharacterAffiliation,
+  CharacterGroup,
+} from "@/features/characters/character";
 
-const FEATURED_GROUPS = FEATURED_CHARACTER_GROUP_SLUGS.flatMap((slug) => {
-  const group = CHARACTER_GROUPS.find((option) => option.slug === slug);
-
-  return group ? [group] : [];
-});
-const ADDITIONAL_GROUPS = CHARACTER_GROUPS.filter(
-  (group) =>
-    !FEATURED_CHARACTER_GROUP_SLUGS.some(
-      (featuredSlug) => featuredSlug === group.slug,
-    ),
-).sort((left, right) => left.name.localeCompare(right.name, "ko-KR"));
+const COLLAPSED_GROUP_COUNT = 3;
 
 interface CharacterFiltersProps {
   query: string;
   affiliationType: CharacterAffiliationCategoryFilter;
   affiliation: string | null;
   affiliations: CharacterAffiliation[];
+  groups: CharacterGroup[];
   selectedGroupIds: string[];
   onQueryChange: (query: string) => void;
   onAffiliationTypeChange: (
@@ -48,6 +38,7 @@ export function CharacterFilters({
   affiliationType,
   affiliation,
   affiliations,
+  groups,
   selectedGroupIds,
   onQueryChange,
   onAffiliationTypeChange,
@@ -56,6 +47,8 @@ export function CharacterFilters({
   onClearGroups,
 }: CharacterFiltersProps) {
   const [isGroupExpanded, setIsGroupExpanded] = useState(false);
+  const visibleGroups = groups.slice(0, COLLAPSED_GROUP_COUNT);
+  const additionalGroups = groups.slice(COLLAPSED_GROUP_COUNT);
 
   return (
     <section aria-label="인물 검색 및 필터" className="space-y-4">
@@ -116,7 +109,7 @@ export function CharacterFilters({
             >
               전체
             </Chip>
-            {FEATURED_GROUPS.map((group) => (
+            {visibleGroups.map((group) => (
               <Chip
                 isSelected={selectedGroupIds.includes(group.slug)}
                 key={group.slug}
@@ -125,25 +118,27 @@ export function CharacterFilters({
                 {group.name}
               </Chip>
             ))}
-            <Button
-              aria-expanded={isGroupExpanded}
-              className="px-2"
-              onClick={() => setIsGroupExpanded((isExpanded) => !isExpanded)}
-              size="sm"
-              variant="ghost"
-            >
-              {isGroupExpanded ? "접기" : "더보기"}
-              {isGroupExpanded ? (
-                <ChevronUp aria-hidden="true" />
-              ) : (
-                <ChevronDown aria-hidden="true" />
-              )}
-            </Button>
+            {additionalGroups.length > 0 ? (
+              <Button
+                aria-expanded={isGroupExpanded}
+                className="px-2"
+                onClick={() => setIsGroupExpanded((isExpanded) => !isExpanded)}
+                size="sm"
+                variant="ghost"
+              >
+                {isGroupExpanded ? "접기" : "더보기"}
+                {isGroupExpanded ? (
+                  <ChevronUp aria-hidden="true" />
+                ) : (
+                  <ChevronDown aria-hidden="true" />
+                )}
+              </Button>
+            ) : null}
           </div>
 
           {isGroupExpanded ? (
             <div className="flex flex-wrap gap-2">
-              {ADDITIONAL_GROUPS.map((group) => (
+              {additionalGroups.map((group) => (
                 <Chip
                   isSelected={selectedGroupIds.includes(group.slug)}
                   key={group.slug}

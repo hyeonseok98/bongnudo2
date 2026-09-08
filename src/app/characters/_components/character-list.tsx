@@ -1,5 +1,6 @@
 import {
   getOrderedAffiliations,
+  getOrderedStreamerAffiliations,
   type CharacterListItem,
 } from "@/features/characters/character";
 import { cn } from "@/utils/cn";
@@ -27,12 +28,15 @@ export function CharacterList({ characters }: CharacterListProps) {
         <span>RP 이름</span>
         <span>현재 소속</span>
         <span>직책</span>
-        <span>스트리머 그룹</span>
+        <span>현실 소속</span>
       </div>
 
       <ul className="divide-y divide-border-default">
         {characters.map((character) => {
           const affiliations = getOrderedAffiliations(character.affiliations);
+          const streamerAffiliations = getOrderedStreamerAffiliations(
+            character.streamerAffiliations,
+          );
           const affiliationNames = affiliations
             .map((affiliation) => affiliation.name)
             .join(", ");
@@ -40,6 +44,9 @@ export function CharacterList({ characters }: CharacterListProps) {
             .flatMap((affiliation) =>
               affiliation.role ? [affiliation.role] : [],
             )
+            .join(", ");
+          const streamerAffiliationNames = streamerAffiliations
+            .map((affiliation) => affiliation.name)
             .join(", ");
 
           return (
@@ -59,9 +66,13 @@ export function CharacterList({ characters }: CharacterListProps) {
                       RP {character.rpName}
                     </p>
                   ) : null}
-                  {affiliations.length > 0 || character.group ? (
+                  {affiliations.length > 0 ||
+                  streamerAffiliations.length > 0 ? (
                     <p className="mt-1 truncate text-caption text-tertiary">
-                      {[affiliationNames || null, character.group?.name]
+                      {[
+                        affiliationNames || null,
+                        streamerAffiliationNames || null,
+                      ]
                         .filter(Boolean)
                         .join(" · ")}
                     </p>
@@ -93,7 +104,7 @@ export function CharacterList({ characters }: CharacterListProps) {
                   {roleNames || "-"}
                 </span>
                 <span className="truncate text-secondary">
-                  {character.group?.name ?? "-"}
+                  {streamerAffiliationNames || "-"}
                 </span>
               </div>
             </li>

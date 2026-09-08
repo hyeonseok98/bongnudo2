@@ -6,6 +6,7 @@ import {
 import type { CharacterSort } from "@/constants/character-list";
 import type {
   CharacterAffiliation,
+  CharacterGroup,
   CharacterListItem,
 } from "@/features/characters/character";
 
@@ -51,6 +52,30 @@ export function getAvailableAffiliations(
   });
 }
 
+export function getAvailableGroups(
+  characters: CharacterListItem[],
+): CharacterGroup[] {
+  const groupsBySlug = new Map<string, CharacterGroup>();
+
+  for (const character of characters) {
+    for (const affiliation of character.streamerAffiliations) {
+      if (
+        affiliation.type === "group" &&
+        !groupsBySlug.has(affiliation.slug)
+      ) {
+        groupsBySlug.set(affiliation.slug, {
+          slug: affiliation.slug,
+          name: affiliation.name,
+        });
+      }
+    }
+  }
+
+  return Array.from(groupsBySlug.values()).sort((left, right) =>
+    left.name.localeCompare(right.name, "ko-KR"),
+  );
+}
+
 export function filterCharacters(
   characters: CharacterListItem[],
   criteria: CharacterFilterCriteria,
@@ -66,8 +91,11 @@ export function filterCharacters(
       normalizedQuery.length === 0 || searchableText.includes(normalizedQuery);
     const isGroupMatched =
       criteria.selectedGroupIds.length === 0 ||
-      (character.group !== null &&
-        criteria.selectedGroupIds.includes(character.group.slug));
+      character.streamerAffiliations.some(
+        (affiliation) =>
+          affiliation.type === "group" &&
+          criteria.selectedGroupIds.includes(affiliation.slug),
+      );
     const isAffiliationTypeMatched =
       criteria.affiliationType === "all" ||
       character.affiliations.some(

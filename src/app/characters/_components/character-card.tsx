@@ -1,6 +1,7 @@
 import { Badge } from "@/components/ui/badge";
 import {
   getOrderedAffiliations,
+  getOrderedStreamerAffiliations,
   type CharacterListItem,
 } from "@/features/characters/character";
 
@@ -12,9 +13,12 @@ interface CharacterCardProps {
 
 export function CharacterCard({ character }: CharacterCardProps) {
   const affiliations = getOrderedAffiliations(character.affiliations);
-  const visibleAffiliations = affiliations.slice(0, 3);
+  const visibleAffiliations = affiliations.slice(0, 2);
   const hiddenAffiliationCount =
     affiliations.length - visibleAffiliations.length;
+  const streamerAffiliations = getOrderedStreamerAffiliations(
+    character.streamerAffiliations,
+  );
 
   return (
     <article className="overflow-hidden rounded-xl border border-default bg-surface-raised">
@@ -36,16 +40,14 @@ export function CharacterCard({ character }: CharacterCardProps) {
           ) : null}
         </div>
 
-        {affiliations.length > 0 || character.group ? (
+        {affiliations.length > 0 || streamerAffiliations.length > 0 ? (
           <div className="space-y-1.5">
             {visibleAffiliations.length > 0 ? (
               <div className="flex flex-wrap gap-1.5">
                 {visibleAffiliations.map((affiliation) => (
                   <Badge key={affiliation.id}>
                     {affiliation.name}
-                    {affiliation.isLeader && affiliation.role
-                      ? " · " + affiliation.role
-                      : null}
+                    {affiliation.role ? " · " + affiliation.role : null}
                   </Badge>
                 ))}
                 {hiddenAffiliationCount > 0 ? (
@@ -53,9 +55,13 @@ export function CharacterCard({ character }: CharacterCardProps) {
                 ) : null}
               </div>
             ) : null}
-            {character.group ? (
-              <div>
-                <Badge variant="outline">{character.group.name}</Badge>
+            {streamerAffiliations.length > 0 ? (
+              <div className="flex flex-wrap gap-1.5">
+                {streamerAffiliations.map((affiliation) => (
+                  <Badge key={affiliation.id} variant="outline">
+                    {affiliation.name}
+                  </Badge>
+                ))}
               </div>
             ) : null}
           </div>

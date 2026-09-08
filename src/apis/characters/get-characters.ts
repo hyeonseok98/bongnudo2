@@ -1,10 +1,15 @@
-import type {
-  CharacterAffiliation,
-  CharacterAffiliationCategory,
-  CharacterListItem,
+import type { QueryData } from "@supabase/supabase-js";
+
+import {
+  getOrderedAffiliations,
+  getOrderedStreamerAffiliations,
+  type CharacterAffiliation,
+  type CharacterAffiliationCategory,
+  type CharacterListItem,
+  type CharacterStreamerAffiliation,
+  type CharacterStreamerAffiliationType,
 } from "@/features/characters/character";
 import { getSupabaseBrowserClient } from "@/lib/supabase/client";
-import type { Tables } from "@/lib/supabase/database.types";
 
 const BONGNUDO2_SEASON_SLUG = "bongnudo-2";
 
@@ -15,45 +20,46 @@ function createCharactersQuery(seasonId: number) {
       id,
       rp_name,
       streamer:streamers!inner (
+        id,
         slug,
         name,
-        group:streamer_groups (
-          slug,
-          name
+        affiliation_memberships:streamer_affiliation_memberships (
+          id,
+          sort_order,
+          affiliation:streamer_affiliations!inner (
+            id,
+            slug,
+            name,
+            type
+          )
         )
       ),
       memberships:organization_memberships (
         id,
-        role,
         is_primary,
-        left_at,
+        display_order,
         organization:organizations!inner (
+          id,
           slug,
           name,
           type
+        ),
+        role_histories:organization_role_histories (
+          id,
+          role,
+          start_date,
+          end_date,
+          is_leader
         )
       )
     `)
     .eq("season_id", seasonId);
 }
 
-type CharacterOrganization = Pick<Tables<"organizations">, "slug" | "name" | "type">;
-
-type CharacterMembership = Pick<
-  Tables<"organization_memberships">,
-  "id" | "role" | "is_primary" | "left_at"
-> & {
-  organization: CharacterOrganization;
-};
-
-interface CharacterParticipant {
-  id: Tables<"season_participants">["id"];
-  rp_name: Tables<"season_participants">["rp_name"];
-  streamer: Pick<Tables<"streamers">, "slug" | "name"> & {
-    group: Pick<Tables<"streamer_groups">, "slug" | "name"> | null;
-  };
-  memberships: CharacterMembership[];
-}
+type CharactersQueryData = QueryData<
+  ReturnType<typeof createCharactersQuery>
+>;
+type CharacterParticipant = CharactersQueryData[number];
 
 export async function getCharacters(): Promise<CharacterListItem[]> {
   const supabase = getSupabaseBrowserClient();
@@ -76,28 +82,56 @@ export async function getCharacters(): Promise<CharacterListItem[]> {
   return data.map(toCharacterListItem);
 }
 
-function toCharacterListItem(
+export function toCharacterListItem(
   participant: CharacterParticipant,
 ): CharacterListItem {
   return {
     id: participant.id,
+    streamerId: participant.streamer.id,
     slug: participant.streamer.slug,
     streamerName: participant.streamer.name,
     rpName: participant.rp_name,
     profileImageUrl: null,
-    group: participant.streamer.group,
-    affiliations: participant.memberships
-      .filter((membership) => membership.left_at === null)
-      .flatMap(toCharacterAffiliation),
+    streamerAffiliations: getOrderedStreamerAffiliations(
+      participant.streamer.affiliation_memberships.flatMap(
+        toStreamerAffiliation,
+      ),
+    ),
+    affiliations: getOrderedAffiliations(
+      participant.memberships.flatMap(toCurrentCharacterAffiliation),
+    ),
   };
 }
 
-function toCharacterAffiliation(
-  membership: CharacterMembership,
+function toStreamerAffiliation(
+  membership: CharacterParticipant["streamer"]["affiliation_memberships"][number],
+): CharacterStreamerAffiliation[] {
+  const type = getStreamerAffiliationType(membership.affiliation.type);
+
+  if (type === null) {
+    return [];
+  }
+
+  return [
+    {
+      id: membership.affiliation.id,
+      slug: membership.affiliation.slug,
+      name: membership.affiliation.name,
+      type,
+      sortOrder: membership.sort_order,
+    },
+  ];
+}
+
+function toCurrentCharacterAffiliation(
+  membership: CharacterParticipant["memberships"][number],
 ): CharacterAffiliation[] {
+  const currentRole = membership.role_histories.find(
+    (roleHistory) => roleHistory.end_date === null,
+  );
   const category = getOrganizationCategory(membership.organization.type);
 
-  if (category === null) {
+  if (!currentRole || category === null) {
     return [];
   }
 
@@ -107,11 +141,22 @@ function toCharacterAffiliation(
       slug: membership.organization.slug,
       name: membership.organization.name,
       category,
-      role: membership.role,
+      role: currentRole.role,
       isPrimary: membership.is_primary,
-      isLeader: false,
+      displayOrder: membership.display_order,
+      isLeader: currentRole.is_leader,
     },
   ];
+}
+
+function getStreamerAffiliationType(
+  type: string,
+): CharacterStreamerAffiliationType | null {
+  if (type === "mcn" || type === "group") {
+    return type;
+  }
+
+  return null;
 }
 
 function getOrganizationCategory(

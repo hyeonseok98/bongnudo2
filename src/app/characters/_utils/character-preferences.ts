@@ -2,7 +2,6 @@ import {
   isCharacterAffiliationCategoryFilter,
   type CharacterAffiliationCategoryFilter,
 } from "@/constants/character-affiliations";
-import { isCharacterGroupSlug } from "@/constants/character-groups";
 import {
   isCharacterSort,
   isCharacterView,
@@ -90,7 +89,7 @@ export function writeCharacterPreferences(
 
 export function normalizeGroupIds(groupIds: string[]): string[] {
   return Array.from(
-    new Set(groupIds.filter((groupId) => isCharacterGroupSlug(groupId))),
+    new Set(groupIds.map((groupId) => groupId.trim()).filter(Boolean)),
   );
 }
 
