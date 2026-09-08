@@ -8,14 +8,18 @@
     "start": "next start",
     "lint": "eslint",
     "sync:character-groups": "node tools/sync-character-groups.mjs",
+    "import:bongnudo2": "node tools/import-bongnudo2-excel.mjs",
+    "import:bongnudo2:validate": "node tools/validate-bongnudo2-excel.mjs",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "test:watch": "vitest",
-    "test:e2e": "playwright test"
+    "test:e2e": "playwright test",
+    "db:types": "supabase gen types typescript --project-id amgsxrkrwhgfsoetzzmq --schema public > src/lib/supabase/database.types.ts"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.1126.0",
     "@base-ui/react": "^1.8.0",
+    "@supabase/supabase-js": "^2.115.0",
     "@tanstack/react-query": "^5.102.8",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
@@ -44,8 +48,10 @@
     "@vitejs/plugin-react": "^6.1.1",
     "eslint": "^9",
     "eslint-config-next": "16.3.4",
+    "exceljs": "4.4.0",
     "jsdom": "^30.0.1",
     "msw": "^2.15.0",
+    "supabase": "^2.116.0",
     "tailwindcss": "^4",
     "typescript": "^5",
     "vitest": "^4.1.11"

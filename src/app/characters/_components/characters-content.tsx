@@ -7,11 +7,13 @@ import { isCharacterSort } from "@/constants/character-list";
 
 import { CHARACTER_FIXTURES } from "../_fixtures/characters";
 import { useCharacterDirectory } from "../_hooks/use-character-directory";
+import { useCharacters } from "../_hooks/use-characters";
 import {
   filterCharacters,
   getAvailableAffiliations,
   sortCharacters,
 } from "../_utils/character-directory";
+import { mergeCharactersWithFixtures } from "../_utils/merge-character-fixtures";
 import { CharacterFilters } from "./character-filters";
 import { CharacterGrid } from "./character-grid";
 import { CharacterList } from "./character-list";
@@ -20,8 +22,15 @@ import { SelectedFilterSummary } from "./selected-filter-summary";
 
 export function CharactersContent() {
   const directory = useCharacterDirectory();
+  const charactersQuery = useCharacters();
+  const characters = charactersQuery.data
+    ? mergeCharactersWithFixtures(
+        charactersQuery.data,
+        CHARACTER_FIXTURES,
+      )
+    : CHARACTER_FIXTURES;
   const availableAffiliations = getAvailableAffiliations(
-    CHARACTER_FIXTURES,
+    characters,
     directory.affiliationType,
   );
   const selectedAffiliation =
@@ -35,7 +44,7 @@ export function CharactersContent() {
     CHARACTER_AFFILIATION_CATEGORIES.find(
       (category) => category.slug === directory.affiliationType,
     ) ?? null;
-  const filteredCharacters = filterCharacters(CHARACTER_FIXTURES, {
+  const filteredCharacters = filterCharacters(characters, {
     query: directory.q,
     affiliationType: directory.affiliationType,
     affiliationSlug: selectedAffiliation?.slug ?? null,
@@ -54,6 +63,16 @@ export function CharactersContent() {
           봉누도에서 살아가는 인물들을 확인해보세요.
         </p>
       </div>
+
+      {charactersQuery.isPending ? (
+        <p className="text-body-sm text-secondary" role="status">
+          인물 정보를 불러오는 중입니다.
+        </p>
+      ) : charactersQuery.isError ? (
+        <p className="text-body-sm text-destructive" role="alert">
+          인물 정보를 불러오지 못했습니다. 임시 데이터를 표시합니다.
+        </p>
+      ) : null}
 
       <CharacterFilters
         affiliation={selectedAffiliation?.slug ?? null}
