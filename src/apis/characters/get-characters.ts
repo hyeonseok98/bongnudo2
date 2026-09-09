@@ -5,7 +5,9 @@ import {
   getOrderedStreamerAffiliations,
   type CharacterAffiliation,
   type CharacterAffiliationCategory,
+  type CharacterDirectoryData,
   type CharacterListItem,
+  type StreamerAffiliation,
   type CharacterStreamerAffiliation,
   type CharacterStreamerAffiliationType,
 } from "@/features/characters/character";
@@ -56,12 +58,21 @@ function createCharactersQuery(seasonId: number) {
     .eq("season_id", seasonId);
 }
 
+function createStreamerAffiliationsQuery() {
+  return getSupabaseBrowserClient()
+    .from("streamer_affiliations")
+    .select(
+      "id, slug, name, type, parent_affiliation_id, is_filter_visible, is_quick_filter, quick_filter_label, filter_order",
+    )
+    .order("filter_order", { ascending: true, nullsFirst: false });
+}
+
 type CharactersQueryData = QueryData<
   ReturnType<typeof createCharactersQuery>
 >;
 type CharacterParticipant = CharactersQueryData[number];
 
-export async function getCharacters(): Promise<CharacterListItem[]> {
+export async function getCharacters(): Promise<CharacterDirectoryData> {
   const supabase = getSupabaseBrowserClient();
   const { data: season, error: seasonError } = await supabase
     .from("seasons")
@@ -73,13 +84,29 @@ export async function getCharacters(): Promise<CharacterListItem[]> {
     throw new Error("시즌 정보를 불러오지 못함.", { cause: seasonError });
   }
 
-  const { data, error } = await createCharactersQuery(season.id);
+  const [charactersResult, affiliationsResult] = await Promise.all([
+    createCharactersQuery(season.id),
+    createStreamerAffiliationsQuery(),
+  ]);
 
-  if (error) {
-    throw new Error("인물 정보를 불러오지 못함.", { cause: error });
+  if (charactersResult.error) {
+    throw new Error("인물 정보를 불러오지 못함.", {
+      cause: charactersResult.error,
+    });
   }
 
-  return data.map(toCharacterListItem);
+  if (affiliationsResult.error) {
+    throw new Error("소속 정보를 불러오지 못함.", {
+      cause: affiliationsResult.error,
+    });
+  }
+
+  return {
+    characters: charactersResult.data.map(toCharacterListItem),
+    streamerAffiliations: affiliationsResult.data.flatMap(
+      toStreamerAffiliationMaster,
+    ),
+  };
 }
 
 export function toCharacterListItem(
@@ -157,6 +184,34 @@ function getStreamerAffiliationType(
   }
 
   return null;
+}
+
+type StreamerAffiliationsQueryData = QueryData<
+  ReturnType<typeof createStreamerAffiliationsQuery>
+>;
+
+function toStreamerAffiliationMaster(
+  affiliation: StreamerAffiliationsQueryData[number],
+): StreamerAffiliation[] {
+  const type = getStreamerAffiliationType(affiliation.type);
+
+  if (type === null) {
+    return [];
+  }
+
+  return [
+    {
+      id: affiliation.id,
+      slug: affiliation.slug,
+      name: affiliation.name,
+      type,
+      parentAffiliationId: affiliation.parent_affiliation_id,
+      isFilterVisible: affiliation.is_filter_visible,
+      isQuickFilter: affiliation.is_quick_filter,
+      quickFilterLabel: affiliation.quick_filter_label,
+      filterOrder: affiliation.filter_order,
+    },
+  ];
 }
 
 function getOrganizationCategory(

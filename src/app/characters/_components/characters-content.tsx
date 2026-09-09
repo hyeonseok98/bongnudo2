@@ -1,15 +1,19 @@
 "use client";
 
+import { getFilterNodeLabel } from "@/components/filters/hierarchical-filter";
 import { Select } from "@/components/ui/select";
-import { CHARACTER_AFFILIATION_CATEGORIES } from "@/constants/character-affiliations";
 import { isCharacterSort } from "@/constants/character-list";
 
 import { useCharacterDirectory } from "../_hooks/use-character-directory";
 import { useCharacters } from "../_hooks/use-characters";
 import {
+  buildCharacterFilterFacetData,
+  buildJobAffiliationFilterNodes,
+  buildStreamerAffiliationFilterData,
   filterCharacters,
-  getAvailableAffiliations,
-  getAvailableGroups,
+  getJobAffiliationFilterSelection,
+  getJobAffiliationFilterValue,
+  getStreamerAffiliationFilterLabel,
   sortCharacters,
 } from "../_utils/character-directory";
 import { CharacterFilters } from "./character-filters";
@@ -21,82 +25,132 @@ import { SelectedFilterSummary } from "./selected-filter-summary";
 export function CharactersContent() {
   const directory = useCharacterDirectory();
   const charactersQuery = useCharacters();
-  const characters = charactersQuery.data ?? [];
-  const availableAffiliations = getAvailableAffiliations(
-    characters,
+  const characters = charactersQuery.data?.characters ?? [];
+  const streamerAffiliations =
+    charactersQuery.data?.streamerAffiliations ?? [];
+  const allJobNodes = buildJobAffiliationFilterNodes(characters);
+  const jobValue = getJobAffiliationFilterValue(
     directory.affiliationType,
+    directory.affiliation,
   );
-  const availableGroups = getAvailableGroups(characters);
-  const activeGroupIds = directory.selectedGroupIds.filter((groupId) =>
-    availableGroups.some((group) => group.slug === groupId),
+  const appliedJobSelection = getJobAffiliationFilterSelection(
+    allJobNodes,
+    jobValue,
   );
-  const selectedAffiliation =
-    availableAffiliations.find(
-      (affiliation) => affiliation.slug === directory.affiliation,
-    ) ?? null;
-  const selectedGroups = availableGroups.filter((group) =>
-    activeGroupIds.includes(group.slug),
-  );
-  const affiliationCategory =
-    CHARACTER_AFFILIATION_CATEGORIES.find(
-      (category) => category.slug === directory.affiliationType,
-    ) ?? null;
-  const filteredCharacters = filterCharacters(characters, {
+  const filterCriteria = {
     query: directory.q,
-    affiliationType: directory.affiliationType,
-    affiliationSlug: selectedAffiliation?.slug ?? null,
-    selectedGroupIds: activeGroupIds,
-  });
-  const sortedCharacters = sortCharacters(
-    filteredCharacters,
-    directory.sort,
+    affiliationType: appliedJobSelection.affiliationType,
+    affiliationSlug: appliedJobSelection.affiliationSlug,
+    selectedStreamerAffiliationSlugs:
+      directory.selectedStreamerAffiliationSlugs,
+  };
+  const filterFacetData = buildCharacterFilterFacetData(
+    characters,
+    streamerAffiliations,
+    filterCriteria,
   );
+  const allStreamerAffiliationFilterData =
+    buildStreamerAffiliationFilterData(characters, streamerAffiliations);
+  const selectedStreamerAffiliations =
+    directory.selectedStreamerAffiliationSlugs.map((slug) => ({
+      slug,
+      label:
+        getStreamerAffiliationFilterLabel(streamerAffiliations, slug) ?? slug,
+    }));
+  const filteredCharacters = filterCharacters(characters, filterCriteria);
+  const sortedCharacters = sortCharacters(filteredCharacters, directory.sort);
 
-  return (
-    <div className="space-y-6">
-      <div>
-        <h1 className="text-title font-bold text-primary">인물 도감</h1>
-        <p className="mt-1 text-body text-secondary">
-          봉누도에서 살아가는 인물들을 확인해보세요.
-        </p>
-      </div>
+  function getJobResultCount(value: string[]) {
+    const selection = getJobAffiliationFilterSelection(allJobNodes, value);
 
-      {charactersQuery.isPending ? (
+    return filterCharacters(characters, {
+      ...filterCriteria,
+      affiliationType: selection.affiliationType,
+      affiliationSlug: selection.affiliationSlug,
+    }).length;
+  }
+
+  function getStreamerAffiliationResultCount(value: string[]) {
+    return filterCharacters(characters, {
+      ...filterCriteria,
+      selectedStreamerAffiliationSlugs: value,
+    }).length;
+  }
+
+  function handleJobApply(value: string[]) {
+    const selection = getJobAffiliationFilterSelection(allJobNodes, value);
+    directory.applyJobAffiliation(
+      selection.affiliationType,
+      selection.affiliationSlug,
+    );
+  }
+
+  if (charactersQuery.isPending) {
+    return (
+      <div className="space-y-6">
+        <CharacterDirectoryHeading />
         <p className="text-body-sm text-secondary" role="status">
           인물 정보를 불러오는 중입니다.
         </p>
-      ) : charactersQuery.isError ? (
+      </div>
+    );
+  }
+
+  if (charactersQuery.isError) {
+    return (
+      <div className="space-y-6">
+        <CharacterDirectoryHeading />
         <p className="text-body-sm text-destructive" role="alert">
           인물 정보를 불러오지 못했습니다.
         </p>
-      ) : null}
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-6">
+      <CharacterDirectoryHeading />
 
       <CharacterFilters
-        affiliation={selectedAffiliation?.slug ?? null}
-        affiliationType={directory.affiliationType}
-        affiliations={availableAffiliations}
-        groups={availableGroups}
+        getJobResultCount={getJobResultCount}
+        getStreamerAffiliationResultCount={
+          getStreamerAffiliationResultCount
+        }
+        jobLabelNodes={allJobNodes}
+        jobNodes={filterFacetData.jobNodes}
+        jobValue={getJobAffiliationFilterValue(
+          appliedJobSelection.affiliationType,
+          appliedJobSelection.affiliationSlug,
+        )}
         query={directory.q}
-        selectedGroupIds={activeGroupIds}
-        onAffiliationChange={directory.selectAffiliation}
-        onAffiliationTypeChange={directory.selectAffiliationType}
-        onClearGroups={directory.clearGroups}
-        onGroupToggle={directory.toggleGroup}
+        selectedStreamerAffiliationSlugs={
+          directory.selectedStreamerAffiliationSlugs
+        }
+        streamerAffiliationNodes={filterFacetData.streamerAffiliations.nodes}
+        streamerAffiliationLabelNodes={
+          allStreamerAffiliationFilterData.nodes
+        }
+        streamerAffiliationQuickOptions={
+          filterFacetData.streamerAffiliations.quickOptions
+        }
+        onJobApply={handleJobApply}
         onQueryChange={directory.changeQuery}
+        onStreamerAffiliationsApply={directory.applyStreamerAffiliations}
       />
 
       <SelectedFilterSummary
         affiliationFilter={
-          selectedAffiliation
-            ? { label: selectedAffiliation.name, isDetail: true }
-            : directory.affiliationType !== "all" && affiliationCategory
-              ? { label: affiliationCategory.name, isDetail: false }
-              : null
+          jobValue.length > 0
+            ? {
+                label:
+                  getFilterNodeLabel(allJobNodes, jobValue[0]) ?? jobValue[0],
+              }
+            : null
         }
-        selectedGroups={selectedGroups}
-        onClearAffiliation={directory.clearAffiliation}
+        selectedStreamerAffiliations={selectedStreamerAffiliations}
+        onClearAffiliation={() => directory.applyJobAffiliation("all", null)}
         onClearAll={directory.resetFilters}
-        onRemoveGroup={directory.toggleGroup}
+        onRemoveStreamerAffiliation={directory.removeStreamerAffiliation}
       />
 
       <section aria-labelledby="character-results-heading" className="space-y-4">
@@ -150,6 +204,17 @@ export function CharactersContent() {
           </div>
         )}
       </section>
+    </div>
+  );
+}
+
+function CharacterDirectoryHeading() {
+  return (
+    <div>
+      <h1 className="text-title font-bold text-primary">인물 도감</h1>
+      <p className="mt-1 text-body text-secondary">
+        봉누도에서 살아가는 인물들을 확인해보세요.
+      </p>
     </div>
   );
 }

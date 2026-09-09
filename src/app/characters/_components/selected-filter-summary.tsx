@@ -2,64 +2,64 @@ import { RotateCcw } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Chip } from "@/components/ui/chip";
-import type { CharacterGroup } from "@/features/characters/character";
 
 interface SelectedAffiliationFilter {
   label: string;
-  isDetail: boolean;
+}
+
+export interface SelectedStreamerAffiliationFilter {
+  label: string;
+  slug: string;
 }
 
 interface SelectedFilterSummaryProps {
   affiliationFilter: SelectedAffiliationFilter | null;
-  selectedGroups: CharacterGroup[];
-  onClearAffiliation: (isDetail: boolean) => void;
+  selectedStreamerAffiliations: SelectedStreamerAffiliationFilter[];
+  onClearAffiliation: () => void;
   onClearAll: () => void;
-  onRemoveGroup: (groupId: string) => void;
+  onRemoveStreamerAffiliation: (affiliationSlug: string) => void;
 }
 
 export function SelectedFilterSummary({
   affiliationFilter,
-  selectedGroups,
+  selectedStreamerAffiliations,
   onClearAffiliation,
   onClearAll,
-  onRemoveGroup,
+  onRemoveStreamerAffiliation,
 }: SelectedFilterSummaryProps) {
   const hasSelectedFilters =
-    affiliationFilter !== null || selectedGroups.length > 0;
+    affiliationFilter !== null || selectedStreamerAffiliations.length > 0;
+
+  if (!hasSelectedFilters) {
+    return null;
+  }
 
   return (
     <div className="flex min-h-12 flex-wrap items-center gap-2 border-y border-default py-2">
-      <Button
-        disabled={!hasSelectedFilters}
-        onClick={onClearAll}
-        size="sm"
-        variant="ghost"
-      >
+      <Button onClick={onClearAll} size="sm" variant="ghost">
         <RotateCcw aria-hidden="true" />
-        전체 해제
+        전체 초기화
       </Button>
-
-      <span aria-hidden="true" className="h-5 border-l border-default" />
 
       {affiliationFilter ? (
         <Chip
           className="border-brand"
           mode="removable"
-          onRemove={() => onClearAffiliation(affiliationFilter.isDetail)}
-          removeLabel={`${affiliationFilter.label} 필터 제거`}
+          onRemove={onClearAffiliation}
+          removeLabel={affiliationFilter.label + " 필터 제거"}
         >
           {affiliationFilter.label}
         </Chip>
       ) : null}
 
-      {selectedGroups.map((group) => (
+      {selectedStreamerAffiliations.map((affiliation) => (
         <Chip
-          key={group.slug}
+          key={affiliation.slug}
           mode="removable"
-          onRemove={() => onRemoveGroup(group.slug)}
-          removeLabel={`${group.name} 필터 제거`}
+          onRemove={() => onRemoveStreamerAffiliation(affiliation.slug)}
+          removeLabel={affiliation.label + " 필터 제거"}
         >
-          {group.name}
+          {affiliation.label}
         </Chip>
       ))}
     </div>

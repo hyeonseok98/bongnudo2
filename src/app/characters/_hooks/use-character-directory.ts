@@ -42,19 +42,18 @@ export interface CharacterDirectory {
   q: string;
   affiliationType: CharacterAffiliationCategoryFilter;
   affiliation: string | null;
-  selectedGroupIds: string[];
+  selectedStreamerAffiliationSlugs: string[];
   sort: CharacterSort;
   view: CharacterView;
   changeQuery: (query: string) => void;
-  selectAffiliationType: (
+  applyJobAffiliation: (
     affiliationType: CharacterAffiliationCategoryFilter,
+    affiliation: string | null,
   ) => void;
-  selectAffiliation: (affiliation: string | null) => void;
-  toggleGroup: (groupId: string) => void;
-  clearGroups: () => void;
+  applyStreamerAffiliations: (affiliationSlugs: string[]) => void;
+  removeStreamerAffiliation: (affiliationSlug: string) => void;
   changeSort: (sort: CharacterSort) => void;
   changeView: (view: CharacterView) => void;
-  clearAffiliation: (isDetail: boolean) => void;
   resetFilters: () => void;
 }
 
@@ -64,7 +63,7 @@ export function useCharacterDirectory(): CharacterDirectory {
     setQueryState,
   ] = useQueryStates(characterQueryParsers);
   const hasRestoredPreferences = useRef(false);
-  const selectedGroupIds = normalizeGroupIds(groups);
+  const selectedStreamerAffiliationSlugs = normalizeGroupIds(groups);
   const selectedAffiliation = affiliation || null;
 
   useEffect(() => {
@@ -105,7 +104,7 @@ export function useCharacterDirectory(): CharacterDirectory {
     return {
       affiliationType,
       affiliation: selectedAffiliation,
-      groups: selectedGroupIds,
+      groups: selectedStreamerAffiliationSlugs,
       sort,
       view,
       ...changes,
@@ -116,49 +115,40 @@ export function useCharacterDirectory(): CharacterDirectory {
     void setQueryState({ q: nextQuery || null }, { history: "replace" });
   }
 
-  function selectAffiliationType(
+  function applyJobAffiliation(
     nextType: CharacterAffiliationCategoryFilter,
+    nextAffiliation: string | null,
   ) {
     writeCharacterPreferences(
       getPreferences({
         affiliationType: nextType,
-        affiliation: null,
+        affiliation: nextAffiliation,
       }),
     );
     void setQueryState(
       {
         affiliationType: nextType === "all" ? null : nextType,
-        affiliation: null,
+        affiliation: nextAffiliation,
       },
       { history: "replace" },
     );
   }
 
-  function selectAffiliation(nextAffiliation: string | null) {
-    writeCharacterPreferences(
-      getPreferences({ affiliation: nextAffiliation }),
-    );
+  function applyStreamerAffiliations(affiliationSlugs: string[]) {
+    const normalizedSlugs = normalizeGroupIds(affiliationSlugs);
+    writeCharacterPreferences(getPreferences({ groups: normalizedSlugs }));
     void setQueryState(
-      { affiliation: nextAffiliation },
+      { groups: normalizedSlugs.length > 0 ? normalizedSlugs : null },
       { history: "replace" },
     );
   }
 
-  function toggleGroup(groupId: string) {
-    const nextGroupIds = selectedGroupIds.includes(groupId)
-      ? selectedGroupIds.filter((selectedId) => selectedId !== groupId)
-      : [...selectedGroupIds, groupId];
-
-    writeCharacterPreferences(getPreferences({ groups: nextGroupIds }));
-    void setQueryState(
-      { groups: nextGroupIds.length > 0 ? nextGroupIds : null },
-      { history: "replace" },
+  function removeStreamerAffiliation(affiliationSlug: string) {
+    applyStreamerAffiliations(
+      selectedStreamerAffiliationSlugs.filter(
+        (selectedSlug) => selectedSlug !== affiliationSlug,
+      ),
     );
-  }
-
-  function clearGroups() {
-    writeCharacterPreferences(getPreferences({ groups: [] }));
-    void setQueryState({ groups: null }, { history: "replace" });
   }
 
   function changeSort(nextSort: CharacterSort) {
@@ -175,15 +165,6 @@ export function useCharacterDirectory(): CharacterDirectory {
       { view: nextView === "grid" ? null : nextView },
       { history: "replace" },
     );
-  }
-
-  function clearAffiliation(isDetail: boolean) {
-    if (isDetail) {
-      selectAffiliation(null);
-      return;
-    }
-
-    selectAffiliationType("all");
   }
 
   function resetFilters() {
@@ -204,17 +185,15 @@ export function useCharacterDirectory(): CharacterDirectory {
     q,
     affiliationType,
     affiliation: selectedAffiliation,
-    selectedGroupIds,
+    selectedStreamerAffiliationSlugs,
     sort,
     view,
     changeQuery,
-    selectAffiliationType,
-    selectAffiliation,
-    toggleGroup,
-    clearGroups,
+    applyJobAffiliation,
+    applyStreamerAffiliations,
+    removeStreamerAffiliation,
     changeSort,
     changeView,
-    clearAffiliation,
     resetFilters,
   };
 }

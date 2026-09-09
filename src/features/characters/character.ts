@@ -16,11 +16,6 @@ export interface CharacterAffiliation {
   isLeader: boolean;
 }
 
-export interface CharacterGroup {
-  slug: string;
-  name: string;
-}
-
 export type CharacterStreamerAffiliationType = "mcn" | "group";
 
 export interface CharacterStreamerAffiliation {
@@ -29,6 +24,23 @@ export interface CharacterStreamerAffiliation {
   name: string;
   type: CharacterStreamerAffiliationType;
   sortOrder: number;
+}
+
+export interface StreamerAffiliation {
+  id: string;
+  slug: string;
+  name: string;
+  type: CharacterStreamerAffiliationType;
+  parentAffiliationId: string | null;
+  isFilterVisible: boolean;
+  isQuickFilter: boolean;
+  quickFilterLabel: string | null;
+  filterOrder: number | null;
+}
+
+export interface CharacterDirectoryData {
+  characters: CharacterListItem[];
+  streamerAffiliations: StreamerAffiliation[];
 }
 
 export interface CharacterListItem {
