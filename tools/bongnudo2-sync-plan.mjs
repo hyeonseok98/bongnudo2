@@ -8,7 +8,7 @@ export async function loadSyncContext(client, excelData, requestedSeasonId) {
     client.from("streamers").select("id, name, chzzk_channel_id, profile_image_key"),
     client.from("season_participants").select("id, season_id, streamer_id, rp_name").eq("season_id", season.id),
     client.from("organizations").select("id, season_id, slug, name, type").eq("season_id", season.id),
-    client.from("streamer_affiliations").select("id, slug, name, type"),
+    client.from("streamer_affiliations").select("id, slug, name, type, parent_affiliation_id, is_filter_visible, is_quick_filter, quick_filter_label, filter_order"),
     client.from("streamer_affiliation_memberships").select("id, streamer_id, affiliation_id, sort_order"),
     client.from("organization_memberships").select("id, participant_id, organization_id, role, joined_at, left_at, is_primary, display_order"),
     client.from("organization_role_histories").select("id, membership_id, role, start_date, end_date, is_leader"),
@@ -109,13 +109,26 @@ export function buildSyncPlan(excelData, context) {
     slug: row.slug,
     name: row.name,
     type: row.type,
+    parentName: row.parent_affiliation_id
+      ? affiliationsById.get(row.parent_affiliation_id)?.name ?? null
+      : null,
+    isFilterVisible: row.is_filter_visible,
+    isQuickFilter: row.is_quick_filter,
+    quickFilterLabel: row.quick_filter_label,
+    filterOrder: row.filter_order,
     label: `${row.name} / ${row.type}`,
   }));
   const affiliations = diffRows(
     currentAffiliations,
     desired.affiliations,
     (row) => row.key,
-    (left, right) => left.slug === right.slug,
+    (left, right) =>
+      left.slug === right.slug &&
+      left.parentName === right.parentName &&
+      left.isFilterVisible === right.isFilterVisible &&
+      left.isQuickFilter === right.isQuickFilter &&
+      left.quickFilterLabel === right.quickFilterLabel &&
+      left.filterOrder === right.filterOrder,
   );
 
   const currentAffiliationMemberships = context.affiliationMemberships
@@ -407,9 +420,47 @@ export async function applySyncPlan(client, plan, force) {
 
   const { sections, desired, context } = plan;
   await updatePeople(client, sectionDesired(sections.people));
-  await upsertRows(client, "streamer_affiliations", sectionDesired(sections.affiliations), "type,name", (row) => ({ slug: row.slug, name: row.name, type: row.type }));
-  const affiliations = await selectAll(client, "streamer_affiliations", "id, slug, name, type");
-  const affiliationsByKey = new Map(affiliations.map((row) => [affiliationKey(row.type, row.name), row]));
+  const affiliationRows = sectionDesired(sections.affiliations);
+  await upsertRows(
+    client,
+    "streamer_affiliations",
+    affiliationRows,
+    "type,name",
+    toAffiliationMasterRow,
+  );
+  let affiliations = await selectAll(
+    client,
+    "streamer_affiliations",
+    "id, slug, name, type",
+  );
+  let affiliationsByKey = new Map(
+    affiliations.map((row) => [affiliationKey(row.type, row.name), row]),
+  );
+  const desiredAffiliationsByName = new Map(
+    desired.affiliations.map((row) => [row.name, row]),
+  );
+  await upsertRows(
+    client,
+    "streamer_affiliations",
+    affiliationRows,
+    "type,name",
+    (row) => ({
+      ...toAffiliationMasterRow(row),
+      parent_affiliation_id: row.parentName
+        ? affiliationsByKey.get(
+            desiredAffiliationsByName.get(row.parentName)?.key,
+          )?.id ?? null
+        : null,
+    }),
+  );
+  affiliations = await selectAll(
+    client,
+    "streamer_affiliations",
+    "id, slug, name, type",
+  );
+  affiliationsByKey = new Map(
+    affiliations.map((row) => [affiliationKey(row.type, row.name), row]),
+  );
   await upsertRows(client, "streamer_affiliation_memberships", sectionDesired(sections.affiliationMemberships), "streamer_id,affiliation_id", (row) => ({ streamer_id: row.streamerId, affiliation_id: affiliationsByKey.get(row.affiliationKey).id, sort_order: row.sortOrder }));
   await deleteRows(client, "streamer_affiliation_memberships", sections.affiliationMemberships.delete.map((item) => item.current.id));
   await deleteRows(client, "streamer_affiliations", sections.affiliations.delete.map((item) => item.current.id));
@@ -449,14 +500,24 @@ export async function applySyncPlan(client, plan, force) {
 function buildDesiredState(excelData, context) {
   const people = context.people.map(({ person, streamer, participant }) => ({ key: participant.id, label: person.name, rpName: person.rpName, profileImageKey: person.profileImageKey, source: person, streamerId: streamer.id, participantId: participant.id }));
   const organizations = excelData.organizations.map((organization) => ({ key: organization.name, label: organization.name, name: organization.name, slug: organization.slug, type: organization.type, category: organization.category }));
-  const affiliationsByKey = new Map();
+  const affiliations = excelData.streamerAffiliations.map((affiliation) => ({
+    key: affiliationKey(affiliation.type, affiliation.name),
+    label: `${affiliation.name} / ${affiliation.type}`,
+    slug: affiliation.slug,
+    name: affiliation.name,
+    type: affiliation.type,
+    parentName: affiliation.parentName,
+    isFilterVisible: affiliation.isFilterVisible,
+    isQuickFilter: affiliation.isQuickFilter,
+    quickFilterLabel: affiliation.quickFilterLabel,
+    filterOrder: affiliation.filterOrder,
+  }));
   const affiliationMemberships = [];
   const organizationMemberships = [];
   const roleHistories = [];
   for (const { person, streamer, participant } of context.people) {
     for (const affiliation of person.affiliations) {
       const key = affiliationKey(affiliation.type, affiliation.name);
-      affiliationsByKey.set(key, { key, label: `${affiliation.name} / ${affiliation.type}`, slug: affiliation.slug, name: affiliation.name, type: affiliation.type });
       affiliationMemberships.push({ key: membershipKey(streamer.id, key), label: `${person.name} / ${affiliation.name} (${affiliation.type})`, streamerId: streamer.id, affiliationKey: key, sortOrder: affiliation.sortOrder });
     }
     const grouped = new Map();
@@ -481,7 +542,7 @@ function buildDesiredState(excelData, context) {
     const person = peopleByName.get(row.personName);
     return { key: applicationKey(person.participantId, row.recruitmentKey), label: `${row.personName} / ${row.recruitmentKey}`, participantId: person.participantId, recruitmentKey: row.recruitmentKey, sessionKey: row.interviewSessionKey, result: row.result, interviewOrder: row.interviewOrder, roleAfterPass: row.roleAfterPass, notes: row.notes };
   });
-  return { people, affiliations: [...affiliationsByKey.values()], affiliationMemberships, organizations, organizationMemberships, roleHistories, publicJobs, recruitments, interviews, applications };
+  return { people, affiliations, affiliationMemberships, organizations, organizationMemberships, roleHistories, publicJobs, recruitments, interviews, applications };
 }
 
 function diffRows(current, desired, getKey, isEqual) {
@@ -581,6 +642,18 @@ async function updateRows(client, table, ids, values) {
 function sectionDesired(section) { return [...section.create, ...section.update].map((item) => item.desired); }
 function chunks(values, size) { const output = []; for (let index = 0; index < values.length; index += size) output.push(values.slice(index, index + size)); return output; }
 function affiliationKey(type, name) { return `${type}\u0000${name}`; }
+
+function toAffiliationMasterRow(row) {
+  return {
+    slug: row.slug,
+    name: row.name,
+    type: row.type,
+    is_filter_visible: row.isFilterVisible,
+    is_quick_filter: row.isQuickFilter,
+    quick_filter_label: row.quickFilterLabel,
+    filter_order: row.filterOrder,
+  };
+}
 function membershipKey(left, right) { return `${left}\u0000${right}`; }
 function applicationKey(participantId, recruitmentKeyOrId) { return `${participantId}\u0000${recruitmentKeyOrId}`; }
 function historyKey(participantId, organizationName, role, startDate, endDate) { return [participantId, organizationName, role ?? "", startDate ?? "", endDate ?? ""].join("\u0000"); }

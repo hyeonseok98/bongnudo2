@@ -531,26 +531,49 @@ export type Database = {
       streamer_affiliations: {
         Row: {
           created_at: string
+          filter_order: number | null
           id: string
+          is_filter_visible: boolean
+          is_quick_filter: boolean
           name: string
+          parent_affiliation_id: string | null
+          quick_filter_label: string | null
           slug: string
           type: string
         }
         Insert: {
           created_at?: string
+          filter_order?: number | null
           id?: string
+          is_filter_visible?: boolean
+          is_quick_filter?: boolean
           name: string
+          parent_affiliation_id?: string | null
+          quick_filter_label?: string | null
           slug: string
           type: string
         }
         Update: {
           created_at?: string
+          filter_order?: number | null
           id?: string
+          is_filter_visible?: boolean
+          is_quick_filter?: boolean
           name?: string
+          parent_affiliation_id?: string | null
+          quick_filter_label?: string | null
           slug?: string
           type?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "streamer_affiliations_parent_affiliation_id_fkey"
+            columns: ["parent_affiliation_id"]
+            isOneToOne: false
+            referencedRelation: "streamer_affiliations"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       streamer_groups: {
         Row: {

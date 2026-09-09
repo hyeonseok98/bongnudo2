@@ -13,6 +13,18 @@ const EXPECTED_PERSON_HEADERS = [
   "모집 구분",
 ];
 
+const EXPECTED_STREAMER_AFFILIATION_HEADERS = [
+  "소속명",
+  "유형",
+  "상위 소속",
+  "필터 노출",
+  "빠른 선택",
+  "빠른 선택 표시명",
+  "표시 순서",
+  "비고",
+  "관계 출처",
+];
+
 const ORGANIZATION_TYPE_BY_CATEGORY = {
   공무직: "institution",
   사업체: "business",
@@ -47,6 +59,7 @@ export async function readBongnudo2Excel(workbookPath) {
   await workbook.xlsx.readFile(workbookPath);
 
   const personRows = readRows(workbook, "인물");
+  const streamerAffiliationRows = readRows(workbook, "스트리머소속");
   const organizationRows = readRows(workbook, "조직목록");
   const recruitmentRows = readRows(workbook, "공무직채용");
   const interviewRows = readRows(workbook, "면접일정");
@@ -58,7 +71,15 @@ export async function readBongnudo2Excel(workbookPath) {
   );
 
   validateHeaders(personRows.headers, EXPECTED_PERSON_HEADERS, "인물");
+  validateHeaders(
+    streamerAffiliationRows.headers,
+    EXPECTED_STREAMER_AFFILIATION_HEADERS,
+    "스트리머소속",
+  );
 
+  const streamerAffiliations = streamerAffiliationRows.rows.map(
+    normalizeStreamerAffiliation,
+  );
   const organizations = organizationRows.rows.map((row) => ({
     row: row.__row,
     name: toText(row.organization),
@@ -78,6 +99,7 @@ export async function readBongnudo2Excel(workbookPath) {
 
   const errors = validateWorkbook({
     people,
+    streamerAffiliations,
     organizations,
     recruitments,
     interviews,
@@ -104,6 +126,10 @@ export async function readBongnudo2Excel(workbookPath) {
 
   return {
     people,
+    streamerAffiliations: streamerAffiliations.map((affiliation) => ({
+      ...affiliation,
+      slug: createStableSlug(affiliation.type, affiliation.name),
+    })),
     organizations: organizations.map((organization) => ({
       ...organization,
       slug:
@@ -116,6 +142,7 @@ export async function readBongnudo2Excel(workbookPath) {
     applications,
     summary: buildSummary({
       people,
+      streamerAffiliations,
       organizations,
       recruitments,
       interviews,
@@ -211,6 +238,21 @@ function normalizeCellValue(value) {
   }
 
   return value;
+}
+
+function normalizeStreamerAffiliation(row) {
+  return {
+    row: row.__row,
+    name: toText(row["소속명"]),
+    type: toText(row["유형"]).toLowerCase(),
+    parentName: toText(row["상위 소속"]) || null,
+    isFilterVisible: toBooleanValue(row["필터 노출"]),
+    isQuickFilter: toBooleanValue(row["빠른 선택"]),
+    quickFilterLabel: toText(row["빠른 선택 표시명"]) || null,
+    filterOrder: toPositiveInteger(row["표시 순서"]),
+    notes: toText(row["비고"]) || null,
+    relationSource: toText(row["관계 출처"]) || null,
+  };
 }
 
 function normalizePerson(row, organizationNames) {
@@ -390,6 +432,10 @@ function validateWorkbook(data) {
       );
     }
   }
+
+  errors.push(
+    ...validateStreamerAffiliations(data.people, data.streamerAffiliations),
+  );
 
   for (const person of data.people) {
     if (!person.name) {
@@ -602,6 +648,180 @@ function validateWorkbook(data) {
   return errors;
 }
 
+export function validateStreamerAffiliations(people, affiliations) {
+  const errors = [];
+  const affiliationsByName = new Map(
+    affiliations
+      .filter((affiliation) => affiliation.name)
+      .map((affiliation) => [affiliation.name, affiliation]),
+  );
+
+  validateUnique(
+    affiliations,
+    (affiliation) => affiliation.name,
+    "스트리머소속",
+    "소속명 중복",
+    errors,
+  );
+  validateUnique(
+    affiliations,
+    (affiliation) => affiliation.filterOrder,
+    "스트리머소속",
+    "표시 순서 중복",
+    errors,
+  );
+
+  for (const affiliation of affiliations) {
+    if (!affiliation.name) {
+      addError(errors, "스트리머소속", affiliation.row, "소속명 누락");
+    }
+    if (affiliation.type !== "mcn" && affiliation.type !== "group") {
+      addError(
+        errors,
+        "스트리머소속",
+        affiliation.row,
+        "유형은 mcn 또는 group이어야 함",
+        affiliation.type,
+      );
+    }
+    if (affiliation.isFilterVisible === null) {
+      addError(
+        errors,
+        "스트리머소속",
+        affiliation.row,
+        "필터 노출은 TRUE 또는 FALSE여야 함",
+      );
+    }
+    if (affiliation.isQuickFilter === null) {
+      addError(
+        errors,
+        "스트리머소속",
+        affiliation.row,
+        "빠른 선택은 TRUE 또는 FALSE여야 함",
+      );
+    }
+    if (!affiliation.filterOrder) {
+      addError(
+        errors,
+        "스트리머소속",
+        affiliation.row,
+        "표시 순서는 양의 정수여야 함",
+      );
+    }
+    if (affiliation.isQuickFilter === true) {
+      if (affiliation.isFilterVisible !== true) {
+        addError(
+          errors,
+          "스트리머소속",
+          affiliation.row,
+          "빠른 선택 소속은 필터에 노출되어야 함",
+        );
+      }
+      if (!affiliation.quickFilterLabel) {
+        addError(
+          errors,
+          "스트리머소속",
+          affiliation.row,
+          "빠른 선택 표시명 누락",
+        );
+      }
+    } else if (affiliation.quickFilterLabel) {
+      addError(
+        errors,
+        "스트리머소속",
+        affiliation.row,
+        "빠른 선택이 FALSE이면 표시명을 입력할 수 없음",
+      );
+    }
+
+    if (!affiliation.parentName) {
+      continue;
+    }
+    if (affiliation.parentName === affiliation.name) {
+      addError(
+        errors,
+        "스트리머소속",
+        affiliation.row,
+        "자기 자신을 상위 소속으로 지정할 수 없음",
+        affiliation.name,
+      );
+      continue;
+    }
+
+    const parent = affiliationsByName.get(affiliation.parentName);
+    if (!parent) {
+      addError(
+        errors,
+        "스트리머소속",
+        affiliation.row,
+        "존재하지 않는 상위 소속",
+        affiliation.parentName,
+      );
+      continue;
+    }
+    if (parent.parentName) {
+      addError(
+        errors,
+        "스트리머소속",
+        affiliation.row,
+        "소속 계층은 최대 2단계까지만 허용함",
+        affiliation.name,
+      );
+    }
+    if (hasAffiliationCycle(affiliation, affiliationsByName)) {
+      addError(
+        errors,
+        "스트리머소속",
+        affiliation.row,
+        "소속 계층에 cycle이 존재함",
+        affiliation.name,
+      );
+    }
+  }
+
+  for (const person of people) {
+    for (const affiliation of person.affiliations) {
+      const master = affiliationsByName.get(affiliation.name);
+      if (!master) {
+        addError(
+          errors,
+          "인물",
+          person.row,
+          "스트리머소속 시트에 없는 소속",
+          affiliation.name,
+        );
+      } else if (master.type !== affiliation.type) {
+        addError(
+          errors,
+          "인물",
+          person.row,
+          `${affiliation.type} 컬럼과 스트리머소속 유형 불일치`,
+          affiliation.name,
+        );
+      }
+    }
+  }
+
+  return errors;
+}
+
+function hasAffiliationCycle(start, affiliationsByName) {
+  const visited = new Set();
+  let current = start;
+
+  while (current) {
+    if (visited.has(current.name)) {
+      return true;
+    }
+    visited.add(current.name);
+    current = current.parentName
+      ? affiliationsByName.get(current.parentName)
+      : null;
+  }
+
+  return false;
+}
+
 function buildSummary(data) {
   const affiliations = data.people.flatMap((person) => person.affiliations);
   const histories = data.people.flatMap((person) => person.roleHistories);
@@ -621,6 +841,18 @@ function buildSummary(data) {
   return {
     people: data.people.length,
     matchedBy: "chzzk_channel_id",
+    affiliationMaster: {
+      total: data.streamerAffiliations.length,
+      parentRelations: data.streamerAffiliations.filter(
+        (affiliation) => affiliation.parentName !== null,
+      ).length,
+      filterVisible: data.streamerAffiliations.filter(
+        (affiliation) => affiliation.isFilterVisible,
+      ).length,
+      quickFilters: data.streamerAffiliations.filter(
+        (affiliation) => affiliation.isQuickFilter,
+      ).length,
+    },
     affiliations: {
       memberships: affiliations.length,
       mcns: affiliations.filter((affiliation) => affiliation.type === "mcn")
@@ -729,6 +961,16 @@ function toTimeText(value) {
 function toPositiveInteger(value) {
   const number = Number(value);
   return Number.isInteger(number) && number > 0 ? number : null;
+}
+
+function toBooleanValue(value) {
+  if (value === true || toText(value).toUpperCase() === "TRUE") {
+    return true;
+  }
+  if (value === false || toText(value).toUpperCase() === "FALSE") {
+    return false;
+  }
+  return null;
 }
 
 function toBoolean(value) {
