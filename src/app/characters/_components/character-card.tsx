@@ -1,9 +1,14 @@
 import { Badge } from "@/components/ui/badge";
 import {
+  RP_AFFILIATION_BADGE_FALLBACK,
+  RP_AFFILIATION_BADGE_STYLES,
+} from "@/constants/rp-affiliation-badge-styles";
+import {
   getOrderedAffiliations,
   getOrderedStreamerAffiliations,
   type CharacterListItem,
 } from "@/features/characters/character";
+import { cn } from "@/utils/cn";
 
 import { CharacterAvatar } from "./character-avatar";
 
@@ -51,7 +56,11 @@ export function CharacterCard({ character }: CharacterCardProps) {
               <div className="flex min-w-0 flex-wrap gap-1.5">
                 {visibleAffiliations.map((affiliation) => (
                   <Badge
-                    className="max-w-full truncate bg-black/55 text-white"
+                    className={cn(
+                      "max-w-full truncate",
+                      RP_AFFILIATION_BADGE_STYLES[affiliation.slug] ??
+                        RP_AFFILIATION_BADGE_FALLBACK,
+                    )}
                     key={affiliation.id}
                   >
                     {affiliation.name}
@@ -59,7 +68,7 @@ export function CharacterCard({ character }: CharacterCardProps) {
                   </Badge>
                 ))}
                 {hiddenAffiliationCount > 0 ? (
-                  <Badge className="bg-black/55 text-white">
+                  <Badge className="bg-white/10 text-white/90">
                     +{hiddenAffiliationCount}
                   </Badge>
                 ) : null}
