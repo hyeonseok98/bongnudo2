@@ -4,24 +4,29 @@ import { FilterBar } from "@/components/filters/filter-bar";
 import {
   HierarchicalFilter,
   type FilterTreeNode,
+  type HierarchicalFilterSelection,
   type QuickFilterOption,
 } from "@/components/filters/hierarchical-filter";
 import { SearchField } from "@/components/ui/search-field";
 
 interface CharacterFiltersProps {
-  getJobResultCount: (value: string[]) => number;
-  getStreamerAffiliationResultCount: (value: string[]) => number;
+  getJobResultCount: (selection: HierarchicalFilterSelection) => number;
+  getStreamerAffiliationResultCount: (
+    selection: HierarchicalFilterSelection,
+  ) => number;
   jobLabelNodes: FilterTreeNode[];
   jobNodes: FilterTreeNode[];
-  jobValue: string[];
+  jobValue: HierarchicalFilterSelection;
   query: string;
-  selectedStreamerAffiliationSlugs: string[];
+  streamerAffiliationSelection: HierarchicalFilterSelection;
   streamerAffiliationNodes: FilterTreeNode[];
   streamerAffiliationLabelNodes: FilterTreeNode[];
   streamerAffiliationQuickOptions: QuickFilterOption[];
-  onJobApply: (value: string[]) => void;
+  onJobApply: (selection: HierarchicalFilterSelection) => void;
   onQueryChange: (query: string) => void;
-  onStreamerAffiliationsApply: (value: string[]) => void;
+  onStreamerAffiliationsApply: (
+    selection: HierarchicalFilterSelection,
+  ) => void;
 }
 
 export function CharacterFilters({
@@ -31,7 +36,7 @@ export function CharacterFilters({
   jobNodes,
   jobValue,
   query,
-  selectedStreamerAffiliationSlugs,
+  streamerAffiliationSelection,
   streamerAffiliationNodes,
   streamerAffiliationLabelNodes,
   streamerAffiliationQuickOptions,
@@ -56,7 +61,7 @@ export function CharacterFilters({
           labelNodes={jobLabelNodes}
           nodes={jobNodes}
           onApply={onJobApply}
-          quickOptions={[]}
+          panelSize="compact"
           selectionMode="single"
           value={jobValue}
         />
@@ -67,7 +72,7 @@ export function CharacterFilters({
           nodes={streamerAffiliationNodes}
           onApply={onStreamerAffiliationsApply}
           quickOptions={streamerAffiliationQuickOptions}
-          value={selectedStreamerAffiliationSlugs}
+          value={streamerAffiliationSelection}
         />
       </FilterBar>
     </section>

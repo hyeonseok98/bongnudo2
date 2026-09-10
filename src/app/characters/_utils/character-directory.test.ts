@@ -12,6 +12,7 @@ import {
   buildJobAffiliationFilterNodes,
   buildStreamerAffiliationFilterData,
   filterCharacters,
+  getExcludedStreamerAffiliationSlugs,
   getJobAffiliationFilterSelection,
   getJobAffiliationFilterValue,
   getStreamerAffiliationFilterLabel,
@@ -196,12 +197,15 @@ describe("streamer affiliation filter data", () => {
 });
 
 describe("character filter facets", () => {
-  it("직업 대분류와 세부 affiliation tree를 count와 함께 생성함", () => {
+  it("직업 대분류 5개를 유지하고 0명 root를 disabled로 생성함", () => {
     const nodes = buildJobAffiliationFilterNodes(CHARACTERS);
 
-    expect(nodes.map((node) => [node.id, node.count])).toEqual([
-      ["public-service", 2],
-      ["business", 1],
+    expect(nodes.map((node) => [node.id, node.count, node.disabled])).toEqual([
+      ["public-service", 2, false],
+      ["business", 1, false],
+      ["illegal-business", 0, true],
+      ["gang", 0, true],
+      ["crew", 0, true],
     ]);
     expect(nodes[0].children).toEqual([
       { id: "police", label: "경찰", count: 2 },
@@ -219,7 +223,7 @@ describe("character filter facets", () => {
         query: "",
         affiliationType: "public-service",
         affiliationSlug: "police",
-        selectedStreamerAffiliationSlugs: [],
+        streamerAffiliationSelection: { mode: "include", ids: [] },
       },
     );
 
@@ -246,17 +250,24 @@ describe("character filter facets", () => {
         query: "",
         affiliationType: "business",
         affiliationSlug: "company",
-        selectedStreamerAffiliationSlugs: ["acacia"],
+        streamerAffiliationSelection: {
+          mode: "include",
+          ids: ["acacia"],
+        },
       },
     );
 
-    expect(result.jobNodes).toEqual([
-      {
-        id: "public-service",
-        label: "공무직",
-        count: 1,
-        children: [{ id: "police", label: "경찰", count: 1 }],
-      },
+    expect(result.jobNodes.map((node) => [
+      node.id,
+      node.count,
+      node.disabled,
+      node.children?.map((child) => child.id),
+    ])).toEqual([
+      ["public-service", 1, false, ["police"]],
+      ["business", 0, true, []],
+      ["illegal-business", 0, true, []],
+      ["gang", 0, true, []],
+      ["crew", 0, true, []],
     ]);
     expect(
       result.streamerAffiliations.nodes.find(
@@ -281,17 +292,19 @@ describe("character filter facets", () => {
         query: "가",
         affiliationType: "all",
         affiliationSlug: null,
-        selectedStreamerAffiliationSlugs: [],
+        streamerAffiliationSelection: { mode: "include", ids: [] },
       },
     );
 
-    expect(result.jobNodes).toEqual([
-      {
-        id: "public-service",
-        label: "공무직",
-        count: 1,
-        children: [{ id: "police", label: "경찰", count: 1 }],
-      },
+    expect(result.jobNodes.map((node) => [node.id, node.count])).toEqual([
+      ["public-service", 1],
+      ["business", 0],
+      ["illegal-business", 0],
+      ["gang", 0],
+      ["crew", 0],
+    ]);
+    expect(result.jobNodes[0].children).toEqual([
+      { id: "police", label: "경찰", count: 1 },
     ]);
     expect(result.streamerAffiliations.nodes).toEqual([
       {
@@ -330,7 +343,10 @@ describe("character filtering", () => {
       query: "",
       affiliationType: "all",
       affiliationSlug: null,
-      selectedStreamerAffiliationSlugs: ["acacia", "swamp"],
+      streamerAffiliationSelection: {
+        mode: "include",
+        ids: ["acacia", "swamp"],
+      },
     });
 
     expect(result.map((character) => character.id)).toEqual([
@@ -344,7 +360,10 @@ describe("character filtering", () => {
       query: "",
       affiliationType: "public-service",
       affiliationSlug: null,
-      selectedStreamerAffiliationSlugs: ["project-i", "swamp"],
+      streamerAffiliationSelection: {
+        mode: "include",
+        ids: ["project-i", "swamp"],
+      },
     });
 
     expect(result.map((character) => character.id)).toEqual([
@@ -358,10 +377,64 @@ describe("character filtering", () => {
       query: "",
       affiliationType: "all",
       affiliationSlug: null,
-      selectedStreamerAffiliationSlugs: ["hidden-group"],
+      streamerAffiliationSelection: {
+        mode: "include",
+        ids: ["hidden-group"],
+      },
     });
 
     expect(result.map((character) => character.id)).toEqual([
+      "character-hidden",
+    ]);
+  });
+
+  it("exclude parent를 descendants까지 제외함", () => {
+    expect(
+      Array.from(
+        getExcludedStreamerAffiliationSlugs(STREAMER_AFFILIATIONS, [
+          "project-i",
+        ]),
+      ),
+    ).toEqual(["project-i", "acacia", "honeys"]);
+
+    const result = filterCharacters(
+      CHARACTERS,
+      {
+        query: "",
+        affiliationType: "all",
+        affiliationSlug: null,
+        streamerAffiliationSelection: {
+          mode: "exclude",
+          ids: ["project-i"],
+        },
+      },
+      STREAMER_AFFILIATIONS,
+    );
+
+    expect(result.map((character) => character.id)).toEqual([
+      "character-c",
+      "character-hidden",
+    ]);
+  });
+
+  it("exclude child를 가진 character를 제외함", () => {
+    const result = filterCharacters(
+      CHARACTERS,
+      {
+        query: "",
+        affiliationType: "all",
+        affiliationSlug: null,
+        streamerAffiliationSelection: {
+          mode: "exclude",
+          ids: ["acacia"],
+        },
+      },
+      STREAMER_AFFILIATIONS,
+    );
+
+    expect(result.map((character) => character.id)).toEqual([
+      "character-b",
+      "character-c",
       "character-hidden",
     ]);
   });

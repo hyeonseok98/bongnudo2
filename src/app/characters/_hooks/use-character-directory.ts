@@ -8,6 +8,7 @@ import {
   useQueryStates,
 } from "nuqs";
 
+import type { HierarchicalFilterSelection } from "@/components/filters/hierarchical-filter";
 import {
   CHARACTER_AFFILIATION_CATEGORY_VALUES,
   type CharacterAffiliationCategoryFilter,
@@ -20,8 +21,9 @@ import {
 } from "@/constants/character-list";
 
 import {
+  getStreamerAffiliationQueryState,
+  getStreamerAffiliationSelection,
   hasExplicitCharacterPreferences,
-  normalizeGroupIds,
   readCharacterPreferences,
   writeCharacterPreferences,
   type CharacterPreferences,
@@ -34,6 +36,7 @@ const characterQueryParsers = {
   ).withDefault("all"),
   affiliation: parseAsString.withDefault(""),
   groups: parseAsArrayOf(parseAsString).withDefault([]),
+  excludeGroups: parseAsArrayOf(parseAsString).withDefault([]),
   sort: parseAsStringLiteral(CHARACTER_SORT_VALUES).withDefault("asc"),
   view: parseAsStringLiteral(CHARACTER_VIEW_VALUES).withDefault("grid"),
 };
@@ -42,7 +45,7 @@ export interface CharacterDirectory {
   q: string;
   affiliationType: CharacterAffiliationCategoryFilter;
   affiliation: string | null;
-  selectedStreamerAffiliationSlugs: string[];
+  streamerAffiliationSelection: HierarchicalFilterSelection;
   sort: CharacterSort;
   view: CharacterView;
   changeQuery: (query: string) => void;
@@ -50,7 +53,9 @@ export interface CharacterDirectory {
     affiliationType: CharacterAffiliationCategoryFilter,
     affiliation: string | null,
   ) => void;
-  applyStreamerAffiliations: (affiliationSlugs: string[]) => void;
+  applyStreamerAffiliations: (
+    selection: HierarchicalFilterSelection,
+  ) => void;
   removeStreamerAffiliation: (affiliationSlug: string) => void;
   changeSort: (sort: CharacterSort) => void;
   changeView: (view: CharacterView) => void;
@@ -59,11 +64,14 @@ export interface CharacterDirectory {
 
 export function useCharacterDirectory(): CharacterDirectory {
   const [
-    { q, affiliationType, affiliation, groups, sort, view },
+    { q, affiliationType, affiliation, groups, excludeGroups, sort, view },
     setQueryState,
   ] = useQueryStates(characterQueryParsers);
   const hasRestoredPreferences = useRef(false);
-  const selectedStreamerAffiliationSlugs = normalizeGroupIds(groups);
+  const streamerAffiliationSelection = getStreamerAffiliationSelection(
+    groups,
+    excludeGroups,
+  );
   const selectedAffiliation = affiliation || null;
 
   useEffect(() => {
@@ -91,6 +99,10 @@ export function useCharacterDirectory(): CharacterDirectory {
             : preferences.affiliationType,
         affiliation: preferences.affiliation,
         groups: preferences.groups.length > 0 ? preferences.groups : null,
+        excludeGroups:
+          preferences.excludeGroups.length > 0
+            ? preferences.excludeGroups
+            : null,
         sort: preferences.sort === "asc" ? null : preferences.sort,
         view: preferences.view === "grid" ? null : preferences.view,
       },
@@ -104,7 +116,14 @@ export function useCharacterDirectory(): CharacterDirectory {
     return {
       affiliationType,
       affiliation: selectedAffiliation,
-      groups: selectedStreamerAffiliationSlugs,
+      groups:
+        streamerAffiliationSelection.mode === "include"
+          ? streamerAffiliationSelection.ids
+          : [],
+      excludeGroups:
+        streamerAffiliationSelection.mode === "exclude"
+          ? streamerAffiliationSelection.ids
+          : [],
       sort,
       view,
       ...changes,
@@ -134,20 +153,27 @@ export function useCharacterDirectory(): CharacterDirectory {
     );
   }
 
-  function applyStreamerAffiliations(affiliationSlugs: string[]) {
-    const normalizedSlugs = normalizeGroupIds(affiliationSlugs);
-    writeCharacterPreferences(getPreferences({ groups: normalizedSlugs }));
-    void setQueryState(
-      { groups: normalizedSlugs.length > 0 ? normalizedSlugs : null },
-      { history: "replace" },
+  function applyStreamerAffiliations(
+    selection: HierarchicalFilterSelection,
+  ) {
+    const queryState = getStreamerAffiliationQueryState(selection);
+    writeCharacterPreferences(
+      getPreferences({
+        groups: queryState.groups ?? [],
+        excludeGroups: queryState.excludeGroups ?? [],
+      }),
     );
+    void setQueryState(queryState, { history: "replace" });
   }
 
   function removeStreamerAffiliation(affiliationSlug: string) {
     applyStreamerAffiliations(
-      selectedStreamerAffiliationSlugs.filter(
-        (selectedSlug) => selectedSlug !== affiliationSlug,
-      ),
+      {
+        ...streamerAffiliationSelection,
+        ids: streamerAffiliationSelection.ids.filter(
+          (selectedSlug) => selectedSlug !== affiliationSlug,
+        ),
+      },
     );
   }
 
@@ -173,10 +199,16 @@ export function useCharacterDirectory(): CharacterDirectory {
         affiliationType: "all",
         affiliation: null,
         groups: [],
+        excludeGroups: [],
       }),
     );
     void setQueryState(
-      { affiliationType: null, affiliation: null, groups: null },
+      {
+        affiliationType: null,
+        affiliation: null,
+        groups: null,
+        excludeGroups: null,
+      },
       { history: "replace" },
     );
   }
@@ -185,7 +217,7 @@ export function useCharacterDirectory(): CharacterDirectory {
     q,
     affiliationType,
     affiliation: selectedAffiliation,
-    selectedStreamerAffiliationSlugs,
+    streamerAffiliationSelection,
     sort,
     view,
     changeQuery,

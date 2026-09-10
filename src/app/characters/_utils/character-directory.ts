@@ -7,6 +7,7 @@ import {
 import type { CharacterSort } from "@/constants/character-list";
 import type {
   FilterTreeNode,
+  HierarchicalFilterSelection,
   QuickFilterOption,
 } from "@/components/filters/hierarchical-filter";
 import type {
@@ -19,7 +20,7 @@ export interface CharacterFilterCriteria {
   query: string;
   affiliationType: CharacterAffiliationCategoryFilter;
   affiliationSlug: string | null;
-  selectedStreamerAffiliationSlugs: string[];
+  streamerAffiliationSelection: HierarchicalFilterSelection;
 }
 
 export interface CharacterFilterFacetData {
@@ -86,10 +87,6 @@ export function buildJobAffiliationFilterNodes(
       ),
     );
 
-    if (categoryCharacters.length === 0) {
-      return [];
-    }
-
     const children = getAvailableAffiliations(
       categoryCharacters,
       category.slug,
@@ -112,6 +109,7 @@ export function buildJobAffiliationFilterNodes(
         id: category.slug,
         label: category.name,
         count: categoryCharacters.length,
+        disabled: categoryCharacters.length === 0,
         children,
       },
     ];
@@ -200,11 +198,11 @@ export function buildCharacterFilterFacetData(
     ...criteria,
     affiliationType: "all",
     affiliationSlug: null,
-  });
+  }, streamerAffiliations);
   const streamerAffiliationFacetCharacters = filterCharacters(characters, {
     ...criteria,
-    selectedStreamerAffiliationSlugs: [],
-  });
+    streamerAffiliationSelection: { mode: "include", ids: [] },
+  }, streamerAffiliations);
 
   return {
     jobNodes: buildJobAffiliationFilterNodes(jobFacetCharacters),
@@ -287,8 +285,16 @@ function compareStreamerAffiliations(
 export function filterCharacters(
   characters: CharacterListItem[],
   criteria: CharacterFilterCriteria,
+  streamerAffiliations: StreamerAffiliation[] = [],
 ): CharacterListItem[] {
   const normalizedQuery = criteria.query.trim().toLocaleLowerCase("ko-KR");
+  const selectedStreamerAffiliationIds =
+    criteria.streamerAffiliationSelection.mode === "exclude"
+      ? getExcludedStreamerAffiliationSlugs(
+          streamerAffiliations,
+          criteria.streamerAffiliationSelection.ids,
+        )
+      : new Set(criteria.streamerAffiliationSelection.ids);
 
   return characters.filter((character) => {
     const searchableText = [character.streamerName, character.rpName]
@@ -297,12 +303,15 @@ export function filterCharacters(
       .toLocaleLowerCase("ko-KR");
     const isQueryMatched =
       normalizedQuery.length === 0 || searchableText.includes(normalizedQuery);
-    const isStreamerAffiliationMatched =
-      criteria.selectedStreamerAffiliationSlugs.length === 0 ||
-      character.streamerAffiliations.some(
-        (affiliation) =>
-          criteria.selectedStreamerAffiliationSlugs.includes(affiliation.slug),
+    const hasSelectedStreamerAffiliation =
+      character.streamerAffiliations.some((affiliation) =>
+        selectedStreamerAffiliationIds.has(affiliation.slug),
       );
+    const isStreamerAffiliationMatched =
+      criteria.streamerAffiliationSelection.mode === "exclude"
+        ? !hasSelectedStreamerAffiliation
+        : selectedStreamerAffiliationIds.size === 0 ||
+          hasSelectedStreamerAffiliation;
     const isAffiliationTypeMatched =
       criteria.affiliationType === "all" ||
       character.affiliations.some(
@@ -323,6 +332,52 @@ export function filterCharacters(
       isAffiliationMatched
     );
   });
+}
+
+export function getExcludedStreamerAffiliationSlugs(
+  affiliations: StreamerAffiliation[],
+  excludedSlugs: string[],
+): Set<string> {
+  const affiliationsBySlug = new Map(
+    affiliations.map((affiliation) => [affiliation.slug, affiliation]),
+  );
+  const childrenByParentId = new Map<string, StreamerAffiliation[]>();
+
+  for (const affiliation of affiliations) {
+    if (!affiliation.parentAffiliationId) {
+      continue;
+    }
+
+    const children =
+      childrenByParentId.get(affiliation.parentAffiliationId) ?? [];
+    children.push(affiliation);
+    childrenByParentId.set(affiliation.parentAffiliationId, children);
+  }
+
+  const resolvedSlugs = new Set<string>();
+
+  function addAffiliationBranch(affiliation: StreamerAffiliation) {
+    if (resolvedSlugs.has(affiliation.slug)) {
+      return;
+    }
+
+    resolvedSlugs.add(affiliation.slug);
+    for (const child of childrenByParentId.get(affiliation.id) ?? []) {
+      addAffiliationBranch(child);
+    }
+  }
+
+  for (const slug of excludedSlugs) {
+    const affiliation = affiliationsBySlug.get(slug);
+
+    if (affiliation) {
+      addAffiliationBranch(affiliation);
+    } else {
+      resolvedSlugs.add(slug);
+    }
+  }
+
+  return resolvedSlugs;
 }
 
 export function sortCharacters(

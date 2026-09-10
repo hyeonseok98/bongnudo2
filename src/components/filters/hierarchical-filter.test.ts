@@ -2,10 +2,17 @@ import { describe, expect, it } from "vitest";
 
 import {
   filterTreeNodes,
+  getDefaultFilterSelection,
+  getDraftSummaryLabel,
   getFilterNodeLabel,
   getFilterNodeSelectionState,
+  getHierarchicalFilterNodeSelectionState,
+  getSelectAllState,
+  toggleHierarchicalFilterSelection,
+  toggleSelectAll,
   toggleFilterNodeSelection,
   type FilterTreeNode,
+  type HierarchicalFilterSelection,
 } from "./hierarchical-filter";
 
 const NODES: FilterTreeNode[] = [
@@ -21,6 +28,95 @@ const NODES: FilterTreeNode[] = [
 ];
 
 describe("hierarchical filter selection", () => {
+  it("초기 no-filter와 명시적 전체 선택을 구분함", () => {
+    const initialSelection: HierarchicalFilterSelection = {
+      mode: "include",
+      ids: [],
+    };
+    const selectAllSelection = toggleSelectAll(initialSelection, "multiple");
+
+    expect(getSelectAllState(initialSelection, "multiple")).toEqual({
+      checked: false,
+      indeterminate: false,
+    });
+    expect(selectAllSelection).toEqual({ mode: "exclude", ids: [] });
+    expect(getSelectAllState(selectAllSelection, "multiple")).toEqual({
+      checked: true,
+      indeterminate: false,
+    });
+  });
+
+  it("전체 선택에서 parent를 하나 제외함", () => {
+    const selection = toggleHierarchicalFilterSelection(
+      NODES,
+      { mode: "exclude", ids: [] },
+      "project-i",
+      "multiple",
+    );
+
+    expect(selection).toEqual({ mode: "exclude", ids: ["project-i"] });
+    expect(
+      getHierarchicalFilterNodeSelectionState(
+        NODES,
+        selection,
+        "acacia",
+      ),
+    ).toEqual({ checked: false, indeterminate: false });
+  });
+
+  it("전체 선택에서 child를 하나 제외함", () => {
+    const selection = toggleHierarchicalFilterSelection(
+      NODES,
+      { mode: "exclude", ids: [] },
+      "acacia",
+      "multiple",
+    );
+
+    expect(selection).toEqual({ mode: "exclude", ids: ["acacia"] });
+    expect(
+      getHierarchicalFilterNodeSelectionState(
+        NODES,
+        selection,
+        "project-i",
+      ),
+    ).toEqual({ checked: false, indeterminate: true });
+  });
+
+  it("직업 전체는 single selection을 비움", () => {
+    expect(
+      toggleSelectAll({ mode: "include", ids: ["project-i"] }, "single"),
+    ).toEqual({ mode: "include", ids: [] });
+  });
+
+  it("disabled node toggle은 selection을 변경하지 않음", () => {
+    const selection: HierarchicalFilterSelection = {
+      mode: "include",
+      ids: [],
+    };
+
+    expect(
+      toggleHierarchicalFilterSelection(
+        [{ id: "business", label: "사업체", count: 0, disabled: true }],
+        selection,
+        "business",
+        "single",
+      ),
+    ).toBe(selection);
+  });
+
+  it("include/exclude summary와 panel reset 상태를 구분함", () => {
+    expect(
+      getDraftSummaryLabel({ mode: "include", ids: ["project-i"] }),
+    ).toBe("선택 1");
+    expect(
+      getDraftSummaryLabel({ mode: "exclude", ids: ["project-i"] }),
+    ).toBe("제외 1");
+    expect(getDraftSummaryLabel({ mode: "exclude", ids: [] })).toBe(
+      "전체 선택",
+    );
+    expect(getDefaultFilterSelection()).toEqual({ mode: "include", ids: [] });
+  });
+
   it("parent를 전체 선택함", () => {
     expect(toggleFilterNodeSelection(NODES, [], "project-i")).toEqual([
       "project-i",

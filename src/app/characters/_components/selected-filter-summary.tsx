@@ -15,6 +15,7 @@ export interface SelectedStreamerAffiliationFilter {
 interface SelectedFilterSummaryProps {
   affiliationFilter: SelectedAffiliationFilter | null;
   selectedStreamerAffiliations: SelectedStreamerAffiliationFilter[];
+  streamerAffiliationMode: "include" | "exclude";
   onClearAffiliation: () => void;
   onClearAll: () => void;
   onRemoveStreamerAffiliation: (affiliationSlug: string) => void;
@@ -23,6 +24,7 @@ interface SelectedFilterSummaryProps {
 export function SelectedFilterSummary({
   affiliationFilter,
   selectedStreamerAffiliations,
+  streamerAffiliationMode,
   onClearAffiliation,
   onClearAll,
   onRemoveStreamerAffiliation,
@@ -59,6 +61,7 @@ export function SelectedFilterSummary({
           onRemove={() => onRemoveStreamerAffiliation(affiliation.slug)}
           removeLabel={affiliation.label + " 필터 제거"}
         >
+          {streamerAffiliationMode === "exclude" ? "제외: " : ""}
           {affiliation.label}
         </Chip>
       ))}
