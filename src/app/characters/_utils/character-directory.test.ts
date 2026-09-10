@@ -310,6 +310,54 @@ describe("character filter facets", () => {
 });
 
 describe("character filtering", () => {
+  it("RP명과 스트리머명에서 완성형·초성·중간 문자열 검색을 지원함", () => {
+    const searchableCharacters = [
+      createCharacter({
+        id: "rp-name",
+        slug: "streamer-a",
+        streamerName: "하루토",
+        rpName: "사랑화",
+        streamerAffiliations: [],
+      }),
+      createCharacter({
+        id: "streamer-name",
+        slug: "streamer-b",
+        streamerName: "카론 유니버스",
+        rpName: null,
+        streamerAffiliations: [],
+      }),
+    ];
+
+    expect(
+      filterCharacters(searchableCharacters, {
+        query: "랑화",
+        jobSelection: { ids: [] },
+        streamerAffiliationSelection: { ids: [] },
+      }).map((character) => character.id),
+    ).toEqual(["rp-name"]);
+    expect(
+      filterCharacters(searchableCharacters, {
+        query: "ㅅㄹ",
+        jobSelection: { ids: [] },
+        streamerAffiliationSelection: { ids: [] },
+      }).map((character) => character.id),
+    ).toEqual(["rp-name"]);
+    expect(
+      filterCharacters(searchableCharacters, {
+        query: "니버",
+        jobSelection: { ids: [] },
+        streamerAffiliationSelection: { ids: [] },
+      }).map((character) => character.id),
+    ).toEqual(["streamer-name"]);
+    expect(
+      filterCharacters(searchableCharacters, {
+        query: "ㅋㄹ",
+        jobSelection: { ids: [] },
+        streamerAffiliationSelection: { ids: [] },
+      }).map((character) => character.id),
+    ).toEqual(["streamer-name"]);
+  });
+
   it("서로 다른 현실 소속 branch를 OR로 처리함", () => {
     const result = filterCharacters(CHARACTERS, {
       query: "",
@@ -415,19 +463,23 @@ function createCharacter({
   id,
   slug,
   affiliations = [],
+  streamerName = slug,
+  rpName = null,
   streamerAffiliations,
 }: {
   id: string;
   slug: string;
   affiliations?: CharacterAffiliation[];
+  streamerName?: string;
+  rpName?: string | null;
   streamerAffiliations: CharacterStreamerAffiliation[];
 }): CharacterListItem {
   return {
     id,
     streamerId: "streamer-" + slug,
     slug,
-    streamerName: slug,
-    rpName: null,
+    streamerName,
+    rpName,
     profileImageUrl: null,
     streamerAffiliations,
     affiliations,

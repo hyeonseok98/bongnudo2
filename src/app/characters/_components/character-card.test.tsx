@@ -54,9 +54,11 @@ describe("CharacterCard", () => {
   it("현재 RP 조직은 두 개와 +N만 표시하고 현실 소속은 MCN부터 표시함", () => {
     render(<CharacterCard character={character} />);
 
-    expect(screen.getByText("EMS · 병원장")).toBeTruthy();
-    expect(screen.getByText("경찰 · 순경")).toBeTruthy();
-    expect(screen.queryByText("언론 · 기자")).toBeNull();
+    expect(screen.getByText("EMS")).toBeTruthy();
+    expect(screen.getByText("병원장 ✦").className).toContain("font-semibold");
+    expect(screen.getByText("경찰")).toBeTruthy();
+    expect(screen.getByText("순경").className).toContain("text-white/80");
+    expect(screen.queryByText("언론")).toBeNull();
     expect(screen.getByText("+1")).toBeTruthy();
 
     const realityAffiliations = screen

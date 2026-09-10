@@ -55,17 +55,33 @@ export function CharacterCard({ character }: CharacterCardProps) {
             {visibleAffiliations.length > 0 ? (
               <div className="flex min-w-0 flex-wrap gap-1.5">
                 {visibleAffiliations.map((affiliation) => (
-                  <Badge
-                    className={cn(
-                      "max-w-full truncate",
-                      RP_AFFILIATION_BADGE_STYLES[affiliation.slug] ??
-                        RP_AFFILIATION_BADGE_FALLBACK,
-                    )}
+                  <div
+                    className="flex max-w-full flex-wrap gap-1.5"
                     key={affiliation.id}
                   >
-                    {affiliation.name}
-                    {affiliation.role ? " · " + affiliation.role : null}
-                  </Badge>
+                    <Badge
+                      className={cn(
+                        "max-w-full truncate",
+                        RP_AFFILIATION_BADGE_STYLES[affiliation.slug] ??
+                          RP_AFFILIATION_BADGE_FALLBACK,
+                      )}
+                    >
+                      {affiliation.name}
+                    </Badge>
+                    {affiliation.role ? (
+                      <Badge
+                        className={cn(
+                          "max-w-full truncate",
+                          affiliation.isLeader
+                            ? "bg-linear-to-r from-white/20 to-white/10 text-white font-semibold shadow-sm shadow-white/15"
+                            : "bg-white/10 text-white/80",
+                        )}
+                      >
+                        {affiliation.role}
+                        {affiliation.isLeader ? " ✦" : null}
+                      </Badge>
+                    ) : null}
+                  </div>
                 ))}
                 {hiddenAffiliationCount > 0 ? (
                   <Badge className="bg-white/10 text-white/90">

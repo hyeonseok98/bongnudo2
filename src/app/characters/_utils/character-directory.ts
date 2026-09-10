@@ -15,6 +15,7 @@ import type {
   CharacterListItem,
   StreamerAffiliation,
 } from "@/features/characters/character";
+import { matchesKoreanSearch } from "@/utils/korean-search";
 
 export interface CharacterFilterCriteria {
   query: string;
@@ -251,7 +252,6 @@ export function filterCharacters(
   criteria: CharacterFilterCriteria,
   streamerAffiliations: StreamerAffiliation[] = [],
 ): CharacterListItem[] {
-  const normalizedQuery = criteria.query.trim().toLocaleLowerCase("ko-KR");
   const selectedJobIds = new Set(criteria.jobSelection.ids);
   const selectedStreamerAffiliationIds = getSelectedStreamerAffiliationSlugs(
     streamerAffiliations,
@@ -259,12 +259,10 @@ export function filterCharacters(
   );
 
   return characters.filter((character) => {
-    const searchableText = [character.streamerName, character.rpName]
-      .filter((value) => value !== null)
-      .join(" ")
-      .toLocaleLowerCase("ko-KR");
     const isQueryMatched =
-      normalizedQuery.length === 0 || searchableText.includes(normalizedQuery);
+      matchesKoreanSearch(character.streamerName, criteria.query) ||
+      (character.rpName !== null &&
+        matchesKoreanSearch(character.rpName, criteria.query));
     const hasSelectedStreamerAffiliation =
       character.streamerAffiliations.some((affiliation) =>
         selectedStreamerAffiliationIds.has(affiliation.slug),
