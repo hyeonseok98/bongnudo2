@@ -21,44 +21,58 @@ export function CharacterCard({ character }: CharacterCardProps) {
   );
 
   return (
-    <article className="overflow-hidden rounded-xl border border-default bg-surface-raised">
+    <article className="relative aspect-3/4 min-w-0 overflow-hidden rounded-xl border border-default bg-surface-raised">
       <CharacterAvatar
         character={character}
-        className="aspect-3/4 w-full"
+        className="absolute inset-0 size-full"
         sizes="(min-width: 1536px) 16vw, (min-width: 1280px) 20vw, (min-width: 1024px) 25vw, (min-width: 640px) 33vw, 50vw"
       />
 
-      <div className="relative -mt-24 space-y-3 bg-linear-to-t from-surface-raised from-65% via-surface-raised/90 to-transparent px-3 pt-16 pb-3">
+      <div
+        aria-hidden="true"
+        className="pointer-events-none absolute inset-x-0 bottom-0 h-2/3 bg-linear-to-t from-black/90 via-black/55 to-transparent"
+      />
+
+      <div className="absolute inset-x-0 bottom-0 min-w-0 p-3">
         <div className="min-w-0">
-          <h3 className="truncate text-body font-semibold text-primary">
+          <h3 className="truncate text-body font-semibold text-white">
             {character.streamerName}
           </h3>
           {character.rpName ? (
-            <p className="truncate text-body-sm text-secondary">
+            <p className="mt-0.5 truncate text-body-sm text-white/75">
               {character.rpName}
             </p>
           ) : null}
         </div>
 
         {affiliations.length > 0 || streamerAffiliations.length > 0 ? (
-          <div className="space-y-1.5">
+          <div className="mt-2 min-w-0 space-y-1.5">
             {visibleAffiliations.length > 0 ? (
-              <div className="flex flex-wrap gap-1.5">
+              <div className="flex min-w-0 flex-wrap gap-1.5">
                 {visibleAffiliations.map((affiliation) => (
-                  <Badge key={affiliation.id}>
+                  <Badge
+                    className="max-w-full truncate bg-black/55 text-white"
+                    key={affiliation.id}
+                  >
                     {affiliation.name}
                     {affiliation.role ? " · " + affiliation.role : null}
                   </Badge>
                 ))}
                 {hiddenAffiliationCount > 0 ? (
-                  <Badge>+{hiddenAffiliationCount}</Badge>
+                  <Badge className="bg-black/55 text-white">
+                    +{hiddenAffiliationCount}
+                  </Badge>
                 ) : null}
               </div>
             ) : null}
             {streamerAffiliations.length > 0 ? (
-              <div className="flex flex-wrap gap-1.5">
+              <div className="flex min-w-0 flex-wrap gap-1.5">
                 {streamerAffiliations.map((affiliation) => (
-                  <Badge key={affiliation.id} variant="outline">
+                  <Badge
+                    className="max-w-full truncate border-white/30 bg-black/35 text-white/90"
+                    key={affiliation.id}
+                    variant="outline"
+                  >
                     {affiliation.name}
                   </Badge>
                 ))}
