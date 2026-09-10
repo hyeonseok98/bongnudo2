@@ -48,6 +48,8 @@ next-env.d.ts
 /scripts
 AGENTS.md
 CLAUDE.md
+/output
+/tools
 
 # server
 supabase/migrations/

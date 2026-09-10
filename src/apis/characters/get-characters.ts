@@ -16,12 +16,13 @@ import { getSupabaseBrowserClient } from "@/lib/supabase/client";
 
 const BONGNUDO2_SEASON_SLUG = "bongnudo-2";
 
-function createCharactersQuery(seasonId: number) {
+function createCharactersQuery() {
   return getSupabaseBrowserClient()
     .from("season_participants")
     .select(`
       id,
       rp_name,
+      seasons!season_participants_season_id_fkey!inner (),
       streamer:streamers!inner (
         id,
         slug,
@@ -57,7 +58,7 @@ function createCharactersQuery(seasonId: number) {
         )
       )
     `)
-    .eq("season_id", seasonId);
+    .eq("seasons.slug", BONGNUDO2_SEASON_SLUG);
 }
 
 function createStreamerAffiliationsQuery() {
@@ -75,19 +76,8 @@ type CharactersQueryData = QueryData<
 type CharacterParticipant = CharactersQueryData[number];
 
 export async function getCharacters(): Promise<CharacterDirectoryData> {
-  const supabase = getSupabaseBrowserClient();
-  const { data: season, error: seasonError } = await supabase
-    .from("seasons")
-    .select("id")
-    .eq("slug", BONGNUDO2_SEASON_SLUG)
-    .single();
-
-  if (seasonError) {
-    throw new Error("시즌 정보를 불러오지 못함.", { cause: seasonError });
-  }
-
   const [charactersResult, affiliationsResult] = await Promise.all([
-    createCharactersQuery(season.id),
+    createCharactersQuery(),
     createStreamerAffiliationsQuery(),
   ]);
 
