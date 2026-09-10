@@ -72,9 +72,8 @@ export function CharacterCard({ character }: CharacterCardProps) {
                       <Badge
                         className={cn(
                           "max-w-full truncate",
-                          affiliation.isLeader
-                            ? "bg-linear-to-r from-white/20 to-white/10 text-white font-semibold shadow-sm shadow-white/15"
-                            : "bg-white/10 text-white/80",
+                          RP_AFFILIATION_BADGE_STYLES[affiliation.slug] ??
+                            RP_AFFILIATION_BADGE_FALLBACK,
                         )}
                       >
                         {affiliation.role}

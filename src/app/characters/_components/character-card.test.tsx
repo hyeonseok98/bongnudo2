@@ -29,7 +29,7 @@ const character: CharacterListItem = {
     },
     {
       id: "second",
-      slug: "polxx",
+      slug: "police",
       name: "경찰",
       category: "public-service",
       role: "순경",
@@ -55,9 +55,19 @@ describe("CharacterCard", () => {
     render(<CharacterCard character={character} />);
 
     expect(screen.getByText("EMS")).toBeTruthy();
-    expect(screen.getByText("병원장 ✦").className).toContain("font-semibold");
+    expect(screen.getByText("병원장 ✦").className).not.toContain(
+      "font-semibold",
+    );
+    expect(screen.getByText("병원장 ✦").className).not.toContain(
+      "shadow-",
+    );
+    expect(screen.getByText("병원장 ✦").className).toContain(
+      "bg-job-ems/55",
+    );
     expect(screen.getByText("경찰")).toBeTruthy();
-    expect(screen.getByText("순경").className).toContain("text-white/80");
+    expect(screen.getByText("순경").className).toContain(
+      "text-job-police-foreground",
+    );
     expect(screen.queryByText("언론")).toBeNull();
     expect(screen.getByText("+1")).toBeTruthy();
 
