@@ -14,9 +14,6 @@ import {
   buildJobAffiliationFilterNodes,
   buildStreamerAffiliationFilterData,
   filterCharacters,
-  getJobAffiliationFilterSelection,
-  getJobAffiliationFilterValue,
-  getStreamerAffiliationFilterLabel,
   sortCharacters,
 } from "../_utils/character-directory";
 import { CharacterFilters } from "./character-filters";
@@ -32,18 +29,9 @@ export function CharactersContent() {
   const streamerAffiliations =
     charactersQuery.data?.streamerAffiliations ?? [];
   const allJobNodes = buildJobAffiliationFilterNodes(characters);
-  const jobValue = getJobAffiliationFilterValue(
-    directory.affiliationType,
-    directory.affiliation,
-  );
-  const appliedJobSelection = getJobAffiliationFilterSelection(
-    allJobNodes,
-    jobValue,
-  );
   const filterCriteria = {
     query: directory.q,
-    affiliationType: appliedJobSelection.affiliationType,
-    affiliationSlug: appliedJobSelection.affiliationSlug,
+    jobSelection: directory.jobSelection,
     streamerAffiliationSelection: directory.streamerAffiliationSelection,
   };
   const filterFacetData = buildCharacterFilterFacetData(
@@ -57,8 +45,13 @@ export function CharactersContent() {
     directory.streamerAffiliationSelection.ids.map((slug) => ({
       slug,
       label:
-        getStreamerAffiliationFilterLabel(streamerAffiliations, slug) ?? slug,
+        streamerAffiliations.find((affiliation) => affiliation.slug === slug)
+          ?.name ?? slug,
     }));
+  const selectedJobs = directory.jobSelection.ids.map((id) => ({
+    id,
+    label: getFilterNodeLabel(allJobNodes, id) ?? id,
+  }));
   const filteredCharacters = filterCharacters(
     characters,
     filterCriteria,
@@ -66,39 +59,28 @@ export function CharactersContent() {
   );
   const sortedCharacters = sortCharacters(filteredCharacters, directory.sort);
 
-  function getJobResultCount(
-    selection: HierarchicalFilterSelection,
-  ) {
-    const jobSelection = getJobAffiliationFilterSelection(
-      allJobNodes,
-      selection.ids,
-    );
-
-    return filterCharacters(characters, {
-      ...filterCriteria,
-      affiliationType: jobSelection.affiliationType,
-      affiliationSlug: jobSelection.affiliationSlug,
-    }, streamerAffiliations).length;
+  function getJobResultCount(selection: HierarchicalFilterSelection) {
+    return filterCharacters(
+      characters,
+      {
+        ...filterCriteria,
+        jobSelection: selection,
+      },
+      streamerAffiliations,
+    ).length;
   }
 
   function getStreamerAffiliationResultCount(
     selection: HierarchicalFilterSelection,
   ) {
-    return filterCharacters(characters, {
-      ...filterCriteria,
-      streamerAffiliationSelection: selection,
-    }, streamerAffiliations).length;
-  }
-
-  function handleJobApply(selection: HierarchicalFilterSelection) {
-    const jobSelection = getJobAffiliationFilterSelection(
-      allJobNodes,
-      selection.ids,
-    );
-    directory.applyJobAffiliation(
-      jobSelection.affiliationType,
-      jobSelection.affiliationSlug,
-    );
+    return filterCharacters(
+      characters,
+      {
+        ...filterCriteria,
+        streamerAffiliationSelection: selection,
+      },
+      streamerAffiliations,
+    ).length;
   }
 
   if (charactersQuery.isPending) {
@@ -134,13 +116,7 @@ export function CharactersContent() {
         }
         jobLabelNodes={allJobNodes}
         jobNodes={filterFacetData.jobNodes}
-        jobValue={{
-          mode: "include",
-          ids: getJobAffiliationFilterValue(
-            appliedJobSelection.affiliationType,
-            appliedJobSelection.affiliationSlug,
-          ),
-        }}
+        jobValue={directory.jobSelection}
         query={directory.q}
         streamerAffiliationSelection={directory.streamerAffiliationSelection}
         streamerAffiliationNodes={filterFacetData.streamerAffiliations.nodes}
@@ -150,24 +126,16 @@ export function CharactersContent() {
         streamerAffiliationQuickOptions={
           filterFacetData.streamerAffiliations.quickOptions
         }
-        onJobApply={handleJobApply}
+        onJobApply={directory.applyJobs}
         onQueryChange={directory.changeQuery}
         onStreamerAffiliationsApply={directory.applyStreamerAffiliations}
       />
 
       <SelectedFilterSummary
-        affiliationFilter={
-          jobValue.length > 0
-            ? {
-                label:
-                  getFilterNodeLabel(allJobNodes, jobValue[0]) ?? jobValue[0],
-              }
-            : null
-        }
+        selectedJobs={selectedJobs}
         selectedStreamerAffiliations={selectedStreamerAffiliations}
-        streamerAffiliationMode={directory.streamerAffiliationSelection.mode}
-        onClearAffiliation={() => directory.applyJobAffiliation("all", null)}
         onClearAll={directory.resetFilters}
+        onRemoveJob={directory.removeJob}
         onRemoveStreamerAffiliation={directory.removeStreamerAffiliation}
       />
 

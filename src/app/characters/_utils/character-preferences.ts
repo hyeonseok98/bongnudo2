@@ -13,19 +13,17 @@ import type { HierarchicalFilterSelection } from "@/components/filters/hierarchi
 const CHARACTER_PREFERENCES_KEY = "bongnudo2:characters:preferences";
 const CHARACTER_PREFERENCE_QUERY_KEYS = [
   "q",
+  "jobs",
   "affiliationType",
   "affiliation",
   "groups",
-  "excludeGroups",
   "sort",
   "view",
 ];
 
 export interface CharacterPreferences {
-  affiliationType: CharacterAffiliationCategoryFilter;
-  affiliation: string | null;
+  jobs: string[];
   groups: string[];
-  excludeGroups: string[];
   sort: CharacterSort;
   view: CharacterView;
 }
@@ -54,22 +52,10 @@ export function readCharacterPreferences(): CharacterPreferences | null {
       return null;
     }
 
-    const {
-      affiliationType,
-      affiliation,
-      groups,
-      excludeGroups,
-      sort,
-      view,
-    } = value;
-    const storedExcludeGroups = excludeGroups ?? [];
+    const { groups, jobs, sort, view } = value;
 
     if (
-      typeof affiliationType !== "string" ||
-      !isCharacterAffiliationCategoryFilter(affiliationType) ||
-      !(typeof affiliation === "string" || affiliation === null) ||
       !isStringArray(groups) ||
-      !isStringArray(storedExcludeGroups) ||
       typeof sort !== "string" ||
       !isCharacterSort(sort) ||
       typeof view !== "string" ||
@@ -78,22 +64,11 @@ export function readCharacterPreferences(): CharacterPreferences | null {
       return null;
     }
 
-    const streamerAffiliationSelection = getStreamerAffiliationSelection(
-      groups,
-      storedExcludeGroups,
-    );
-
     return {
-      affiliationType,
-      affiliation: affiliationType === "all" ? null : affiliation,
-      groups:
-        streamerAffiliationSelection.mode === "include"
-          ? streamerAffiliationSelection.ids
-          : [],
-      excludeGroups:
-        streamerAffiliationSelection.mode === "exclude"
-          ? streamerAffiliationSelection.ids
-          : [],
+      jobs: isStringArray(jobs)
+        ? normalizeFilterIds(jobs)
+        : getLegacyPreferenceJobs(value),
+      groups: normalizeFilterIds(groups),
       sort,
       view,
     };
@@ -111,45 +86,54 @@ export function writeCharacterPreferences(
   );
 }
 
-export function normalizeGroupIds(groupIds: string[]): string[] {
-  return Array.from(
-    new Set(groupIds.map((groupId) => groupId.trim()).filter(Boolean)),
-  );
+export function normalizeFilterIds(ids: string[]): string[] {
+  return Array.from(new Set(ids.map((id) => id.trim()).filter(Boolean)));
 }
 
 export function getStreamerAffiliationSelection(
   groups: string[],
-  excludeGroups: string[],
 ): HierarchicalFilterSelection {
-  const normalizedGroups = normalizeGroupIds(groups);
-
-  if (normalizedGroups.length > 0) {
-    return { mode: "include", ids: normalizedGroups };
-  }
-
-  const normalizedExcludeGroups = normalizeGroupIds(excludeGroups);
-
-  return normalizedExcludeGroups.length > 0
-    ? { mode: "exclude", ids: normalizedExcludeGroups }
-    : { mode: "include", ids: [] };
+  return { ids: normalizeFilterIds(groups) };
 }
 
-export function getStreamerAffiliationQueryState(
+export function getFilterQueryValue(
   selection: HierarchicalFilterSelection,
-): {
-  groups: string[] | null;
-  excludeGroups: string[] | null;
-} {
-  const ids = normalizeGroupIds(selection.ids);
+): string[] | null {
+  const ids = normalizeFilterIds(selection.ids);
 
-  if (selection.mode === "exclude" && ids.length > 0) {
-    return { groups: null, excludeGroups: ids };
+  return ids.length > 0 ? ids : null;
+}
+
+export function getLegacyJobSelection(
+  jobs: string[],
+  affiliationType: CharacterAffiliationCategoryFilter,
+  affiliation: string,
+): HierarchicalFilterSelection {
+  const normalizedJobs = normalizeFilterIds(jobs);
+
+  if (normalizedJobs.length > 0) {
+    return { ids: normalizedJobs };
   }
 
-  return {
-    groups: ids.length > 0 ? ids : null,
-    excludeGroups: null,
-  };
+  if (affiliation) {
+    return { ids: [affiliation] };
+  }
+
+  return affiliationType === "all" ? { ids: [] } : { ids: [affiliationType] };
+}
+
+function getLegacyPreferenceJobs(value: Record<string, unknown>): string[] {
+  const { affiliation, affiliationType } = value;
+
+  if (
+    typeof affiliationType !== "string" ||
+    !isCharacterAffiliationCategoryFilter(affiliationType) ||
+    !(typeof affiliation === "string" || affiliation === null)
+  ) {
+    return [];
+  }
+
+  return getLegacyJobSelection([], affiliationType, affiliation ?? "").ids;
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {

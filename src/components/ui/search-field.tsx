@@ -27,11 +27,12 @@ export function SearchField({
         className="pointer-events-none absolute top-1/2 left-3.5 size-5 -translate-y-1/2 text-tertiary"
       />
       <Input
+        {...props}
         aria-label={label}
         className={cn(onClear ? "pr-11 pl-11" : "pr-4 pl-11", className)}
-        type="search"
+        role="searchbox"
+        type="text"
         value={value}
-        {...props}
       />
       {onClear && hasValue ? (
         <button

@@ -3,7 +3,8 @@ import { RotateCcw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Chip } from "@/components/ui/chip";
 
-interface SelectedAffiliationFilter {
+interface SelectedJobFilter {
+  id: string;
   label: string;
 }
 
@@ -13,24 +14,22 @@ export interface SelectedStreamerAffiliationFilter {
 }
 
 interface SelectedFilterSummaryProps {
-  affiliationFilter: SelectedAffiliationFilter | null;
+  selectedJobs: SelectedJobFilter[];
   selectedStreamerAffiliations: SelectedStreamerAffiliationFilter[];
-  streamerAffiliationMode: "include" | "exclude";
-  onClearAffiliation: () => void;
   onClearAll: () => void;
+  onRemoveJob: (jobId: string) => void;
   onRemoveStreamerAffiliation: (affiliationSlug: string) => void;
 }
 
 export function SelectedFilterSummary({
-  affiliationFilter,
+  selectedJobs,
   selectedStreamerAffiliations,
-  streamerAffiliationMode,
-  onClearAffiliation,
   onClearAll,
+  onRemoveJob,
   onRemoveStreamerAffiliation,
 }: SelectedFilterSummaryProps) {
   const hasSelectedFilters =
-    affiliationFilter !== null || selectedStreamerAffiliations.length > 0;
+    selectedJobs.length > 0 || selectedStreamerAffiliations.length > 0;
 
   if (!hasSelectedFilters) {
     return null;
@@ -43,16 +42,17 @@ export function SelectedFilterSummary({
         전체 초기화
       </Button>
 
-      {affiliationFilter ? (
+      {selectedJobs.map((job) => (
         <Chip
+          key={job.id}
           className="border-brand"
           mode="removable"
-          onRemove={onClearAffiliation}
-          removeLabel={affiliationFilter.label + " 필터 제거"}
+          onRemove={() => onRemoveJob(job.id)}
+          removeLabel={job.label + " 필터 제거"}
         >
-          {affiliationFilter.label}
+          {job.label}
         </Chip>
-      ) : null}
+      ))}
 
       {selectedStreamerAffiliations.map((affiliation) => (
         <Chip
@@ -61,7 +61,6 @@ export function SelectedFilterSummary({
           onRemove={() => onRemoveStreamerAffiliation(affiliation.slug)}
           removeLabel={affiliation.label + " 필터 제거"}
         >
-          {streamerAffiliationMode === "exclude" ? "제외: " : ""}
           {affiliation.label}
         </Chip>
       ))}

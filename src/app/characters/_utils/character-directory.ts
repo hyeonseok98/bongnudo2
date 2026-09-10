@@ -18,19 +18,13 @@ import type {
 
 export interface CharacterFilterCriteria {
   query: string;
-  affiliationType: CharacterAffiliationCategoryFilter;
-  affiliationSlug: string | null;
+  jobSelection: HierarchicalFilterSelection;
   streamerAffiliationSelection: HierarchicalFilterSelection;
 }
 
 export interface CharacterFilterFacetData {
   jobNodes: FilterTreeNode[];
   streamerAffiliations: StreamerAffiliationFilterData;
-}
-
-export interface JobAffiliationFilterSelection {
-  affiliationType: CharacterAffiliationCategoryFilter;
-  affiliationSlug: string | null;
 }
 
 export function getAvailableAffiliations(
@@ -194,15 +188,22 @@ export function buildCharacterFilterFacetData(
   streamerAffiliations: StreamerAffiliation[],
   criteria: CharacterFilterCriteria,
 ): CharacterFilterFacetData {
-  const jobFacetCharacters = filterCharacters(characters, {
-    ...criteria,
-    affiliationType: "all",
-    affiliationSlug: null,
-  }, streamerAffiliations);
-  const streamerAffiliationFacetCharacters = filterCharacters(characters, {
-    ...criteria,
-    streamerAffiliationSelection: { mode: "include", ids: [] },
-  }, streamerAffiliations);
+  const jobFacetCharacters = filterCharacters(
+    characters,
+    {
+      ...criteria,
+      jobSelection: { ids: [] },
+    },
+    streamerAffiliations,
+  );
+  const streamerAffiliationFacetCharacters = filterCharacters(
+    characters,
+    {
+      ...criteria,
+      streamerAffiliationSelection: { ids: [] },
+    },
+    streamerAffiliations,
+  );
 
   return {
     jobNodes: buildJobAffiliationFilterNodes(jobFacetCharacters),
@@ -211,43 +212,6 @@ export function buildCharacterFilterFacetData(
       streamerAffiliations,
     ),
   };
-}
-
-export function getJobAffiliationFilterValue(
-  affiliationType: CharacterAffiliationCategoryFilter,
-  affiliationSlug: string | null,
-): string[] {
-  if (affiliationSlug) {
-    return [affiliationSlug];
-  }
-
-  return affiliationType === "all" ? [] : [affiliationType];
-}
-
-export function getJobAffiliationFilterSelection(
-  nodes: FilterTreeNode[],
-  value: string[],
-): JobAffiliationFilterSelection {
-  const selectedId = value[0];
-
-  if (!selectedId) {
-    return { affiliationType: "all", affiliationSlug: null };
-  }
-
-  for (const parent of nodes) {
-    if (parent.id === selectedId && isCharacterAffiliationCategory(parent.id)) {
-      return { affiliationType: parent.id, affiliationSlug: null };
-    }
-
-    if (
-      isCharacterAffiliationCategory(parent.id) &&
-      (parent.children ?? []).some((child) => child.id === selectedId)
-    ) {
-      return { affiliationType: parent.id, affiliationSlug: selectedId };
-    }
-  }
-
-  return { affiliationType: "all", affiliationSlug: null };
 }
 
 export function getStreamerAffiliationFilterLabel(
@@ -288,13 +252,11 @@ export function filterCharacters(
   streamerAffiliations: StreamerAffiliation[] = [],
 ): CharacterListItem[] {
   const normalizedQuery = criteria.query.trim().toLocaleLowerCase("ko-KR");
-  const selectedStreamerAffiliationIds =
-    criteria.streamerAffiliationSelection.mode === "exclude"
-      ? getExcludedStreamerAffiliationSlugs(
-          streamerAffiliations,
-          criteria.streamerAffiliationSelection.ids,
-        )
-      : new Set(criteria.streamerAffiliationSelection.ids);
+  const selectedJobIds = new Set(criteria.jobSelection.ids);
+  const selectedStreamerAffiliationIds = getSelectedStreamerAffiliationSlugs(
+    streamerAffiliations,
+    criteria.streamerAffiliationSelection.ids,
+  );
 
   return characters.filter((character) => {
     const searchableText = [character.streamerName, character.rpName]
@@ -308,35 +270,23 @@ export function filterCharacters(
         selectedStreamerAffiliationIds.has(affiliation.slug),
       );
     const isStreamerAffiliationMatched =
-      criteria.streamerAffiliationSelection.mode === "exclude"
-        ? !hasSelectedStreamerAffiliation
-        : selectedStreamerAffiliationIds.size === 0 ||
-          hasSelectedStreamerAffiliation;
-    const isAffiliationTypeMatched =
-      criteria.affiliationType === "all" ||
+      selectedStreamerAffiliationIds.size === 0 ||
+      hasSelectedStreamerAffiliation;
+    const isJobMatched =
+      selectedJobIds.size === 0 ||
       character.affiliations.some(
         (affiliation) =>
-          affiliation.category === criteria.affiliationType,
-      );
-    const isAffiliationMatched =
-      criteria.affiliationSlug === null ||
-      character.affiliations.some(
-        (affiliation) =>
-          affiliation.slug === criteria.affiliationSlug,
+          selectedJobIds.has(affiliation.category) ||
+          selectedJobIds.has(affiliation.slug),
       );
 
-    return (
-      isQueryMatched &&
-      isStreamerAffiliationMatched &&
-      isAffiliationTypeMatched &&
-      isAffiliationMatched
-    );
+    return isQueryMatched && isStreamerAffiliationMatched && isJobMatched;
   });
 }
 
-export function getExcludedStreamerAffiliationSlugs(
+function getSelectedStreamerAffiliationSlugs(
   affiliations: StreamerAffiliation[],
-  excludedSlugs: string[],
+  selectedSlugs: string[],
 ): Set<string> {
   const affiliationsBySlug = new Map(
     affiliations.map((affiliation) => [affiliation.slug, affiliation]),
@@ -356,22 +306,23 @@ export function getExcludedStreamerAffiliationSlugs(
 
   const resolvedSlugs = new Set<string>();
 
-  function addAffiliationBranch(affiliation: StreamerAffiliation) {
+  function addBranch(affiliation: StreamerAffiliation) {
     if (resolvedSlugs.has(affiliation.slug)) {
       return;
     }
 
     resolvedSlugs.add(affiliation.slug);
+
     for (const child of childrenByParentId.get(affiliation.id) ?? []) {
-      addAffiliationBranch(child);
+      addBranch(child);
     }
   }
 
-  for (const slug of excludedSlugs) {
+  for (const slug of selectedSlugs) {
     const affiliation = affiliationsBySlug.get(slug);
 
     if (affiliation) {
-      addAffiliationBranch(affiliation);
+      addBranch(affiliation);
     } else {
       resolvedSlugs.add(slug);
     }

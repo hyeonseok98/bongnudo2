@@ -62,7 +62,6 @@ export function CharacterFilters({
           nodes={jobNodes}
           onApply={onJobApply}
           panelSize="compact"
-          selectionMode="single"
           value={jobValue}
         />
         <HierarchicalFilter

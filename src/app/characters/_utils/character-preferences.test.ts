@@ -1,56 +1,41 @@
 import { describe, expect, it } from "vitest";
 
 import {
-  getStreamerAffiliationQueryState,
+  getFilterQueryValue,
+  getLegacyJobSelection,
   getStreamerAffiliationSelection,
   hasExplicitCharacterPreferences,
 } from "./character-preferences";
 
-describe("streamer affiliation URL state", () => {
-  it("초기 상태를 include no-filter로 해석함", () => {
-    expect(getStreamerAffiliationSelection([], [])).toEqual({
-      mode: "include",
-      ids: [],
+describe("character filter URL state", () => {
+  it("빈 groups를 no-filter로 해석함", () => {
+    expect(getStreamerAffiliationSelection([])).toEqual({ ids: [] });
+  });
+
+  it("groups를 중복과 공백 없이 복수 선택으로 유지함", () => {
+    expect(
+      getStreamerAffiliationSelection(["acacia", " swamp ", "acacia"]),
+    ).toEqual({ ids: ["acacia", "swamp"] });
+  });
+
+  it("새 jobs query를 복수 선택으로 round-trip함", () => {
+    const selection = getLegacyJobSelection(["police", "ems"], "all", "");
+
+    expect(selection).toEqual({ ids: ["police", "ems"] });
+    expect(getFilterQueryValue(selection)).toEqual(["police", "ems"]);
+    expect(hasExplicitCharacterPreferences("?jobs=police,ems")).toBe(true);
+  });
+
+  it("기존 단일 직업 URL을 새 selection으로 해석함", () => {
+    expect(getLegacyJobSelection([], "public-service", "police")).toEqual({
+      ids: ["police"],
+    });
+    expect(getLegacyJobSelection([], "business", "")).toEqual({
+      ids: ["business"],
     });
   });
 
-  it("기존 groups를 include mode로 유지하고 동시에 있으면 우선함", () => {
-    expect(
-      getStreamerAffiliationSelection(
-        ["acacia", "swamp"],
-        ["project-i"],
-      ),
-    ).toEqual({ mode: "include", ids: ["acacia", "swamp"] });
-  });
-
-  it("excludeGroups를 exclude mode로 해석함", () => {
-    expect(getStreamerAffiliationSelection([], ["project-i"])).toEqual({
-      mode: "exclude",
-      ids: ["project-i"],
-    });
-    expect(hasExplicitCharacterPreferences("?excludeGroups=project-i")).toBe(
-      true,
-    );
-  });
-
-  it("include와 exclude 적용 시 반대 query를 제거함", () => {
-    expect(
-      getStreamerAffiliationQueryState({
-        mode: "include",
-        ids: ["acacia"],
-      }),
-    ).toEqual({ groups: ["acacia"], excludeGroups: null });
-    expect(
-      getStreamerAffiliationQueryState({
-        mode: "exclude",
-        ids: ["project-i"],
-      }),
-    ).toEqual({ groups: null, excludeGroups: ["project-i"] });
-  });
-
-  it("제외 없는 select-all 적용을 no-filter로 정규화함", () => {
-    expect(
-      getStreamerAffiliationQueryState({ mode: "exclude", ids: [] }),
-    ).toEqual({ groups: null, excludeGroups: null });
+  it("빈 선택은 query에서 제거함", () => {
+    expect(getFilterQueryValue({ ids: [] })).toBeNull();
   });
 });

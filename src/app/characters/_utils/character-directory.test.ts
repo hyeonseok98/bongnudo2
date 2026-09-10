@@ -12,9 +12,6 @@ import {
   buildJobAffiliationFilterNodes,
   buildStreamerAffiliationFilterData,
   filterCharacters,
-  getExcludedStreamerAffiliationSlugs,
-  getJobAffiliationFilterSelection,
-  getJobAffiliationFilterValue,
   getStreamerAffiliationFilterLabel,
 } from "./character-directory";
 
@@ -221,9 +218,8 @@ describe("character filter facets", () => {
       STREAMER_AFFILIATIONS,
       {
         query: "",
-        affiliationType: "public-service",
-        affiliationSlug: "police",
-        streamerAffiliationSelection: { mode: "include", ids: [] },
+        jobSelection: { ids: ["police"] },
+        streamerAffiliationSelection: { ids: [] },
       },
     );
 
@@ -248,12 +244,8 @@ describe("character filter facets", () => {
       STREAMER_AFFILIATIONS,
       {
         query: "",
-        affiliationType: "business",
-        affiliationSlug: "company",
-        streamerAffiliationSelection: {
-          mode: "include",
-          ids: ["acacia"],
-        },
+        jobSelection: { ids: ["company"] },
+        streamerAffiliationSelection: { ids: ["acacia"] },
       },
     );
 
@@ -290,9 +282,8 @@ describe("character filter facets", () => {
       STREAMER_AFFILIATIONS,
       {
         query: "가",
-        affiliationType: "all",
-        affiliationSlug: null,
-        streamerAffiliationSelection: { mode: "include", ids: [] },
+        jobSelection: { ids: [] },
+        streamerAffiliationSelection: { ids: [] },
       },
     );
 
@@ -316,41 +307,32 @@ describe("character filter facets", () => {
     ]);
   });
 
-  it("직업 계층 선택을 기존 URL query 구조로 변환함", () => {
-    const nodes = buildJobAffiliationFilterNodes(CHARACTERS);
-
-    expect(getJobAffiliationFilterValue("public-service", "police")).toEqual([
-      "police",
-    ]);
-    expect(getJobAffiliationFilterSelection(nodes, ["police"])).toEqual({
-      affiliationType: "public-service",
-      affiliationSlug: "police",
-    });
-    expect(getJobAffiliationFilterSelection(nodes, ["business"])).toEqual({
-      affiliationType: "business",
-      affiliationSlug: null,
-    });
-    expect(getJobAffiliationFilterSelection(nodes, [])).toEqual({
-      affiliationType: "all",
-      affiliationSlug: null,
-    });
-  });
 });
 
 describe("character filtering", () => {
   it("서로 다른 현실 소속 branch를 OR로 처리함", () => {
     const result = filterCharacters(CHARACTERS, {
       query: "",
-      affiliationType: "all",
-      affiliationSlug: null,
-      streamerAffiliationSelection: {
-        mode: "include",
-        ids: ["acacia", "swamp"],
-      },
+      jobSelection: { ids: [] },
+      streamerAffiliationSelection: { ids: ["acacia", "swamp"] },
     });
 
     expect(result.map((character) => character.id)).toEqual([
       "character-a",
+      "character-c",
+    ]);
+  });
+
+  it("직업 sibling 복수 선택을 OR로 처리함", () => {
+    const result = filterCharacters(CHARACTERS, {
+      query: "",
+      jobSelection: { ids: ["public-service", "company"] },
+      streamerAffiliationSelection: { ids: [] },
+    });
+
+    expect(result.map((character) => character.id)).toEqual([
+      "character-a",
+      "character-b",
       "character-c",
     ]);
   });
@@ -358,29 +340,18 @@ describe("character filtering", () => {
   it("직업과 현실 소속을 AND로 처리함", () => {
     const result = filterCharacters(CHARACTERS, {
       query: "",
-      affiliationType: "public-service",
-      affiliationSlug: null,
-      streamerAffiliationSelection: {
-        mode: "include",
-        ids: ["project-i", "swamp"],
-      },
+      jobSelection: { ids: ["public-service"] },
+      streamerAffiliationSelection: { ids: ["project-i"] },
     });
 
-    expect(result.map((character) => character.id)).toEqual([
-      "character-a",
-      "character-c",
-    ]);
+    expect(result.map((character) => character.id)).toEqual(["character-a"]);
   });
 
   it("기존 groups URL의 slug와 숨김 항목도 계속 filtering함", () => {
     const result = filterCharacters(CHARACTERS, {
       query: "",
-      affiliationType: "all",
-      affiliationSlug: null,
-      streamerAffiliationSelection: {
-        mode: "include",
-        ids: ["hidden-group"],
-      },
+      jobSelection: { ids: [] },
+      streamerAffiliationSelection: { ids: ["hidden-group"] },
     });
 
     expect(result.map((character) => character.id)).toEqual([
@@ -388,56 +359,27 @@ describe("character filtering", () => {
     ]);
   });
 
-  it("exclude parent를 descendants까지 제외함", () => {
-    expect(
-      Array.from(
-        getExcludedStreamerAffiliationSlugs(STREAMER_AFFILIATIONS, [
-          "project-i",
-        ]),
-      ),
-    ).toEqual(["project-i", "acacia", "honeys"]);
-
+  it("소속 parent 선택을 descendant 전체 branch로 처리함", () => {
+    const childOnlyCharacter = createCharacter({
+      id: "child-only",
+      slug: "자식",
+      streamerAffiliations: [
+        createCharacterStreamerAffiliation("group-acacia", "acacia", "group"),
+      ],
+    });
     const result = filterCharacters(
-      CHARACTERS,
+      [childOnlyCharacter],
       {
         query: "",
-        affiliationType: "all",
-        affiliationSlug: null,
-        streamerAffiliationSelection: {
-          mode: "exclude",
-          ids: ["project-i"],
-        },
+        jobSelection: { ids: [] },
+        streamerAffiliationSelection: { ids: ["project-i"] },
       },
       STREAMER_AFFILIATIONS,
     );
 
-    expect(result.map((character) => character.id)).toEqual([
-      "character-c",
-      "character-hidden",
-    ]);
+    expect(result).toEqual([childOnlyCharacter]);
   });
 
-  it("exclude child를 가진 character를 제외함", () => {
-    const result = filterCharacters(
-      CHARACTERS,
-      {
-        query: "",
-        affiliationType: "all",
-        affiliationSlug: null,
-        streamerAffiliationSelection: {
-          mode: "exclude",
-          ids: ["acacia"],
-        },
-      },
-      STREAMER_AFFILIATIONS,
-    );
-
-    expect(result.map((character) => character.id)).toEqual([
-      "character-b",
-      "character-c",
-      "character-hidden",
-    ]);
-  });
 });
 
 function createStreamerAffiliation(

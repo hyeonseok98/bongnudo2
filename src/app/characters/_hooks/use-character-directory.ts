@@ -11,7 +11,6 @@ import {
 import type { HierarchicalFilterSelection } from "@/components/filters/hierarchical-filter";
 import {
   CHARACTER_AFFILIATION_CATEGORY_VALUES,
-  type CharacterAffiliationCategoryFilter,
 } from "@/constants/character-affiliations";
 import {
   CHARACTER_SORT_VALUES,
@@ -21,7 +20,8 @@ import {
 } from "@/constants/character-list";
 
 import {
-  getStreamerAffiliationQueryState,
+  getFilterQueryValue,
+  getLegacyJobSelection,
   getStreamerAffiliationSelection,
   hasExplicitCharacterPreferences,
   readCharacterPreferences,
@@ -31,32 +31,29 @@ import {
 
 const characterQueryParsers = {
   q: parseAsString.withDefault(""),
+  jobs: parseAsArrayOf(parseAsString).withDefault([]),
   affiliationType: parseAsStringLiteral(
     CHARACTER_AFFILIATION_CATEGORY_VALUES,
   ).withDefault("all"),
   affiliation: parseAsString.withDefault(""),
   groups: parseAsArrayOf(parseAsString).withDefault([]),
-  excludeGroups: parseAsArrayOf(parseAsString).withDefault([]),
   sort: parseAsStringLiteral(CHARACTER_SORT_VALUES).withDefault("asc"),
   view: parseAsStringLiteral(CHARACTER_VIEW_VALUES).withDefault("grid"),
 };
 
 export interface CharacterDirectory {
   q: string;
-  affiliationType: CharacterAffiliationCategoryFilter;
-  affiliation: string | null;
+  jobSelection: HierarchicalFilterSelection;
   streamerAffiliationSelection: HierarchicalFilterSelection;
   sort: CharacterSort;
   view: CharacterView;
   changeQuery: (query: string) => void;
-  applyJobAffiliation: (
-    affiliationType: CharacterAffiliationCategoryFilter,
-    affiliation: string | null,
-  ) => void;
+  applyJobs: (selection: HierarchicalFilterSelection) => void;
   applyStreamerAffiliations: (
     selection: HierarchicalFilterSelection,
   ) => void;
   removeStreamerAffiliation: (affiliationSlug: string) => void;
+  removeJob: (jobId: string) => void;
   changeSort: (sort: CharacterSort) => void;
   changeView: (view: CharacterView) => void;
   resetFilters: () => void;
@@ -64,15 +61,16 @@ export interface CharacterDirectory {
 
 export function useCharacterDirectory(): CharacterDirectory {
   const [
-    { q, affiliationType, affiliation, groups, excludeGroups, sort, view },
+    { q, jobs, affiliationType, affiliation, groups, sort, view },
     setQueryState,
   ] = useQueryStates(characterQueryParsers);
   const hasRestoredPreferences = useRef(false);
-  const streamerAffiliationSelection = getStreamerAffiliationSelection(
-    groups,
-    excludeGroups,
+  const streamerAffiliationSelection = getStreamerAffiliationSelection(groups);
+  const jobSelection = getLegacyJobSelection(
+    jobs,
+    affiliationType,
+    affiliation,
   );
-  const selectedAffiliation = affiliation || null;
 
   useEffect(() => {
     if (hasRestoredPreferences.current) {
@@ -93,16 +91,10 @@ export function useCharacterDirectory(): CharacterDirectory {
 
     void setQueryState(
       {
-        affiliationType:
-          preferences.affiliationType === "all"
-            ? null
-            : preferences.affiliationType,
-        affiliation: preferences.affiliation,
+        jobs: preferences.jobs.length > 0 ? preferences.jobs : null,
+        affiliationType: null,
+        affiliation: null,
         groups: preferences.groups.length > 0 ? preferences.groups : null,
-        excludeGroups:
-          preferences.excludeGroups.length > 0
-            ? preferences.excludeGroups
-            : null,
         sort: preferences.sort === "asc" ? null : preferences.sort,
         view: preferences.view === "grid" ? null : preferences.view,
       },
@@ -114,16 +106,8 @@ export function useCharacterDirectory(): CharacterDirectory {
     changes: Partial<CharacterPreferences> = {},
   ): CharacterPreferences {
     return {
-      affiliationType,
-      affiliation: selectedAffiliation,
-      groups:
-        streamerAffiliationSelection.mode === "include"
-          ? streamerAffiliationSelection.ids
-          : [],
-      excludeGroups:
-        streamerAffiliationSelection.mode === "exclude"
-          ? streamerAffiliationSelection.ids
-          : [],
+      jobs: jobSelection.ids,
+      groups: streamerAffiliationSelection.ids,
       sort,
       view,
       ...changes,
@@ -134,20 +118,18 @@ export function useCharacterDirectory(): CharacterDirectory {
     void setQueryState({ q: nextQuery || null }, { history: "replace" });
   }
 
-  function applyJobAffiliation(
-    nextType: CharacterAffiliationCategoryFilter,
-    nextAffiliation: string | null,
-  ) {
+  function applyJobs(selection: HierarchicalFilterSelection) {
+    const nextJobs = getFilterQueryValue(selection);
     writeCharacterPreferences(
       getPreferences({
-        affiliationType: nextType,
-        affiliation: nextAffiliation,
+        jobs: nextJobs ?? [],
       }),
     );
     void setQueryState(
       {
-        affiliationType: nextType === "all" ? null : nextType,
-        affiliation: nextAffiliation,
+        jobs: nextJobs,
+        affiliationType: null,
+        affiliation: null,
       },
       { history: "replace" },
     );
@@ -156,20 +138,24 @@ export function useCharacterDirectory(): CharacterDirectory {
   function applyStreamerAffiliations(
     selection: HierarchicalFilterSelection,
   ) {
-    const queryState = getStreamerAffiliationQueryState(selection);
+    const groups = getFilterQueryValue(selection);
     writeCharacterPreferences(
       getPreferences({
-        groups: queryState.groups ?? [],
-        excludeGroups: queryState.excludeGroups ?? [],
+        groups: groups ?? [],
       }),
     );
-    void setQueryState(queryState, { history: "replace" });
+    void setQueryState({ groups }, { history: "replace" });
+  }
+
+  function removeJob(jobId: string) {
+    applyJobs({
+      ids: jobSelection.ids.filter((selectedId) => selectedId !== jobId),
+    });
   }
 
   function removeStreamerAffiliation(affiliationSlug: string) {
     applyStreamerAffiliations(
       {
-        ...streamerAffiliationSelection,
         ids: streamerAffiliationSelection.ids.filter(
           (selectedSlug) => selectedSlug !== affiliationSlug,
         ),
@@ -196,18 +182,16 @@ export function useCharacterDirectory(): CharacterDirectory {
   function resetFilters() {
     writeCharacterPreferences(
       getPreferences({
-        affiliationType: "all",
-        affiliation: null,
+        jobs: [],
         groups: [],
-        excludeGroups: [],
       }),
     );
     void setQueryState(
       {
+        jobs: null,
         affiliationType: null,
         affiliation: null,
         groups: null,
-        excludeGroups: null,
       },
       { history: "replace" },
     );
@@ -215,15 +199,15 @@ export function useCharacterDirectory(): CharacterDirectory {
 
   return {
     q,
-    affiliationType,
-    affiliation: selectedAffiliation,
+    jobSelection,
     streamerAffiliationSelection,
     sort,
     view,
     changeQuery,
-    applyJobAffiliation,
+    applyJobs,
     applyStreamerAffiliations,
     removeStreamerAffiliation,
+    removeJob,
     changeSort,
     changeView,
     resetFilters,

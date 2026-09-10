@@ -3,7 +3,7 @@
 import { Checkbox } from "@base-ui/react/checkbox";
 import { Popover } from "@base-ui/react/popover";
 import { Check, ChevronDown, ChevronRight, Minus } from "lucide-react";
-import { useState } from "react";
+import { useLayoutEffect, useRef, useState } from "react";
 
 import { Button } from "@/components/ui/button";
 import { Chip } from "@/components/ui/chip";
@@ -17,6 +17,9 @@ import {
 } from "@/components/ui/sheet";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { cn } from "@/utils/cn";
+import { matchesKoreanSearch } from "@/utils/korean-search";
+
+const DRAFT_SUMMARY_GAP = 8;
 
 export interface FilterTreeNode {
   id: string;
@@ -31,9 +34,9 @@ export interface QuickFilterOption {
   label: string;
 }
 
-export type HierarchicalFilterSelection =
-  | { mode: "include"; ids: string[] }
-  | { mode: "exclude"; ids: string[] };
+export interface HierarchicalFilterSelection {
+  ids: string[];
+}
 
 interface HierarchicalFilterProps {
   disabled?: boolean;
@@ -44,7 +47,6 @@ interface HierarchicalFilterProps {
   onApply: (selection: HierarchicalFilterSelection) => void;
   panelSize?: "compact" | "default";
   quickOptions?: QuickFilterOption[];
-  selectionMode?: "multiple" | "single";
   value: HierarchicalFilterSelection;
 }
 
@@ -57,7 +59,6 @@ export function HierarchicalFilter({
   onApply,
   panelSize = "default",
   quickOptions = [],
-  selectionMode = "multiple",
   value,
 }: HierarchicalFilterProps) {
   const isMobile = useIsMobile();
@@ -65,6 +66,7 @@ export function HierarchicalFilter({
   const [draftSelection, setDraftSelection] =
     useState<HierarchicalFilterSelection>(value);
   const [searchQuery, setSearchQuery] = useState("");
+  const [isAllSelected, setIsAllSelected] = useState(false);
   const [expandedNodeIds, setExpandedNodeIds] = useState<Set<string>>(
     () => new Set(nodes.filter(hasChildren).map((node) => node.id)),
   );
@@ -73,6 +75,7 @@ export function HierarchicalFilter({
   function handleOpenChange(nextOpen: boolean) {
     if (nextOpen) {
       setDraftSelection(value);
+      setIsAllSelected(false);
       setSearchQuery("");
       setExpandedNodeIds(
         new Set(nodes.filter(hasChildren).map((node) => node.id)),
@@ -83,13 +86,9 @@ export function HierarchicalFilter({
   }
 
   function handleNodeToggle(nodeId: string) {
+    setIsAllSelected(false);
     setDraftSelection((currentSelection) =>
-      toggleHierarchicalFilterSelection(
-        nodes,
-        currentSelection,
-        nodeId,
-        selectionMode,
-      ),
+      toggleHierarchicalFilterSelection(nodes, currentSelection, nodeId),
     );
   }
 
@@ -99,6 +98,7 @@ export function HierarchicalFilter({
   }
 
   function handleNodeRemove(nodeId: string) {
+    setIsAllSelected(false);
     setDraftSelection((currentSelection) => ({
       ...currentSelection,
       ids: currentSelection.ids.filter((selectedId) => selectedId !== nodeId),
@@ -121,7 +121,7 @@ export function HierarchicalFilter({
 
   const content = (
     <FilterContent
-      allCount={getResultCount({ mode: "include", ids: [] })}
+      allCount={getResultCount({ ids: [] })}
       draftSelection={draftSelection}
       expandedNodeIds={expandedNodeIds}
       label={label}
@@ -130,18 +130,20 @@ export function HierarchicalFilter({
       quickOptions={quickOptions}
       resultCount={getResultCount(draftSelection)}
       searchQuery={searchQuery}
-      selectionMode={selectionMode}
+      isAllSelected={isAllSelected}
       onApply={handleApply}
       onCancel={() => setIsOpen(false)}
       onExpandedChange={handleExpandedChange}
       onNodeToggle={handleNodeToggle}
       onNodeRemove={handleNodeRemove}
-      onReset={() => setDraftSelection(getDefaultFilterSelection())}
-      onSelectAll={() =>
-        setDraftSelection((currentSelection) =>
-          toggleSelectAll(currentSelection, selectionMode),
-        )
-      }
+      onReset={() => {
+        setDraftSelection(getDefaultFilterSelection());
+        setIsAllSelected(false);
+      }}
+      onSelectAll={() => {
+        setDraftSelection(getDefaultFilterSelection());
+        setIsAllSelected(true);
+      }}
       onSearchQueryChange={setSearchQuery}
     />
   );
@@ -188,25 +190,22 @@ export function HierarchicalFilter({
         <Popover.Positioner
           align="start"
           className="z-popover"
-          collisionAvoidance={
-            panelSize === "compact"
-              ? {
-                  side: "none",
-                  align: "shift",
-                  fallbackAxisSide: "none",
-                }
-              : undefined
-          }
-          collisionPadding={panelSize === "compact" ? 16 : undefined}
-          side={panelSize === "compact" ? "bottom" : undefined}
+          collisionAvoidance={{
+            side: "none",
+            align: "shift",
+            fallbackAxisSide: "none",
+          }}
+          collisionPadding={16}
+          collisionBoundary="clipping-ancestors"
+          side="bottom"
           sideOffset={8}
         >
           <Popover.Popup
             className={cn(
               "flex flex-col overflow-hidden rounded-xl border border-default bg-surface-raised shadow-2xl outline-none transition-[transform,opacity] duration-default data-ending-style:scale-95 data-ending-style:opacity-0 data-starting-style:scale-95 data-starting-style:opacity-0",
               panelSize === "compact"
-                ? "max-h-[min(31.25rem,var(--available-height))] w-[min(26rem,calc(100vw-2rem))]"
-                : "max-h-[min(42rem,calc(100vh-7rem))] w-[min(30rem,calc(100vw-2rem))]",
+                ? "max-h-[min(31.25rem,var(--available-height))] w-[min(23rem,calc(100vw-2rem))]"
+                : "max-h-[min(42rem,var(--available-height))] w-[min(26rem,calc(100vw-2rem))]",
             )}
           >
             <Popover.Title className="sr-only">{label} 선택</Popover.Title>
@@ -253,7 +252,7 @@ interface FilterContentProps {
   quickOptions: QuickFilterOption[];
   resultCount: number;
   searchQuery: string;
-  selectionMode: "multiple" | "single";
+  isAllSelected: boolean;
   onApply: () => void;
   onCancel: () => void;
   onExpandedChange: (nodeId: string) => void;
@@ -274,7 +273,7 @@ function FilterContent({
   quickOptions,
   resultCount,
   searchQuery,
-  selectionMode,
+  isAllSelected,
   onApply,
   onCancel,
   onExpandedChange,
@@ -285,13 +284,15 @@ function FilterContent({
   onSearchQueryChange,
 }: FilterContentProps) {
   const visibleNodes = filterTreeNodes(nodes, searchQuery);
-  const allState = getSelectAllState(draftSelection, selectionMode);
+  const allState = getSelectAllState(isAllSelected);
+  const isSearchActive = searchQuery.trim().length > 0;
   const isDefaultSelection =
-    draftSelection.mode === "include" && draftSelection.ids.length === 0;
+    draftSelection.ids.length === 0 && !isAllSelected;
+  const draftSummary = getFilterDraftSummary(labelNodes, draftSelection);
 
   return (
     <div className="flex min-h-0 flex-1 flex-col">
-      <div className="shrink-0 space-y-4 border-b border-default p-4">
+      <div className="shrink-0 space-y-4 border-b border-default p-4 md:space-y-3 md:p-3">
         {quickOptions.length > 0 ? (
           <div className="space-y-2">
             <p className="text-caption font-semibold text-secondary">
@@ -301,7 +302,7 @@ function FilterContent({
               {quickOptions.map((option) => (
                 <Chip
                   className={cn(
-                    "h-8 px-2.5",
+                    "h-8 px-2.5 md:text-[13px]",
                     getHierarchicalFilterNodeSelectionState(
                       nodes,
                       draftSelection,
@@ -327,7 +328,7 @@ function FilterContent({
         ) : null}
 
         <SearchField
-          className="h-10"
+          className="h-10 md:text-[13px]"
           label={label + " 검색"}
           onChange={(event) => onSearchQueryChange(event.target.value)}
           onClear={() => onSearchQueryChange("")}
@@ -338,18 +339,20 @@ function FilterContent({
 
       <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-2 py-2">
         <div className="space-y-1">
-          <FilterAllNode
-            checked={allState.checked}
-            count={allCount}
-            indeterminate={allState.indeterminate}
-            onToggle={onSelectAll}
-          />
+          {!isSearchActive ? (
+            <FilterAllNode
+              checked={allState.checked}
+              count={allCount}
+              indeterminate={allState.indeterminate}
+              onToggle={onSelectAll}
+            />
+          ) : null}
           {visibleNodes.length > 0 ? (
             visibleNodes.map((node) => (
               <FilterNode
                 draftSelection={draftSelection}
                 expandedNodeIds={expandedNodeIds}
-                isSearchActive={searchQuery.trim().length > 0}
+                isSearchActive={isSearchActive}
                 key={node.id}
                 node={node}
                 onExpandedChange={onExpandedChange}
@@ -357,44 +360,28 @@ function FilterContent({
               />
             ))
           ) : (
-            <div className="grid min-h-40 place-items-center px-4 text-center text-body-sm text-secondary">
+            <div className="grid min-h-40 place-items-center px-4 text-center text-body-sm text-secondary md:text-[13px]">
               검색 결과가 없습니다.
             </div>
           )}
         </div>
       </div>
 
-      {!isDefaultSelection ? (
-        <div className="flex h-14 shrink-0 items-center gap-3 border-t border-default px-4">
-          <p className="shrink-0 text-caption font-semibold text-secondary">
-            {getDraftSummaryLabel(draftSelection)}
-          </p>
-          {draftSelection.ids.length > 0 ? (
-            <div className="min-w-0 flex-1 overflow-x-auto">
-              <div className="flex w-max gap-2 pr-1">
-                {draftSelection.ids.map((nodeId) => (
-                  <Chip
-                    className="shrink-0"
-                    key={nodeId}
-                    mode="removable"
-                    onRemove={() => onNodeRemove(nodeId)}
-                    removeLabel={
-                      (getFilterNodeLabel(labelNodes, nodeId) ?? nodeId) +
-                      (draftSelection.mode === "exclude"
-                        ? " 제외 해제"
-                        : " 선택 해제")
-                    }
-                  >
-                    {getFilterNodeLabel(labelNodes, nodeId) ?? nodeId}
-                  </Chip>
-                ))}
-              </div>
-            </div>
-          ) : null}
+      {draftSummary ? (
+        <div className="shrink-0 border-t border-default px-4 py-2 md:px-3">
+          <div className="flex items-start gap-3">
+            <p className="shrink-0 pt-2 text-caption font-semibold text-secondary">
+              선택
+            </p>
+            <FilterDraftSummary
+              items={draftSummary.items}
+              onRemove={onNodeRemove}
+            />
+          </div>
         </div>
       ) : null}
 
-      <div className="flex shrink-0 items-center gap-2 border-t border-default bg-surface-raised p-4">
+      <div className="flex shrink-0 items-center gap-2 border-t border-default bg-surface-raised p-4 md:p-3 [&_button]:md:text-[13px]">
         <Button
           disabled={isDefaultSelection}
           onClick={onReset}
@@ -413,6 +400,163 @@ function FilterContent({
   );
 }
 
+interface FilterDraftSummaryProps {
+  items: { id: string; label: string }[];
+  onRemove: (nodeId: string) => void;
+}
+
+function FilterDraftSummary({ items, onRemove }: FilterDraftSummaryProps) {
+  const containerRef = useRef<HTMLDivElement>(null);
+  const itemRefs = useRef(new Map<string, HTMLSpanElement>());
+  const overflowRefs = useRef(new Map<number, HTMLSpanElement>());
+  const [visibleItemCount, setVisibleItemCount] = useState(items.length);
+
+  useLayoutEffect(() => {
+    const container = containerRef.current;
+
+    if (!container) {
+      return;
+    }
+
+    const summaryContainer = container;
+
+    function updateVisibleItemCount() {
+      const availableWidth = summaryContainer.clientWidth;
+      const itemWidths = items.map(
+        (item) => itemRefs.current.get(item.id)?.offsetWidth ?? 0,
+      );
+      const totalItemsWidth = itemWidths.reduce(
+        (total, width) => total + width,
+        0,
+      );
+      const totalGapsWidth = Math.max(items.length - 1, 0) * DRAFT_SUMMARY_GAP;
+
+      if (totalItemsWidth + totalGapsWidth <= availableWidth) {
+        setVisibleItemCount(items.length);
+        return;
+      }
+
+      for (let count = items.length - 1; count >= 0; count -= 1) {
+        const overflowCount = items.length - count;
+        const overflowWidth =
+          overflowRefs.current.get(overflowCount)?.offsetWidth ?? 0;
+        const visibleItemsWidth = itemWidths
+          .slice(0, count)
+          .reduce((total, width) => total + width, 0);
+        const requiredWidth =
+          visibleItemsWidth +
+          (count > 0 ? DRAFT_SUMMARY_GAP : 0) +
+          overflowWidth;
+
+        if (requiredWidth <= availableWidth) {
+          setVisibleItemCount(count);
+          return;
+        }
+      }
+
+      setVisibleItemCount(0);
+    }
+
+    const resizeObserver = new ResizeObserver(updateVisibleItemCount);
+
+    resizeObserver.observe(summaryContainer);
+    updateVisibleItemCount();
+
+    return () => resizeObserver.disconnect();
+  }, [items]);
+
+  const boundedVisibleItemCount = Math.min(visibleItemCount, items.length);
+  const overflowCount = items.length - boundedVisibleItemCount;
+
+  return (
+    <div className="relative min-w-0 flex-1" ref={containerRef}>
+      <div className="flex h-8 min-w-0 flex-nowrap items-center gap-2 overflow-hidden">
+        {items.slice(0, boundedVisibleItemCount).map((item) => (
+          <FilterDraftSummaryChip
+            item={item}
+            key={item.id}
+            onRemove={() => onRemove(item.id)}
+          />
+        ))}
+        {overflowCount > 0 ? <DraftSummaryOverflow count={overflowCount} /> : null}
+      </div>
+
+      <div
+        aria-hidden="true"
+        className="pointer-events-none absolute invisible left-0 top-0 flex gap-2 whitespace-nowrap"
+      >
+        {items.map((item) => (
+          <FilterDraftSummaryChip
+            item={item}
+            key={item.id}
+            onRemove={() => undefined}
+            ref={(element) => {
+              if (element) {
+                itemRefs.current.set(item.id, element);
+              }
+            }}
+          />
+        ))}
+        {items.map((_, index) => {
+          const count = index + 1;
+
+          return (
+            <DraftSummaryOverflow
+              count={count}
+              key={count}
+              ref={(element) => {
+                if (element) {
+                  overflowRefs.current.set(count, element);
+                }
+              }}
+            />
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+function FilterDraftSummaryChip({
+  item,
+  onRemove,
+  ref,
+}: {
+  item: { id: string; label: string };
+  onRemove: () => void;
+  ref?: (element: HTMLSpanElement | null) => void;
+}) {
+  return (
+    <span className="max-w-80 shrink-0" ref={ref}>
+      <Chip
+        className="max-w-full md:text-[13px]"
+        mode="removable"
+        onRemove={onRemove}
+        removeLabel={item.label + " 선택 해제"}
+      >
+        <span className="min-w-0 truncate">{item.label}</span>
+      </Chip>
+    </span>
+  );
+}
+
+function DraftSummaryOverflow({
+  count,
+  ref,
+}: {
+  count: number;
+  ref?: (element: HTMLSpanElement | null) => void;
+}) {
+  return (
+    <span
+      className="inline-flex h-8 shrink-0 items-center justify-center rounded-lg border border-default bg-surface-muted px-2.5 text-body-sm font-medium text-secondary md:text-[13px]"
+      ref={ref}
+    >
+      +{count}
+    </span>
+  );
+}
+
 function FilterAllNode({
   checked,
   count,
@@ -427,23 +571,24 @@ function FilterAllNode({
   return (
     <div
       className={cn(
-        "flex min-h-11 items-center rounded-lg pr-3 transition-colors duration-default hover:bg-surface-muted",
+        "flex min-h-11 items-center rounded-lg pr-3 transition-colors duration-default hover:bg-surface-muted md:min-h-10 md:pr-2",
         (checked || indeterminate) && "bg-surface-selected/60",
       )}
     >
-      <span aria-hidden="true" className="size-11 shrink-0" />
+      <span aria-hidden="true" className="size-11 shrink-0 md:size-9" />
       <FilterCheckbox
+        ariaLabel="전체 필터"
         checked={checked}
         indeterminate={indeterminate}
         label="전체"
         onCheckedChange={onToggle}
       />
       <button
-        className="flex min-h-11 min-w-0 flex-1 cursor-pointer items-center text-left"
+        className="flex min-h-11 min-w-0 flex-1 cursor-pointer items-center text-left md:min-h-10"
         onClick={onToggle}
         type="button"
       >
-        <span className="min-w-0 flex-1 truncate text-body-sm font-medium text-primary">
+        <span className="min-w-0 flex-1 truncate text-body-sm font-medium text-primary md:text-[13px]">
           전체
         </span>
         <span className="ml-3 shrink-0 text-caption tabular-nums text-tertiary">
@@ -484,7 +629,7 @@ function FilterNode({
     <div>
       <div
         className={cn(
-          "flex min-h-11 items-center rounded-lg pr-3 transition-colors duration-default",
+          "flex min-h-11 items-center rounded-lg pr-3 transition-colors duration-default md:min-h-10 md:pr-2",
           node.disabled ? "opacity-50" : "hover:bg-surface-muted",
           (state.checked || state.indeterminate) && "bg-surface-selected/60",
         )}
@@ -493,7 +638,7 @@ function FilterNode({
           <button
             aria-expanded={isExpanded}
             aria-label={node.label + (isExpanded ? " 접기" : " 펼치기")}
-            className="grid size-11 shrink-0 cursor-pointer place-items-center rounded-lg text-tertiary hover:text-primary"
+            className="grid size-11 shrink-0 cursor-pointer place-items-center rounded-lg text-tertiary hover:text-primary md:size-9"
             onClick={() => onExpandedChange(node.id)}
             type="button"
           >
@@ -504,7 +649,7 @@ function FilterNode({
             )}
           </button>
         ) : (
-          <span aria-hidden="true" className="size-11 shrink-0" />
+          <span aria-hidden="true" className="size-11 shrink-0 md:size-9" />
         )}
         <FilterCheckbox
           checked={state.checked}
@@ -514,12 +659,12 @@ function FilterNode({
           onCheckedChange={() => onNodeToggle(node.id)}
         />
         <button
-          className="flex min-h-11 min-w-0 flex-1 cursor-pointer items-center text-left disabled:cursor-not-allowed"
+          className="flex min-h-11 min-w-0 flex-1 cursor-pointer items-center text-left disabled:cursor-not-allowed md:min-h-10"
           disabled={node.disabled}
           onClick={() => onNodeToggle(node.id)}
           type="button"
         >
-          <span className="min-w-0 flex-1 truncate text-body-sm font-medium text-primary">
+          <span className="min-w-0 flex-1 truncate text-body-sm font-medium text-primary md:text-[13px]">
             {node.label}
           </span>
           {node.count !== undefined ? (
@@ -531,7 +676,7 @@ function FilterNode({
       </div>
 
       {isExpanded ? (
-        <div className="relative ml-11 space-y-1 border-l border-default/70 pl-3">
+        <div className="relative ml-11 space-y-1 border-l border-default/70 pl-3 md:ml-9 md:pl-2">
           {children.map((child) => {
             const childState = getHierarchicalFilterNodeSelectionState(
               [node],
@@ -542,7 +687,7 @@ function FilterNode({
             return (
               <div
                 className={cn(
-                  "flex min-h-11 items-center rounded-lg pr-3 pl-2 transition-colors duration-default",
+                  "flex min-h-11 items-center rounded-lg pr-3 pl-2 transition-colors duration-default md:min-h-10 md:pr-2 md:pl-1",
                   child.disabled ? "opacity-50" : "hover:bg-surface-muted",
                   (childState.checked || childState.indeterminate) &&
                     "bg-surface-selected/60",
@@ -557,12 +702,12 @@ function FilterNode({
                   onCheckedChange={() => onNodeToggle(child.id)}
                 />
                 <button
-                  className="flex min-h-11 min-w-0 flex-1 cursor-pointer items-center text-left disabled:cursor-not-allowed"
+                  className="flex min-h-11 min-w-0 flex-1 cursor-pointer items-center text-left disabled:cursor-not-allowed md:min-h-10"
                   disabled={child.disabled}
                   onClick={() => onNodeToggle(child.id)}
                   type="button"
                 >
-                  <span className="min-w-0 flex-1 truncate text-body-sm text-primary">
+                  <span className="min-w-0 flex-1 truncate text-body-sm text-primary md:text-[13px]">
                     {child.label}
                   </span>
                   {child.count !== undefined ? (
@@ -581,12 +726,14 @@ function FilterNode({
 }
 
 function FilterCheckbox({
+  ariaLabel,
   checked,
   disabled,
   indeterminate,
   label,
   onCheckedChange,
 }: {
+  ariaLabel?: string;
   checked: boolean;
   disabled?: boolean;
   indeterminate: boolean;
@@ -595,7 +742,7 @@ function FilterCheckbox({
 }) {
   return (
     <Checkbox.Root
-      aria-label={label + " 선택"}
+      aria-label={ariaLabel ?? label + " 선택"}
       checked={checked}
       className={cn(
         "mr-2 grid size-5 shrink-0 place-items-center rounded border border-control bg-background text-brand-foreground transition-colors duration-default",
@@ -621,19 +768,19 @@ export function filterTreeNodes(
   nodes: FilterTreeNode[],
   query: string,
 ): FilterTreeNode[] {
-  const normalizedQuery = query.trim().toLocaleLowerCase("ko-KR");
+  const normalizedQuery = query.trim();
 
   if (!normalizedQuery) {
     return nodes;
   }
 
   return nodes.flatMap((node) => {
-    if (node.label.toLocaleLowerCase("ko-KR").includes(normalizedQuery)) {
+    if (matchesKoreanSearch(node.label, normalizedQuery)) {
       return [node];
     }
 
     const matchedChildren = (node.children ?? []).filter((child) =>
-      child.label.toLocaleLowerCase("ko-KR").includes(normalizedQuery),
+      matchesKoreanSearch(child.label, normalizedQuery),
     );
 
     return matchedChildren.length > 0
@@ -700,37 +847,22 @@ export function getFilterValueLabel(
   }
 
   if (selection.ids.length > 1) {
-    return (
-      selection.ids.length +
-      (selection.mode === "exclude" ? "개 제외" : "개 선택")
-    );
+    return selection.ids.length + "개 선택";
   }
 
   const label = getFilterNodeLabel(nodes, selection.ids[0]);
 
   if (!label) {
-    return selection.mode === "exclude" ? "1개 제외" : "1개 선택";
+    return "1개 선택";
   }
 
-  return selection.mode === "exclude" ? label + " 제외" : label;
-}
-
-export function toggleSelectAll(
-  selection: HierarchicalFilterSelection,
-  selectionMode: "multiple" | "single",
-): HierarchicalFilterSelection {
-  if (selectionMode === "single" || selection.mode === "exclude") {
-    return { mode: "include", ids: [] };
-  }
-
-  return { mode: "exclude", ids: [] };
+  return label;
 }
 
 export function toggleHierarchicalFilterSelection(
   nodes: FilterTreeNode[],
   selection: HierarchicalFilterSelection,
   nodeId: string,
-  selectionMode: "multiple" | "single",
 ): HierarchicalFilterSelection {
   const branch = findFilterBranch(nodes, nodeId);
   const node = branch?.child ?? branch?.parent;
@@ -739,23 +871,8 @@ export function toggleHierarchicalFilterSelection(
     return selection;
   }
 
-  if (selectionMode === "single") {
-    return {
-      mode: "include",
-      ids: selection.ids.includes(nodeId) ? [] : [nodeId],
-    };
-  }
-
-  if (selection.mode === "include") {
-    return {
-      mode: "include",
-      ids: toggleFilterNodeSelection(nodes, selection.ids, nodeId),
-    };
-  }
-
   return {
-    mode: "exclude",
-    ids: toggleFilterNodeExclusion(nodes, selection.ids, nodeId),
+    ids: toggleFilterNodeSelection(nodes, selection.ids, nodeId),
   };
 }
 
@@ -770,104 +887,44 @@ export function getHierarchicalFilterNodeSelectionState(
     return { checked: false, indeterminate: false };
   }
 
-  if (selection.mode === "include") {
-    return getFilterNodeSelectionState(
-      branch.child ?? branch.parent,
-      selection.ids,
-      branch.child ? branch.parent.id : undefined,
-    );
-  }
-
-  if (selection.ids.includes(branch.parent.id)) {
-    return { checked: false, indeterminate: false };
-  }
-
-  if (branch.child) {
-    return {
-      checked: !selection.ids.includes(branch.child.id),
-      indeterminate: false,
-    };
-  }
-
-  const hasExcludedChild = (branch.parent.children ?? []).some((child) =>
-    selection.ids.includes(child.id),
+  return getFilterNodeSelectionState(
+    branch.child ?? branch.parent,
+    selection.ids,
+    branch.child ? branch.parent.id : undefined,
   );
-
-  return {
-    checked: !hasExcludedChild,
-    indeterminate: hasExcludedChild,
-  };
 }
 
 export function getSelectAllState(
-  selection: HierarchicalFilterSelection,
-  selectionMode: "multiple" | "single",
+  isAllSelected: boolean,
 ): { checked: boolean; indeterminate: boolean } {
-  if (selectionMode === "single") {
-    return {
-      checked: selection.ids.length === 0,
-      indeterminate: false,
-    };
-  }
-
   return {
-    checked: selection.mode === "exclude" && selection.ids.length === 0,
-    indeterminate: selection.ids.length > 0,
+    checked: isAllSelected,
+    indeterminate: false,
   };
 }
 
-function toggleFilterNodeExclusion(
-  nodes: FilterTreeNode[],
-  excludedIds: string[],
-  nodeId: string,
-): string[] {
-  const nextExcludedIds = new Set(excludedIds);
-  const branch = findFilterBranch(nodes, nodeId);
-
-  if (!branch) {
-    return excludedIds;
-  }
-
-  if (branch.parent.id === nodeId) {
-    if (nextExcludedIds.has(nodeId)) {
-      nextExcludedIds.delete(nodeId);
-    } else {
-      nextExcludedIds.add(nodeId);
-      for (const child of branch.parent.children ?? []) {
-        nextExcludedIds.delete(child.id);
-      }
-    }
-  } else if (nextExcludedIds.has(branch.parent.id)) {
-    nextExcludedIds.delete(branch.parent.id);
-    for (const sibling of branch.parent.children ?? []) {
-      if (sibling.id !== nodeId) {
-        nextExcludedIds.add(sibling.id);
-      }
-    }
-  } else if (nextExcludedIds.has(nodeId)) {
-    nextExcludedIds.delete(nodeId);
-  } else {
-    nextExcludedIds.add(nodeId);
-  }
-
-  return Array.from(nextExcludedIds);
-}
-
 export function getDefaultFilterSelection(): HierarchicalFilterSelection {
-  return { mode: "include", ids: [] };
+  return { ids: [] };
 }
 
-export function getDraftSummaryLabel(
+interface FilterDraftSummary {
+  items: { id: string; label: string }[];
+}
+
+export function getFilterDraftSummary(
+  nodes: FilterTreeNode[],
   selection: HierarchicalFilterSelection,
-): string {
-  if (selection.mode === "exclude" && selection.ids.length === 0) {
-    return "전체 선택";
+): FilterDraftSummary | null {
+  if (selection.ids.length === 0) {
+    return null;
   }
 
-  return (
-    (selection.mode === "exclude" ? "제외 " : "선택 ") +
-    selection.ids.length
-  );
+  return {
+    items: selection.ids.map((id) => ({
+      id,
+      label: getFilterNodeLeafLabel(nodes, id) ?? id,
+    })),
+  };
 }
 
 export function getFilterNodeLabel(
@@ -883,6 +940,15 @@ export function getFilterNodeLabel(
   return branch.child
     ? branch.parent.label + " > " + branch.child.label
     : branch.parent.label;
+}
+
+export function getFilterNodeLeafLabel(
+  nodes: FilterTreeNode[],
+  nodeId: string,
+): string | null {
+  const branch = findFilterBranch(nodes, nodeId);
+
+  return branch ? (branch.child ?? branch.parent).label : null;
 }
 
 function findFilterBranch(
