@@ -26,8 +26,7 @@ export function CharactersContent() {
   const directory = useCharacterDirectory();
   const charactersQuery = useCharacters();
   const characters = charactersQuery.data?.characters ?? [];
-  const streamerAffiliations =
-    charactersQuery.data?.streamerAffiliations ?? [];
+  const streamerAffiliations = charactersQuery.data?.streamerAffiliations ?? [];
   const allJobNodes = buildJobAffiliationFilterNodes(characters);
   const filterCriteria = {
     query: directory.q,
@@ -39,8 +38,10 @@ export function CharactersContent() {
     streamerAffiliations,
     filterCriteria,
   );
-  const allStreamerAffiliationFilterData =
-    buildStreamerAffiliationFilterData(characters, streamerAffiliations);
+  const allStreamerAffiliationFilterData = buildStreamerAffiliationFilterData(
+    characters,
+    streamerAffiliations,
+  );
   const selectedStreamerAffiliations =
     directory.streamerAffiliationSelection.ids.map((slug) => ({
       slug,
@@ -111,18 +112,14 @@ export function CharactersContent() {
 
       <CharacterFilters
         getJobResultCount={getJobResultCount}
-        getStreamerAffiliationResultCount={
-          getStreamerAffiliationResultCount
-        }
+        getStreamerAffiliationResultCount={getStreamerAffiliationResultCount}
         jobLabelNodes={allJobNodes}
         jobNodes={filterFacetData.jobNodes}
         jobValue={directory.jobSelection}
         query={directory.q}
         streamerAffiliationSelection={directory.streamerAffiliationSelection}
         streamerAffiliationNodes={filterFacetData.streamerAffiliations.nodes}
-        streamerAffiliationLabelNodes={
-          allStreamerAffiliationFilterData.nodes
-        }
+        streamerAffiliationLabelNodes={allStreamerAffiliationFilterData.nodes}
         streamerAffiliationQuickOptions={
           filterFacetData.streamerAffiliations.quickOptions
         }
@@ -139,7 +136,10 @@ export function CharactersContent() {
         onRemoveStreamerAffiliation={directory.removeStreamerAffiliation}
       />
 
-      <section aria-labelledby="character-results-heading" className="space-y-4">
+      <section
+        aria-labelledby="character-results-heading"
+        className="space-y-4"
+      >
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <h2
             id="character-results-heading"
@@ -173,22 +173,24 @@ export function CharactersContent() {
           </div>
         </div>
 
-        {sortedCharacters.length > 0 ? (
-          directory.view === "grid" ? (
-            <CharacterGrid characters={sortedCharacters} />
+        <div className="min-h-[55vh]">
+          {sortedCharacters.length > 0 ? (
+            directory.view === "grid" ? (
+              <CharacterGrid characters={sortedCharacters} />
+            ) : (
+              <CharacterList characters={sortedCharacters} />
+            )
           ) : (
-            <CharacterList characters={sortedCharacters} />
-          )
-        ) : (
-          <div className="flex min-h-64 flex-col items-center justify-center bg-surface-muted px-5 py-10 text-center">
-            <p className="text-heading-sm font-semibold text-primary">
-              조건에 맞는 인물이 없습니다.
-            </p>
-            <p className="mt-1 text-body-sm text-secondary">
-              검색어나 선택한 필터를 변경해보세요.
-            </p>
-          </div>
-        )}
+            <div className="flex min-h-64 flex-col items-center justify-center bg-surface-muted px-5 py-10 text-center">
+              <p className="text-heading-sm font-semibold text-primary">
+                조건에 맞는 인물이 없습니다.
+              </p>
+              <p className="mt-1 text-body-sm text-secondary">
+                검색어나 선택한 필터를 변경해보세요.
+              </p>
+            </div>
+          )}
+        </div>
       </section>
     </div>
   );
