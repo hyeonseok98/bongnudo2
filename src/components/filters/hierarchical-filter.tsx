@@ -423,7 +423,8 @@ function FilterDraftSummary({ items, onRemove }: FilterDraftSummaryProps) {
     function updateVisibleItemCount() {
       const availableWidth = summaryContainer.clientWidth;
       const itemWidths = items.map(
-        (item) => itemRefs.current.get(item.id)?.offsetWidth ?? 0,
+        (item) =>
+          Math.ceil(itemRefs.current.get(item.id)?.getBoundingClientRect().width ?? 0),
       );
       const totalItemsWidth = itemWidths.reduce(
         (total, width) => total + width,
@@ -439,7 +440,11 @@ function FilterDraftSummary({ items, onRemove }: FilterDraftSummaryProps) {
       for (let count = items.length - 1; count >= 0; count -= 1) {
         const overflowCount = items.length - count;
         const overflowWidth =
-          overflowRefs.current.get(overflowCount)?.offsetWidth ?? 0;
+          Math.ceil(
+            overflowRefs.current
+              .get(overflowCount)
+              ?.getBoundingClientRect().width ?? 0,
+          );
         const visibleItemsWidth = itemWidths
           .slice(0, count)
           .reduce((total, width) => total + width, 0);
@@ -478,7 +483,9 @@ function FilterDraftSummary({ items, onRemove }: FilterDraftSummaryProps) {
             onRemove={() => onRemove(item.id)}
           />
         ))}
-        {overflowCount > 0 ? <DraftSummaryOverflow count={overflowCount} /> : null}
+        {overflowCount > 0 ? (
+          <DraftSummaryOverflow className="ml-auto" count={overflowCount} />
+        ) : null}
       </div>
 
       <div
@@ -541,15 +548,20 @@ function FilterDraftSummaryChip({
 }
 
 function DraftSummaryOverflow({
+  className,
   count,
   ref,
 }: {
+  className?: string;
   count: number;
   ref?: (element: HTMLSpanElement | null) => void;
 }) {
   return (
     <span
-      className="inline-flex h-8 shrink-0 items-center justify-center rounded-lg border border-default bg-surface-muted px-2.5 text-body-sm font-medium text-secondary md:text-[13px]"
+      className={cn(
+        "inline-flex h-8 shrink-0 items-center justify-center rounded-lg border border-default bg-surface-muted px-2.5 text-body-sm font-medium text-secondary md:text-[13px]",
+        className,
+      )}
       ref={ref}
     >
       +{count}
