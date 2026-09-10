@@ -1,9 +1,13 @@
-import { describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { toCharacterListItem } from "./get-characters";
 
 describe("toCharacterListItem", () => {
+  afterEach(() => vi.unstubAllEnvs());
+
   it("현실 소속과 현재 RP 조직을 새 구조의 정렬 규칙으로 변환함", () => {
+    vi.stubEnv("NEXT_PUBLIC_R2_PUBLIC_URL", "https://assets.example.com");
+
     const character = toCharacterListItem({
       id: "participant",
       rp_name: null,
@@ -11,6 +15,7 @@ describe("toCharacterListItem", () => {
         id: "streamer",
         slug: "streamer",
         name: "스트리머",
+        profile_image_key: "streamers/스트리머/profile/프로필 이미지.webp",
         affiliation_memberships: [
           {
             id: "group-membership",
@@ -136,6 +141,9 @@ describe("toCharacterListItem", () => {
     });
 
     expect(character.rpName).toBeNull();
+    expect(character.profileImageUrl).toBe(
+      "https://assets.example.com/streamers/%EC%8A%A4%ED%8A%B8%EB%A6%AC%EB%A8%B8/profile/%ED%94%84%EB%A1%9C%ED%95%84%20%EC%9D%B4%EB%AF%B8%EC%A7%80.webp",
+    );
     expect(character.streamerAffiliations.map(({ type, slug }) => [type, slug]))
       .toEqual([
         ["mcn", "first-mcn"],

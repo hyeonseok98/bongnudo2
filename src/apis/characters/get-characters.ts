@@ -11,6 +11,7 @@ import {
   type CharacterStreamerAffiliation,
   type CharacterStreamerAffiliationType,
 } from "@/features/characters/character";
+import { getR2PublicUrl } from "@/lib/r2";
 import { getSupabaseBrowserClient } from "@/lib/supabase/client";
 
 const BONGNUDO2_SEASON_SLUG = "bongnudo-2";
@@ -25,6 +26,7 @@ function createCharactersQuery(seasonId: number) {
         id,
         slug,
         name,
+        profile_image_key,
         affiliation_memberships:streamer_affiliation_memberships (
           id,
           sort_order,
@@ -118,7 +120,7 @@ export function toCharacterListItem(
     slug: participant.streamer.slug,
     streamerName: participant.streamer.name,
     rpName: participant.rp_name,
-    profileImageUrl: null,
+    profileImageUrl: getR2PublicUrl(participant.streamer.profile_image_key),
     streamerAffiliations: getOrderedStreamerAffiliations(
       participant.streamer.affiliation_memberships.flatMap(
         toStreamerAffiliation,

@@ -1,4 +1,4 @@
-import { render, screen } from "@testing-library/react";
+import { fireEvent, render, screen } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
 
 import type { CharacterListItem } from "@/features/characters/character";
@@ -64,5 +64,27 @@ describe("CharacterCard", () => {
       .map((element) => element.textContent);
 
     expect(realityAffiliations).toEqual(["MCN", "그룹"]);
+  });
+
+  it("프로필 이미지 로드 실패 시 이니셜 placeholder로 복구함", () => {
+    const { container } = render(
+      <CharacterCard
+        character={{
+          ...character,
+          profileImageUrl: "https://assets.example.com/profile.webp",
+        }}
+      />,
+    );
+
+    const image = screen.getByRole("img", { name: "스트리머 프로필" });
+
+    fireEvent.error(image);
+
+    expect(
+      screen.queryByRole("img", { name: "스트리머 프로필" }),
+    ).toBeNull();
+    expect(container.querySelector("[aria-hidden='true']")?.textContent).toBe(
+      "스",
+    );
   });
 });
