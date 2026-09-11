@@ -50,6 +50,7 @@ AGENTS.md
 CLAUDE.md
 /output
 /tools
+/data
 
 # server
 supabase/migrations/

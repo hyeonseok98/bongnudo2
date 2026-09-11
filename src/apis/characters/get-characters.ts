@@ -7,6 +7,7 @@ import {
   type CharacterAffiliationCategory,
   type CharacterDirectoryData,
   type CharacterListItem,
+  type CharacterRoleHistory,
   type StreamerAffiliation,
   type CharacterStreamerAffiliation,
   type CharacterStreamerAffiliationType,
@@ -27,6 +28,7 @@ function createCharactersQuery() {
         id,
         slug,
         name,
+        chzzk_channel_id,
         profile_image_key,
         affiliation_memberships:streamer_affiliation_memberships (
           id,
@@ -111,6 +113,9 @@ export function toCharacterListItem(
     streamerName: participant.streamer.name,
     rpName: participant.rp_name,
     profileImageUrl: getR2PublicUrl(participant.streamer.profile_image_key),
+    channelUrl: participant.streamer.chzzk_channel_id
+      ? `https://chzzk.naver.com/${participant.streamer.chzzk_channel_id}`
+      : null,
     streamerAffiliations: getOrderedStreamerAffiliations(
       participant.streamer.affiliation_memberships.flatMap(
         toStreamerAffiliation,
@@ -119,7 +124,29 @@ export function toCharacterListItem(
     affiliations: getOrderedAffiliations(
       participant.memberships.flatMap(toCurrentCharacterAffiliation),
     ),
+    roleHistories: participant.memberships.flatMap(toCharacterRoleHistories),
   };
+}
+
+function toCharacterRoleHistories(
+  membership: CharacterParticipant["memberships"][number],
+): CharacterRoleHistory[] {
+  const category = getOrganizationCategory(membership.organization.type);
+
+  if (category === null) {
+    return [];
+  }
+
+  return membership.role_histories.map((roleHistory) => ({
+    id: roleHistory.id,
+    organizationSlug: membership.organization.slug,
+    organizationName: membership.organization.name,
+    category,
+    role: roleHistory.role,
+    startDate: roleHistory.start_date,
+    endDate: roleHistory.end_date,
+    isLeader: roleHistory.is_leader,
+  }));
 }
 
 function toStreamerAffiliation(

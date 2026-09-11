@@ -11,14 +11,16 @@ import { useCharacterDirectory } from "../_hooks/use-character-directory";
 import { useCharacters } from "../_hooks/use-characters";
 import {
   buildCharacterFilterFacetData,
+  buildCharacterDirectoryItems,
   buildJobAffiliationFilterNodes,
   buildStreamerAffiliationFilterData,
   filterCharacters,
-  sortCharacters,
+  sortCharacterDirectoryItems,
 } from "../_utils/character-directory";
 import { CharacterFilters } from "./character-filters";
 import { CharacterGrid } from "./character-grid";
 import { CharacterList } from "./character-list";
+import { CharacterModeSwitch } from "./character-mode-switch";
 import { CharacterViewToggle } from "./character-view-toggle";
 import { SelectedFilterSummary } from "./selected-filter-summary";
 
@@ -58,36 +60,50 @@ export function CharactersContent() {
     filterCriteria,
     streamerAffiliations,
   );
-  const sortedCharacters = sortCharacters(filteredCharacters, directory.sort);
+  const directoryItems = sortCharacterDirectoryItems(
+    buildCharacterDirectoryItems(filteredCharacters, directory.mode),
+    directory.sort,
+  );
+
+  function getDirectoryResultCount(filtered: typeof characters) {
+    return buildCharacterDirectoryItems(filtered, directory.mode).length;
+  }
 
   function getJobResultCount(selection: HierarchicalFilterSelection) {
-    return filterCharacters(
+    const filtered = filterCharacters(
       characters,
       {
         ...filterCriteria,
         jobSelection: selection,
       },
       streamerAffiliations,
-    ).length;
+    );
+
+    return getDirectoryResultCount(filtered);
   }
 
   function getStreamerAffiliationResultCount(
     selection: HierarchicalFilterSelection,
   ) {
-    return filterCharacters(
+    const filtered = filterCharacters(
       characters,
       {
         ...filterCriteria,
         streamerAffiliationSelection: selection,
       },
       streamerAffiliations,
-    ).length;
+    );
+
+    return getDirectoryResultCount(filtered);
   }
 
   if (charactersQuery.isPending) {
     return (
       <div className="space-y-6">
-        <CharacterDirectoryHeading />
+        <CharacterDirectoryHeading
+          mode={directory.mode}
+          onModeChange={directory.changeMode}
+        />
         <p className="text-body-sm text-secondary" role="status">
           인물 정보를 불러오는 중입니다.
         </p>
@@ -98,7 +114,10 @@ export function CharactersContent() {
   if (charactersQuery.isError) {
     return (
       <div className="space-y-6">
-        <CharacterDirectoryHeading />
+        <CharacterDirectoryHeading
+          mode={directory.mode}
+          onModeChange={directory.changeMode}
+        />
         <p className="text-body-sm text-destructive" role="alert">
           인물 정보를 불러오지 못했습니다.
         </p>
@@ -108,7 +127,10 @@ export function CharactersContent() {
 
   return (
     <div className="space-y-6">
-      <CharacterDirectoryHeading />
+      <CharacterDirectoryHeading
+        mode={directory.mode}
+        onModeChange={directory.changeMode}
+      />
 
       <CharacterFilters
         getJobResultCount={getJobResultCount}
@@ -147,7 +169,7 @@ export function CharactersContent() {
           >
             총{" "}
             <strong className="font-semibold text-brand-text">
-              {sortedCharacters.length}명
+              {directoryItems.length}명
             </strong>
             의 인물이 등록되어 있습니다.
           </h2>
@@ -174,11 +196,11 @@ export function CharactersContent() {
         </div>
 
         <div className="min-h-[55vh]">
-          {sortedCharacters.length > 0 ? (
+          {directoryItems.length > 0 ? (
             directory.view === "grid" ? (
-              <CharacterGrid characters={sortedCharacters} />
+              <CharacterGrid items={directoryItems} />
             ) : (
-              <CharacterList characters={sortedCharacters} />
+              <CharacterList items={directoryItems} />
             )
           ) : (
             <div className="flex min-h-64 flex-col items-center justify-center bg-surface-muted px-5 py-10 text-center">
@@ -196,13 +218,24 @@ export function CharactersContent() {
   );
 }
 
-function CharacterDirectoryHeading() {
+interface CharacterDirectoryHeadingProps {
+  mode: "streamer" | "rp";
+  onModeChange: (mode: "streamer" | "rp") => void;
+}
+
+function CharacterDirectoryHeading({
+  mode,
+  onModeChange,
+}: CharacterDirectoryHeadingProps) {
   return (
-    <div>
-      <h1 className="text-title font-bold text-primary">인물 도감</h1>
-      <p className="mt-1 text-body text-secondary">
-        봉누도에서 살아가는 인물들을 확인해보세요.
-      </p>
+    <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+      <div>
+        <h1 className="text-title font-bold text-primary">인물 도감</h1>
+        <p className="mt-1 text-body text-secondary">
+          봉누도에서 살아가는 인물들을 확인해보세요.
+        </p>
+      </div>
+      <CharacterModeSwitch mode={mode} onModeChange={onModeChange} />
     </div>
   );
 }

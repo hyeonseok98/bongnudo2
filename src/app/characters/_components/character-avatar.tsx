@@ -3,23 +3,25 @@
 import Image from "next/image";
 import { useState } from "react";
 
-import type { CharacterListItem } from "@/features/characters/character";
 import { cn } from "@/utils/cn";
 
 interface CharacterAvatarProps {
-  character: CharacterListItem;
+  name: string;
+  profileImageUrl: string | null;
   className?: string;
+  imageClassName?: string;
   sizes: string;
 }
 
 export function CharacterAvatar({
-  character,
+  name,
+  profileImageUrl,
   className,
+  imageClassName,
   sizes,
 }: CharacterAvatarProps) {
-  const initial = Array.from(character.streamerName)[0];
+  const initial = Array.from(name)[0];
   const [failedImageUrl, setFailedImageUrl] = useState<string | null>(null);
-  const profileImageUrl = character.profileImageUrl;
   const shouldShowImage =
     profileImageUrl !== null && profileImageUrl !== failedImageUrl;
 
@@ -34,8 +36,8 @@ export function CharacterAvatar({
       {shouldShowImage ? (
         <Image
           fill
-          alt={`${character.streamerName} 프로필`}
-          className="object-cover"
+          alt={`${name} 프로필`}
+          className={cn("object-cover", imageClassName)}
           onError={() => setFailedImageUrl(profileImageUrl)}
           sizes={sizes}
           src={profileImageUrl}

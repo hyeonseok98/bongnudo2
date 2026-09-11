@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 
 import type { CharacterListItem } from "@/features/characters/character";
 
+import { buildCharacterDirectoryItems } from "../_utils/character-directory";
 import { CharacterCard } from "./character-card";
 
 const character: CharacterListItem = {
@@ -12,6 +13,7 @@ const character: CharacterListItem = {
   streamerName: "스트리머",
   rpName: null,
   profileImageUrl: null,
+  channelUrl: null,
   streamerAffiliations: [
     { id: "group", slug: "group", name: "그룹", type: "group", sortOrder: 1 },
     { id: "mcn", slug: "mcn", name: "MCN", type: "mcn", sortOrder: 1 },
@@ -48,11 +50,14 @@ const character: CharacterListItem = {
       isLeader: true,
     },
   ],
+  roleHistories: [],
 };
+
+const item = buildCharacterDirectoryItems([character], "streamer")[0]!;
 
 describe("CharacterCard", () => {
   it("현재 RP 조직은 두 개와 +N만 표시하고 현실 소속은 MCN부터 표시함", () => {
-    render(<CharacterCard character={character} />);
+    render(<CharacterCard item={item} />);
 
     expect(screen.getByText("EMS")).toBeTruthy();
     expect(screen.getByText("병원장 ✦").className).not.toContain(
@@ -81,8 +86,8 @@ describe("CharacterCard", () => {
   it("프로필 이미지 로드 실패 시 이니셜 placeholder로 복구함", () => {
     const { container } = render(
       <CharacterCard
-        character={{
-          ...character,
+        item={{
+          ...item,
           profileImageUrl: "https://assets.example.com/profile.webp",
         }}
       />,

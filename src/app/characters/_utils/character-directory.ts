@@ -4,16 +4,20 @@ import {
   isCharacterAffiliationCategory,
   type CharacterAffiliationCategoryFilter,
 } from "@/constants/character-affiliations";
-import type { CharacterSort } from "@/constants/character-list";
+import type {
+  CharacterDirectoryMode,
+  CharacterSort,
+} from "@/constants/character-list";
 import type {
   FilterTreeNode,
   HierarchicalFilterSelection,
   QuickFilterOption,
 } from "@/components/filters/hierarchical-filter";
-import type {
-  CharacterAffiliation,
-  CharacterListItem,
-  StreamerAffiliation,
+import {
+  getOrderedAffiliations,
+  type CharacterAffiliation,
+  type CharacterListItem,
+  type StreamerAffiliation,
 } from "@/features/characters/character";
 import { matchesKoreanSearch } from "@/utils/korean-search";
 
@@ -21,6 +25,62 @@ export interface CharacterFilterCriteria {
   query: string;
   jobSelection: HierarchicalFilterSelection;
   streamerAffiliationSelection: HierarchicalFilterSelection;
+}
+
+export interface CharacterDirectoryItem {
+  id: string;
+  kind: CharacterDirectoryMode;
+  href: string;
+  primaryName: string;
+  secondaryName: string | null;
+  profileImageUrl: string | null;
+  affiliations: CharacterAffiliation[];
+  streamerAffiliations: CharacterListItem["streamerAffiliations"];
+}
+
+export function buildCharacterDirectoryItems(
+  characters: CharacterListItem[],
+  mode: CharacterDirectoryMode,
+): CharacterDirectoryItem[] {
+  if (mode === "rp") {
+    return characters.flatMap((character) =>
+      character.rpName
+        ? [
+            {
+              id: character.id,
+              kind: "rp" as const,
+              href: `/characters/rp/${character.id}`,
+              primaryName: character.rpName,
+              secondaryName: null,
+              profileImageUrl: null,
+              affiliations: character.affiliations,
+              streamerAffiliations: [],
+            },
+          ]
+        : [],
+    );
+  }
+
+  const itemsByStreamerId = new Map<string, CharacterDirectoryItem>();
+
+  for (const character of characters) {
+    if (itemsByStreamerId.has(character.streamerId)) {
+      continue;
+    }
+
+    itemsByStreamerId.set(character.streamerId, {
+      id: character.streamerId,
+      kind: "streamer",
+      href: `/characters/streamer/${encodeURIComponent(character.slug)}`,
+      primaryName: character.streamerName,
+      secondaryName: character.rpName,
+      profileImageUrl: character.profileImageUrl,
+      affiliations: character.affiliations,
+      streamerAffiliations: character.streamerAffiliations,
+    });
+  }
+
+  return Array.from(itemsByStreamerId.values());
 }
 
 export interface CharacterFilterFacetData {
@@ -339,6 +399,43 @@ export function sortCharacters(
     (left, right) =>
       left.streamerName.localeCompare(right.streamerName, "ko-KR") * direction,
   );
+}
+
+export function sortCharacterDirectoryItems(
+  items: CharacterDirectoryItem[],
+  sort: CharacterSort,
+): CharacterDirectoryItem[] {
+  const direction = sort === "asc" ? 1 : -1;
+
+  return [...items].sort(
+    (left, right) =>
+      left.primaryName.localeCompare(right.primaryName, "ko-KR") * direction,
+  );
+}
+
+export interface CharacterAffiliationDetailAssets {
+  bannerDarkUrl: string | null;
+  backgroundDarkUrl: string | null;
+}
+
+export function getCharacterAffiliationDetailAssets(
+  character: CharacterListItem,
+): CharacterAffiliationDetailAssets {
+  const affiliation = getOrderedAffiliations(character.affiliations)[0];
+
+  if (
+    !affiliation ||
+    !PUBLIC_SERVICE_AFFILIATION_ORDER.some(
+      (slug) => slug === affiliation.slug,
+    )
+  ) {
+    return { bannerDarkUrl: null, backgroundDarkUrl: null };
+  }
+
+  return {
+    bannerDarkUrl: `/images/affiliations/organizations/${affiliation.slug}_dark.webp`,
+    backgroundDarkUrl: `/images/affiliations/organizations/detail-background/${affiliation.slug}_bg_dark.webp`,
+  };
 }
 
 function getPublicServiceOrder(slug: string): number {

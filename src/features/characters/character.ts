@@ -43,6 +43,17 @@ export interface CharacterDirectoryData {
   streamerAffiliations: StreamerAffiliation[];
 }
 
+export interface CharacterRoleHistory {
+  id: string;
+  organizationSlug: string;
+  organizationName: string;
+  category: CharacterAffiliationCategory;
+  role: string | null;
+  startDate: string | null;
+  endDate: string | null;
+  isLeader: boolean;
+}
+
 export interface CharacterListItem {
   id: string;
   streamerId: string;
@@ -50,8 +61,10 @@ export interface CharacterListItem {
   streamerName: string;
   rpName: string | null;
   profileImageUrl: string | null;
+  channelUrl: string | null;
   streamerAffiliations: CharacterStreamerAffiliation[];
   affiliations: CharacterAffiliation[];
+  roleHistories: CharacterRoleHistory[];
 }
 
 export function getOrderedAffiliations(

@@ -13,8 +13,10 @@ import {
   CHARACTER_AFFILIATION_CATEGORY_VALUES,
 } from "@/constants/character-affiliations";
 import {
+  CHARACTER_DIRECTORY_MODE_VALUES,
   CHARACTER_SORT_VALUES,
   CHARACTER_VIEW_VALUES,
+  type CharacterDirectoryMode,
   type CharacterSort,
   type CharacterView,
 } from "@/constants/character-list";
@@ -39,6 +41,9 @@ const characterQueryParsers = {
   groups: parseAsArrayOf(parseAsString).withDefault([]),
   sort: parseAsStringLiteral(CHARACTER_SORT_VALUES).withDefault("asc"),
   view: parseAsStringLiteral(CHARACTER_VIEW_VALUES).withDefault("grid"),
+  mode: parseAsStringLiteral(CHARACTER_DIRECTORY_MODE_VALUES).withDefault(
+    "streamer",
+  ),
 };
 
 export interface CharacterDirectory {
@@ -47,6 +52,7 @@ export interface CharacterDirectory {
   streamerAffiliationSelection: HierarchicalFilterSelection;
   sort: CharacterSort;
   view: CharacterView;
+  mode: CharacterDirectoryMode;
   changeQuery: (query: string) => void;
   applyJobs: (selection: HierarchicalFilterSelection) => void;
   applyStreamerAffiliations: (
@@ -56,12 +62,13 @@ export interface CharacterDirectory {
   removeJob: (jobId: string) => void;
   changeSort: (sort: CharacterSort) => void;
   changeView: (view: CharacterView) => void;
+  changeMode: (mode: CharacterDirectoryMode) => void;
   resetFilters: () => void;
 }
 
 export function useCharacterDirectory(): CharacterDirectory {
   const [
-    { q, jobs, affiliationType, affiliation, groups, sort, view },
+    { q, jobs, affiliationType, affiliation, groups, sort, view, mode },
     setQueryState,
   ] = useQueryStates(characterQueryParsers);
   const hasRestoredPreferences = useRef(false);
@@ -179,6 +186,13 @@ export function useCharacterDirectory(): CharacterDirectory {
     );
   }
 
+  function changeMode(nextMode: CharacterDirectoryMode) {
+    void setQueryState(
+      { mode: nextMode === "streamer" ? null : nextMode },
+      { history: "push" },
+    );
+  }
+
   function resetFilters() {
     writeCharacterPreferences(
       getPreferences({
@@ -203,6 +217,7 @@ export function useCharacterDirectory(): CharacterDirectory {
     streamerAffiliationSelection,
     sort,
     view,
+    mode,
     changeQuery,
     applyJobs,
     applyStreamerAffiliations,
@@ -210,6 +225,7 @@ export function useCharacterDirectory(): CharacterDirectory {
     removeJob,
     changeSort,
     changeView,
+    changeMode,
     resetFilters,
   };
 }

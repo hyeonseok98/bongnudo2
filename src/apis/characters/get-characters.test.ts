@@ -15,6 +15,7 @@ describe("toCharacterListItem", () => {
         id: "streamer",
         slug: "streamer",
         name: "스트리머",
+        chzzk_channel_id: "channel-id",
         profile_image_key: "streamers/스트리머/profile/프로필 이미지.webp",
         affiliation_memberships: [
           {
@@ -144,6 +145,9 @@ describe("toCharacterListItem", () => {
     expect(character.profileImageUrl).toBe(
       "https://assets.example.com/streamers/%EC%8A%A4%ED%8A%B8%EB%A6%AC%EB%A8%B8/profile/%ED%94%84%EB%A1%9C%ED%95%84%20%EC%9D%B4%EB%AF%B8%EC%A7%80.webp",
     );
+    expect(character.channelUrl).toBe(
+      "https://chzzk.naver.com/channel-id",
+    );
     expect(character.streamerAffiliations.map(({ type, slug }) => [type, slug]))
       .toEqual([
         ["mcn", "first-mcn"],
@@ -161,5 +165,15 @@ describe("toCharacterListItem", () => {
       isPrimary: true,
       displayOrder: 1,
     });
+    expect(character.roleHistories).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          id: "ended-role",
+          organizationSlug: "primary-first-organization",
+          role: "과거 직책",
+          endDate: "2026-09-01",
+        }),
+      ]),
+    );
   });
 });

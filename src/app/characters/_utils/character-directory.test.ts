@@ -9,6 +9,7 @@ import type {
 
 import {
   buildCharacterFilterFacetData,
+  buildCharacterDirectoryItems,
   buildJobAffiliationFilterNodes,
   buildStreamerAffiliationFilterData,
   filterCharacters,
@@ -430,6 +431,44 @@ describe("character filtering", () => {
 
 });
 
+describe("character directory view model", () => {
+  it("스트리머는 streamer id로 중복 제거하고 RP는 rpName이 있는 참가자만 만듦", () => {
+    const rpCharacter = createCharacter({
+      id: "participant-rp",
+      slug: "강지",
+      streamerName: "강지",
+      rpName: "도현정",
+      streamerAffiliations: [],
+    });
+    const duplicateStreamer = createCharacter({
+      id: "participant-rp-2",
+      slug: "강지",
+      streamerName: "강지",
+      rpName: null,
+      streamerAffiliations: [],
+    });
+
+    expect(
+      buildCharacterDirectoryItems(
+        [rpCharacter, duplicateStreamer],
+        "streamer",
+      ),
+    ).toHaveLength(1);
+    expect(
+      buildCharacterDirectoryItems(
+        [rpCharacter, duplicateStreamer],
+        "rp",
+      ),
+    ).toMatchObject([
+      {
+        id: "participant-rp",
+        href: "/characters/rp/participant-rp",
+        primaryName: "도현정",
+      },
+    ]);
+  });
+});
+
 function createStreamerAffiliation(
   overrides: Partial<StreamerAffiliation> &
     Pick<StreamerAffiliation, "id" | "slug" | "name">,
@@ -481,7 +520,9 @@ function createCharacter({
     streamerName,
     rpName,
     profileImageUrl: null,
+    channelUrl: null,
     streamerAffiliations,
     affiliations,
+    roleHistories: [],
   };
 }

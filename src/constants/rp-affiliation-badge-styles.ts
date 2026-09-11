@@ -1,8 +1,8 @@
 export const RP_AFFILIATION_BADGE_STYLES: Record<string, string> = {
   ems: "bg-job-ems/55 text-job-ems-foreground",
-  police: "bg-job-police/20 text-job-police-foreground",
+  police: "bg-job-police/75 text-job-police-foreground",
   media: "bg-job-media/40 text-job-media-foreground",
-  "transport-maintenance": "bg-job-transport/30 text-job-transport-foreground",
+  "transport-maintenance": "bg-job-transport/40 text-job-transport-foreground",
   "city-hall": "bg-job-city-hall/30 text-job-city-hall-foreground",
   business: "bg-job-business/10 text-job-business-foreground",
   "illegal-business":
