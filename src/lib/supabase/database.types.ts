@@ -193,6 +193,35 @@ export type Database = {
           },
         ]
       }
+      live_viewer_snapshots: {
+        Row: {
+          id: string
+          sampled_at: string
+          season_participant_id: string
+          viewer_count: number
+        }
+        Insert: {
+          id?: string
+          sampled_at: string
+          season_participant_id: string
+          viewer_count: number
+        }
+        Update: {
+          id?: string
+          sampled_at?: string
+          season_participant_id?: string
+          viewer_count?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "live_viewer_snapshots_season_participant_id_fkey"
+            columns: ["season_participant_id"]
+            isOneToOne: false
+            referencedRelation: "season_participants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       organization_memberships: {
         Row: {
           created_at: string
@@ -642,7 +671,25 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      live_viewer_snapshots_view: {
+        Row: {
+          id: string | null
+          rp_name: string | null
+          sampled_at: string | null
+          season_participant_id: string | null
+          streamer_name: string | null
+          viewer_count: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "live_viewer_snapshots_season_participant_id_fkey"
+            columns: ["season_participant_id"]
+            isOneToOne: false
+            referencedRelation: "season_participants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Functions: {
       [_ in never]: never

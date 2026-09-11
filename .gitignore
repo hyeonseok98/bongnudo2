@@ -53,5 +53,6 @@ CLAUDE.md
 /data
 
 # server
-supabase/migrations/
+supabase/migrations/*
+!supabase/migrations/20260911052508_create_live_viewer_snapshots.sql
 supabase/.temp/
