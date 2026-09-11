@@ -84,7 +84,7 @@ describe("CharacterCard", () => {
     expect(realityAffiliations).toEqual(["MCN", "그룹"]);
   });
 
-  it("프로필 이미지 로드 실패 시 이니셜 placeholder로 복구함", () => {
+  it("프로필 이미지 로드 실패 시 프로필 placeholder로 복구함", () => {
     const { container } = render(
       <CharacterCard
         item={{
@@ -101,8 +101,8 @@ describe("CharacterCard", () => {
     expect(
       screen.queryByRole("img", { name: "스트리머 프로필" }),
     ).toBeNull();
-    expect(container.querySelector("[aria-hidden='true']")?.textContent).toBe(
-      "스",
-    );
+    expect(
+      container.querySelector("svg[aria-hidden='true']"),
+    ).not.toBeNull();
   });
 });

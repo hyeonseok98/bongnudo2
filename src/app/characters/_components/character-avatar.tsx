@@ -1,6 +1,7 @@
 "use client";
 
 import Image from "next/image";
+import { UserRound } from "lucide-react";
 import { useState } from "react";
 
 import { cn } from "@/utils/cn";
@@ -20,25 +21,40 @@ export function CharacterAvatar({
   imageClassName,
   sizes,
 }: CharacterAvatarProps) {
-  const initial = Array.from(name)[0];
   const [failedImageUrl, setFailedImageUrl] = useState<string | null>(null);
+  const [loadedImageUrl, setLoadedImageUrl] = useState<string | null>(null);
   const shouldShowImage =
     profileImageUrl !== null && profileImageUrl !== failedImageUrl;
+  const isImageLoaded =
+    profileImageUrl !== null && loadedImageUrl === profileImageUrl;
 
   return (
     <div
       className={cn(
-        "relative grid shrink-0 place-items-center overflow-hidden bg-surface-muted text-title font-semibold text-tertiary",
+        "relative grid shrink-0 place-items-center overflow-hidden bg-linear-to-br from-surface-muted via-surface-raised to-surface-inset text-title font-semibold text-tertiary",
         className,
       )}
     >
-      <span aria-hidden="true">{initial}</span>
+      {!isImageLoaded ? (
+        <UserRound
+          aria-hidden="true"
+          className="absolute size-1/3 text-secondary"
+        />
+      ) : null}
       {shouldShowImage ? (
         <Image
           fill
           alt={`${name} 프로필`}
-          className={cn("object-cover", imageClassName)}
-          onError={() => setFailedImageUrl(profileImageUrl)}
+          className={cn(
+            "object-cover transition-opacity duration-300",
+            isImageLoaded ? "opacity-100" : "opacity-0",
+            imageClassName,
+          )}
+          onError={() => {
+            setFailedImageUrl(profileImageUrl);
+            setLoadedImageUrl(null);
+          }}
+          onLoad={() => setLoadedImageUrl(profileImageUrl)}
           sizes={sizes}
           src={profileImageUrl}
         />

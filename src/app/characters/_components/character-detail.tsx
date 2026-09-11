@@ -7,6 +7,7 @@ import {
   CalendarDays,
   ChevronRight,
   ExternalLink,
+  FileText,
   History,
   Link2,
   PlayCircle,
@@ -139,16 +140,16 @@ function DetailBanner({
           fill
           alt=""
           aria-hidden="true"
-          className="pointer-events-none hidden object-cover opacity-80 dark:block"
+          className="pointer-events-none hidden object-cover opacity-90 dark:block"
           sizes="(min-width: 1600px) 1536px, 100vw"
           src={assets.bannerDarkUrl}
         />
       ) : null}
       <div
         aria-hidden="true"
-        className="pointer-events-none absolute inset-0 bg-linear-to-r from-background/85 via-background/40 to-background/75"
+        className="pointer-events-none absolute inset-0 bg-linear-to-b from-background/10 via-background/45 to-background"
       />
-      <div className="absolute inset-x-0 bottom-0 h-16 bg-linear-to-t from-background/60 to-transparent" />
+      <div className="pointer-events-none absolute inset-0 bg-linear-to-r from-background/70 via-transparent to-background/60" />
     </div>
   );
 }
@@ -193,6 +194,7 @@ function StreamerDetail({
     <DetailShell
       center={
         <ProfileColumn
+          assets={assets}
           isRpAvailable={rpItems.length > 0}
           mode="streamer"
           name={character.streamerName}
@@ -258,7 +260,7 @@ function RpDetail({
     <DetailShell
       center={
         <ProfileColumn
-          isRp
+          assets={assets}
           mode="rp"
           name={character.rpName ?? character.streamerName}
           profileImageUrl={null}
@@ -279,6 +281,7 @@ function RpDetail({
         <div className="grid content-start gap-4">
           <TimelinePanel title="주요 사건 타임라인" />
           <RoleHistoryPanel histories={character.roleHistories} />
+          <AdditionalInfoPanel />
         </div>
       }
     />
@@ -323,14 +326,14 @@ function IdentityPanel({
           fill
           alt=""
           aria-hidden="true"
-          className="pointer-events-none z-base hidden object-cover object-[70%_center] opacity-[0.28] dark:block"
+          className="pointer-events-none z-base hidden object-cover object-[70%_center] opacity-[0.34] dark:block"
           sizes="320px"
           src={assets.backgroundDarkUrl}
         />
       ) : null}
       <div
         aria-hidden="true"
-        className="pointer-events-none absolute inset-0 z-base hidden bg-linear-to-br from-background/95 via-background/76 to-background/35 dark:block"
+        className="pointer-events-none absolute inset-0 z-base hidden bg-linear-to-br from-background/95 via-background/72 to-background/30 dark:block"
       />
       <div className="relative z-10 border-b border-default pb-5">
         <div className="flex flex-wrap gap-2">
@@ -363,16 +366,16 @@ function IdentityPanel({
 }
 
 function ProfileColumn({
+  assets,
   isRpAvailable = true,
-  isRp = false,
   mode,
   name,
   profileImageUrl,
   rpHref,
   streamerHref,
 }: {
+  assets: CharacterAffiliationDetailAssets;
   isRpAvailable?: boolean;
-  isRp?: boolean;
   mode: "streamer" | "rp";
   name: string;
   profileImageUrl: string | null;
@@ -382,21 +385,23 @@ function ProfileColumn({
   return (
     <div className="space-y-3">
       <section className="relative aspect-6/7 w-full overflow-hidden rounded-xl border border-default bg-surface-inset shadow-xl">
+        {assets.backgroundDarkUrl ? (
+          <Image
+            fill
+            alt=""
+            aria-hidden="true"
+            className="pointer-events-none hidden object-cover object-[70%_center] opacity-50 dark:block"
+            sizes="(min-width: 1280px) 34vw, 100vw"
+            src={assets.backgroundDarkUrl}
+          />
+        ) : null}
+        <div className="pointer-events-none absolute inset-0 bg-linear-to-br from-background/35 via-background/20 to-background/75" />
         <CharacterAvatar
-          className={cn(
-            "absolute inset-0 size-full rounded-none text-hero",
-            isRp &&
-              "bg-linear-to-br from-brand/10 via-surface-muted to-surface-inset",
-          )}
+          className="absolute inset-0 z-10 size-full rounded-none bg-transparent text-hero text-primary/70"
           name={name}
           profileImageUrl={profileImageUrl}
           sizes="(min-width: 1280px) 34vw, 100vw"
         />
-        {isRp ? (
-          <p className="pointer-events-none absolute bottom-5 left-5 rounded-md border border-brand/30 bg-black/55 px-3 py-2 text-caption tracking-widest text-brand-text backdrop-blur-sm">
-            RP PROFILE
-          </p>
-        ) : null}
       </section>
       <CharacterModeSwitch
         isRpAvailable={isRpAvailable}
@@ -412,7 +417,7 @@ function ProfileColumn({
 function TimelinePanel({ title = "주요 타임라인" }: { title?: string }) {
   return (
     <DetailPanel icon={CalendarDays} title={title}>
-      <ol className="relative mt-2 min-h-20 pb-1 before:absolute before:bottom-0 before:left-1.5 before:top-2 before:w-px before:bg-linear-to-b before:from-brand/70 before:via-brand/35 before:to-border-default">
+      <ol className="relative mt-2 min-h-20 pb-1 before:absolute before:bottom-[1.125rem] before:left-1.5 before:top-2 before:w-px before:bg-linear-to-b before:from-brand/70 before:via-brand/35 before:to-border-default">
         <li className="relative grid grid-cols-[5.75rem_minmax(0,1fr)] gap-3 pl-5 text-body-sm">
           <span
             aria-hidden="true"
@@ -525,14 +530,14 @@ function RoleHistoryPanel({
     <DetailPanel icon={History} title="직책 이력">
       {orderedHistories.length > 0 ? (
         <div className="overflow-hidden rounded-lg border border-default">
-          <div className="grid grid-cols-[minmax(6.5rem,1fr)_minmax(5rem,1fr)_minmax(5rem,1fr)] bg-surface-muted px-3 py-2 text-caption text-secondary">
+          <div className="grid grid-cols-[minmax(6.5rem,1fr)_minmax(5rem,1fr)_minmax(5rem,1fr)] bg-surface-muted px-3 py-2 text-center text-caption text-secondary">
             <span>기간</span>
             <span>소속</span>
             <span>직책</span>
           </div>
           {orderedHistories.map((history) => (
             <div
-              className="grid grid-cols-[minmax(6.5rem,1fr)_minmax(5rem,1fr)_minmax(5rem,1fr)] border-t border-default px-3 py-3 text-body-sm text-primary"
+              className="grid grid-cols-[minmax(6.5rem,1fr)_minmax(5rem,1fr)_minmax(5rem,1fr)] border-t border-default px-3 py-3 text-center text-body-sm text-primary"
               key={history.id}
             >
               <span>{formatHistoryPeriod(history)}</span>
@@ -546,6 +551,16 @@ function RoleHistoryPanel({
           등록된 직책 이력이 없습니다.
         </p>
       )}
+    </DetailPanel>
+  );
+}
+
+function AdditionalInfoPanel() {
+  return (
+    <DetailPanel icon={FileText} title="추가 정보">
+      <p className="whitespace-pre-wrap text-body-sm leading-relaxed text-tertiary">
+        추가 정보가 없습니다.
+      </p>
     </DetailPanel>
   );
 }
