@@ -109,6 +109,7 @@ export function toCharacterListItem(
   return {
     id: participant.id,
     streamerId: participant.streamer.id,
+    chzzkChannelId: participant.streamer.chzzk_channel_id,
     slug: participant.streamer.slug,
     streamerName: participant.streamer.name,
     rpName: participant.rp_name,

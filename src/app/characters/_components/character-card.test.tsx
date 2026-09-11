@@ -9,6 +9,7 @@ import { CharacterCard } from "./character-card";
 const character: CharacterListItem = {
   id: "participant",
   streamerId: "streamer",
+  chzzkChannelId: "channel",
   slug: "streamer",
   streamerName: "스트리머",
   rpName: null,

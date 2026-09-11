@@ -29,7 +29,7 @@ export const SIDEBAR_NAV: SidebarNavigationGroup[] = [
   {
     label: "실시간",
     items: [
-      { label: "LIVE", icon: Radio },
+      { label: "LIVE", href: "/live", icon: Radio },
       { label: "타임라인", icon: Clock },
     ],
   },

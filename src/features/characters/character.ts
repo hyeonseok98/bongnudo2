@@ -57,6 +57,7 @@ export interface CharacterRoleHistory {
 export interface CharacterListItem {
   id: string;
   streamerId: string;
+  chzzkChannelId: string | null;
   slug: string;
   streamerName: string;
   rpName: string | null;

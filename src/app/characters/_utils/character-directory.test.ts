@@ -516,6 +516,7 @@ function createCharacter({
   return {
     id,
     streamerId: "streamer-" + slug,
+    chzzkChannelId: "channel-" + slug,
     slug,
     streamerName,
     rpName,
