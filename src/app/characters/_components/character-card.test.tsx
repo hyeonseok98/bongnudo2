@@ -96,10 +96,18 @@ describe("CharacterCard", () => {
 
     const image = screen.getByRole("img", { name: "스트리머 프로필" });
 
+    expect(
+      container.querySelector("[data-slot='character-avatar-loading']"),
+    ).not.toBeNull();
+    expect(container.querySelector("svg[aria-hidden='true']")).toBeNull();
+
     fireEvent.error(image);
 
     expect(
       screen.queryByRole("img", { name: "스트리머 프로필" }),
+    ).toBeNull();
+    expect(
+      container.querySelector("[data-slot='character-avatar-loading']"),
     ).toBeNull();
     expect(
       container.querySelector("svg[aria-hidden='true']"),

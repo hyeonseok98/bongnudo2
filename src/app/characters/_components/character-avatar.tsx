@@ -23,10 +23,13 @@ export function CharacterAvatar({
 }: CharacterAvatarProps) {
   const [failedImageUrl, setFailedImageUrl] = useState<string | null>(null);
   const [loadedImageUrl, setLoadedImageUrl] = useState<string | null>(null);
-  const shouldShowImage =
-    profileImageUrl !== null && profileImageUrl !== failedImageUrl;
+  const hasImageFailed =
+    profileImageUrl !== null && profileImageUrl === failedImageUrl;
+  const shouldShowImage = profileImageUrl !== null && !hasImageFailed;
   const isImageLoaded =
     profileImageUrl !== null && loadedImageUrl === profileImageUrl;
+  const isImageLoading = shouldShowImage && !isImageLoaded;
+  const shouldShowFallback = profileImageUrl === null || hasImageFailed;
 
   return (
     <div
@@ -35,11 +38,22 @@ export function CharacterAvatar({
         className,
       )}
     >
-      {!isImageLoaded ? (
+      {shouldShowFallback ? (
         <UserRound
           aria-hidden="true"
           className="absolute size-1/3 text-secondary"
         />
+      ) : null}
+      {isImageLoading ? (
+        <span
+          aria-hidden="true"
+          className="pointer-events-none absolute inset-0 overflow-hidden"
+          data-slot="character-avatar-loading"
+        >
+          <span className="animate-profile-image-shimmer absolute inset-y-0 -left-1/2 w-1/2">
+            <span className="absolute inset-0 -skew-x-12 bg-linear-to-r from-transparent via-white/15 to-transparent" />
+          </span>
+        </span>
       ) : null}
       {shouldShowImage ? (
         <Image

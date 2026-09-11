@@ -204,6 +204,22 @@
   transition-duration: var(--duration-slow);
 }
 
+@keyframes profile-image-shimmer {
+  to {
+    transform: translateX(300%);
+  }
+}
+
+@utility animate-profile-image-shimmer {
+  animation: profile-image-shimmer 1.4s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-profile-image-shimmer {
+    animation: none;
+  }
+}
+
 @utility z-base {
   z-index: var(--z-index-base);
 }

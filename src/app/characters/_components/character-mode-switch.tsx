@@ -41,7 +41,7 @@ export function CharacterModeSwitch({
       {MODE_OPTIONS.map((option) => {
         const isDisabled = option.value === "rp" && !isRpAvailable;
         const className = cn(
-          "inline-flex items-center justify-center border border-transparent px-5 text-body-sm font-medium transition-[background-color,border-color,color,box-shadow] duration-default",
+          "inline-flex items-center justify-center border border-transparent px-5 text-body-sm font-semibold transition-[background-color,border-color,color,box-shadow] duration-default",
           isDetail ? "h-12" : "h-10",
           isDetail && "first:border-r-control",
           !isDetail && "rounded-lg",
