@@ -19,7 +19,7 @@ const character: CharacterListItem = {
   affiliations: [
     {
       id: "third",
-      slug: "press",
+      slug: "media",
       name: "언론",
       category: "public-service",
       role: "기자",

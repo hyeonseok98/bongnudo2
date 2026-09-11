@@ -218,12 +218,12 @@ describe("buildSyncPlan", () => {
   it("공무직 category만 public job desired state에 포함함", () => {
     const excel = makeExcel({}, [
       { name: "공무직 조직", category: "공무직", slug: "public", type: "institution" },
-      { name: "사업체", category: "사업체", slug: "business", type: "business" },
+      { name: "사업체 조직", category: "사업체", slug: "business-office", type: "business" },
     ]);
     const plan = buildSyncPlan(excel, makeContext(excel, {
       jobs: [
         { id: "job", slug: "public-job-public", name: "공무직 조직" },
-        { id: "old-job", slug: "public-job-business", name: "사업체" },
+        { id: "old-job", slug: "public-job-media", name: "언론" },
       ],
     }));
     expect(plan.sections.publicJobs.unchanged).toHaveLength(1);

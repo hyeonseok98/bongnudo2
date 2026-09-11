@@ -29,8 +29,8 @@ export const CHARACTER_AFFILIATION_CATEGORIES = [
 export const PUBLIC_SERVICE_AFFILIATION_ORDER = [
   "ems",
   "police",
-  "transportation",
-  "press",
+  "transport-maintenance",
+  "media",
   "city-hall",
 ] as const;
 

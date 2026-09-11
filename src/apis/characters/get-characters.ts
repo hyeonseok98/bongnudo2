@@ -212,12 +212,10 @@ function getOrganizationCategory(
   switch (organizationType) {
     case "institution":
     case "public-service":
-    case "public_service":
       return "public-service";
     case "business":
       return "business";
     case "illegal-business":
-    case "illegal_business":
       return "illegal-business";
     case "gang":
       return "gang";

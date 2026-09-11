@@ -29,8 +29,8 @@ const POLICE_AFFILIATION: CharacterAffiliation = {
 const BUSINESS_AFFILIATION: CharacterAffiliation = {
   ...POLICE_AFFILIATION,
   id: "business-membership",
-  slug: "company",
-  name: "회사",
+  slug: "business-office",
+  name: "사업체 조직",
   category: "business",
 };
 
@@ -208,7 +208,7 @@ describe("character filter facets", () => {
       { id: "police", label: "경찰", count: 2 },
     ]);
     expect(nodes[1].children).toEqual([
-      { id: "company", label: "회사", count: 1 },
+      { id: "business-office", label: "사업체 조직", count: 1 },
     ]);
   });
 
@@ -244,7 +244,7 @@ describe("character filter facets", () => {
       STREAMER_AFFILIATIONS,
       {
         query: "",
-        jobSelection: { ids: ["company"] },
+        jobSelection: { ids: ["business-office"] },
         streamerAffiliationSelection: { ids: ["acacia"] },
       },
     );
@@ -374,7 +374,7 @@ describe("character filtering", () => {
   it("직업 sibling 복수 선택을 OR로 처리함", () => {
     const result = filterCharacters(CHARACTERS, {
       query: "",
-      jobSelection: { ids: ["public-service", "company"] },
+      jobSelection: { ids: ["public-service", "business-office"] },
       streamerAffiliationSelection: { ids: [] },
     });
 
