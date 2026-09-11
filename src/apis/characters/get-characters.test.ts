@@ -1,5 +1,7 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 
+import type { CharacterListItem } from "../../features/characters/character";
+
 import { toCharacterListItem } from "./get-characters";
 
 describe("toCharacterListItem", () => {
@@ -8,7 +10,7 @@ describe("toCharacterListItem", () => {
   it("현실 소속과 현재 RP 조직을 새 구조의 정렬 규칙으로 변환함", () => {
     vi.stubEnv("NEXT_PUBLIC_R2_PUBLIC_URL", "https://assets.example.com");
 
-    const character = toCharacterListItem({
+    const character: CharacterListItem = toCharacterListItem({
       id: "participant",
       rp_name: null,
       streamer: {
@@ -146,7 +148,7 @@ describe("toCharacterListItem", () => {
     expect(character.profileImageUrl).toBe(
       "https://assets.example.com/streamers/%EC%8A%A4%ED%8A%B8%EB%A6%AC%EB%A8%B8/profile/%ED%94%84%EB%A1%9C%ED%95%84%20%EC%9D%B4%EB%AF%B8%EC%A7%80.webp",
     );
-    expect(character.channelUrl).toBe("https://chzzk.naver.com/channel-id");
+    expect(character.channelUrl).toBe("https://chzzk.naver.com/channel");
     expect(
       character.streamerAffiliations.map(({ type, slug }) => [type, slug]),
     ).toEqual([
