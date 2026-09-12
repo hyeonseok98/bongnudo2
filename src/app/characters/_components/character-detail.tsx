@@ -112,7 +112,7 @@ export function CharacterDetail({ kind, identifier }: CharacterDetailProps) {
   return (
     <div className="relative">
       <DetailBackdrop assets={detailAssets} />
-      <div className="relative z-10 pt-20 sm:pt-24">
+      <div className="relative z-10 pt-16 sm:pt-20">
         <Link
           className="mb-3 flex w-fit cursor-pointer items-center gap-2 rounded-md bg-background/80 px-3 py-2 text-body-sm font-semibold text-primary shadow-sm backdrop-blur-sm transition-colors hover:text-brand-text dark:rounded-none dark:bg-transparent dark:px-0 dark:py-0 dark:text-white dark:shadow-none dark:backdrop-blur-none"
           href="/characters"

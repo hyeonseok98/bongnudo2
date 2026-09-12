@@ -35,7 +35,7 @@ export function CharactersBanner() {
             className={`${inkLiquid.className} flex flex-wrap items-baseline gap-x-3 text-primary`}
           >
             <span className="text-title">각자의 이야기로 완성되는,</span>
-            <span className="whitespace-nowrap text-hero--line-height font-semibold">
+            <span className="whitespace-nowrap text-hero--line-height">
               봉누도2
             </span>
           </p>

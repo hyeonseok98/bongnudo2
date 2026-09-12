@@ -13,9 +13,11 @@ export const metadata: Metadata = {
 
 export default function CharactersPage() {
   return (
-    <main className="space-y-6 pb-5 sm:pb-6 lg:pb-8">
+    <main className="pb-5 sm:pb-6 lg:pb-8">
       <CharactersBanner />
-      <CharactersContent />
+      <div className="relative z-10 sm:-mt-12">
+        <CharactersContent />
+      </div>
     </main>
   );
 }
