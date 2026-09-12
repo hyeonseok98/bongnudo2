@@ -62,9 +62,11 @@ type ParticipantChannelQueryData = QueryData<
 
 export async function getCurrentLiveStreams({
   onMetrics,
+  runId,
 }: {
   onMetrics?: (metrics: CurrentLiveStreamsMetrics) => void;
-} = {}): Promise<CurrentLiveStream[]> {
+  runId: string;
+}): Promise<CurrentLiveStream[]> {
   const participantLookupStartedAt = performance.now();
   const participantIdsByChannel = await getParticipantIdsByChannel();
   const participantLookupMs = getDurationMs(participantLookupStartedAt);
@@ -72,6 +74,7 @@ export async function getCurrentLiveStreams({
   return getChzzkLiveStreams(participantIdsByChannel, {
     onMetrics,
     participantLookupMs,
+    runId,
   });
 }
 
@@ -100,9 +103,11 @@ async function getChzzkLiveStreams(
   {
     onMetrics,
     participantLookupMs,
+    runId,
   }: {
     onMetrics?: (metrics: CurrentLiveStreamsMetrics) => void;
     participantLookupMs: number;
+    runId: string;
   },
 ): Promise<CurrentLiveStream[]> {
   const clientId = process.env.CHZZK_CLIENT_ID;
@@ -112,7 +117,12 @@ async function getChzzkLiveStreams(
     throw new Error("치지직 환경변수가 설정되지 않음.");
   }
 
-  const liveStreams: CurrentLiveStream[] = [];
+  const liveStreamsByParticipant = new Map<string, CurrentLiveStream>();
+  const duplicateStreamsByParticipant = new Map<string, {
+    channelId: string;
+    duplicateCount: number;
+    hasConflictingLiveData: boolean;
+  }>();
   const visitedPageTokens = new Set<string>();
   const pageDurationsMs: number[] = [];
   const paginationStartedAt = performance.now();
@@ -163,7 +173,7 @@ async function getChzzkLiveStreams(
       const seasonParticipantId = participantIdsByChannel.get(live.channelId);
 
       if (seasonParticipantId) {
-        liveStreams.push({
+        const liveStream = {
           seasonParticipantId,
           liveStartedAt: live.openDate ?? null,
           broadcast: {
@@ -174,6 +184,26 @@ async function getChzzkLiveStreams(
             channelId: live.channelId,
             channelName: live.channelName,
           },
+        } satisfies CurrentLiveStream;
+        const existingLiveStream = liveStreamsByParticipant.get(
+          seasonParticipantId,
+        );
+
+        if (!existingLiveStream) {
+          liveStreamsByParticipant.set(seasonParticipantId, liveStream);
+          continue;
+        }
+
+        const duplicate = duplicateStreamsByParticipant.get(
+          seasonParticipantId,
+        );
+        duplicateStreamsByParticipant.set(seasonParticipantId, {
+          channelId: live.channelId,
+          duplicateCount: (duplicate?.duplicateCount ?? 0) + 1,
+          hasConflictingLiveData:
+            (duplicate?.hasConflictingLiveData ?? false)
+            || existingLiveStream.broadcast.channelId !== live.channelId
+            || existingLiveStream.broadcast.liveId !== live.liveId,
         });
       }
     }
@@ -191,12 +221,22 @@ async function getChzzkLiveStreams(
     }
   } while (nextPageToken);
 
-  return liveStreams;
+  for (const [seasonParticipantId, duplicate] of duplicateStreamsByParticipant) {
+    console.warn("Duplicate LIVE participant", {
+      runId,
+      duplicateCount: duplicate.duplicateCount,
+      seasonParticipantId,
+      channelId: duplicate.channelId,
+      hasConflictingLiveData: duplicate.hasConflictingLiveData,
+    });
+  }
+
+  return [...liveStreamsByParticipant.values()];
 
   function reportMetrics(): void {
     onMetrics?.({
       chzzkPaginationMs: getDurationMs(paginationStartedAt),
-      matchedParticipantCount: liveStreams.length,
+      matchedParticipantCount: liveStreamsByParticipant.size,
       pageCount: pageDurationsMs.length,
       pageDurationsMs: [...pageDurationsMs],
       participantLookupMs,

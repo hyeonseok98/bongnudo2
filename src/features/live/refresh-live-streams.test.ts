@@ -57,7 +57,7 @@ describe("refreshLiveStreams", () => {
 
   afterEach(() => vi.restoreAllMocks());
 
-  it("CHZZK 결과로 current를 교체하고 운영 시간에는 snapshot을 저장함", async () => {
+  it("동일한 deduplicated LIVE 결과로 current와 snapshot을 저장함", async () => {
     const result = await refreshLiveStreams(
       new Date("2026-09-12T08:00:42.000Z"),
     );
@@ -67,6 +67,10 @@ describe("refreshLiveStreams", () => {
       skippedDueToLock: false,
       snapshotSkipped: false,
       snapshotStoredCount: 1,
+    });
+    expect(mocks.getCurrentLiveStreams).toHaveBeenCalledWith({
+      onMetrics: expect.any(Function),
+      runId: result.runId,
     });
     expect(mocks.rpc).toHaveBeenCalledWith("replace_live_current", {
       p_live_streams: [{

@@ -76,6 +76,7 @@ export async function refreshLiveStreams(
       onMetrics: (nextMetrics) => {
         metrics = nextMetrics;
       },
+      runId,
     });
     const refreshedAt = new Date().toISOString();
     const replaceStartedAt = performance.now();
