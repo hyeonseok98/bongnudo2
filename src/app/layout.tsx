@@ -3,6 +3,7 @@ import { MainContainer } from "@/components/layouts/main-container";
 import { Sidebar } from "@/components/layouts/sidebar";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { SIDEBAR_COOKIE_NAME } from "@/constants/sidebar";
+import { getCurrentUser } from "@/features/auth/session";
 import { QueryProvider } from "@/providers/query-provider";
 import { SidebarProvider } from "@/providers/sidebar-provider";
 import { ThemeProvider } from "@/providers/theme-provider";
@@ -26,7 +27,10 @@ export const metadata: Metadata = {
 };
 
 export default async function RootLayout({ children }: LayoutProps<"/">) {
-  const cookieStore = await cookies();
+  const [cookieStore, currentUser] = await Promise.all([
+    cookies(),
+    getCurrentUser(),
+  ]);
   const initialIsOpen = cookieStore.get(SIDEBAR_COOKIE_NAME)?.value !== "false";
 
   return (
@@ -40,7 +44,7 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
           <TooltipProvider>
             <SidebarProvider initialIsOpen={initialIsOpen}>
               <div className="flex h-dvh flex-col overflow-hidden bg-background">
-                <Header />
+                <Header currentUser={currentUser} />
                 <div className="flex min-h-0 flex-1">
                   <Sidebar />
                   <div className="@container flex min-h-0 min-w-0 flex-1 flex-col overflow-y-auto bg-background">

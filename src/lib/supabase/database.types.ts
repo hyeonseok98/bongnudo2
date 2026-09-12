@@ -669,6 +669,71 @@ export type Database = {
           },
         ]
       }
+      user_sessions: {
+        Row: {
+          created_at: string
+          expires_at: string
+          id: string
+          token_hash: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          expires_at: string
+          id?: string
+          token_hash: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          expires_at?: string
+          id?: string
+          token_hash?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_sessions_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      users: {
+        Row: {
+          chzzk_channel_id: string
+          chzzk_channel_name: string
+          created_at: string
+          id: string
+          last_login_at: string
+          role: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          chzzk_channel_id: string
+          chzzk_channel_name: string
+          created_at?: string
+          id?: string
+          last_login_at?: string
+          role?: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          chzzk_channel_id?: string
+          chzzk_channel_name?: string
+          created_at?: string
+          id?: string
+          last_login_at?: string
+          role?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       live_viewer_snapshots_view: {

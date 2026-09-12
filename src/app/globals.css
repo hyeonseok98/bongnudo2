@@ -15,6 +15,8 @@
   --color-brand: var(--brand);
   --color-brand-foreground: var(--brand-foreground);
   --color-brand-text: var(--brand-text);
+  --color-chzzk: var(--chzzk);
+  --color-chzzk-foreground: var(--chzzk-foreground);
   --color-job-ems: var(--job-ems);
   --color-job-ems-foreground: var(--job-ems-foreground);
   --color-job-police: var(--job-police);
@@ -98,6 +100,8 @@
   --green-600: #238636;
   --green-650: #1f883d;
   --green-700: #1a7f37;
+  --chzzk: #00ffa3;
+  --chzzk-foreground: #000000;
   --blue-500: #4493f8;
   --blue-700: #0969da;
   --yellow-600: #d29922;

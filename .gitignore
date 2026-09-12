@@ -55,6 +55,8 @@ CLAUDE.md
 # server
 supabase/migrations/*
 !supabase/migrations/20260911052508_create_live_viewer_snapshots.sql
+!supabase/migrations/20260912070700_create_chzzk_oauth_users.sql
+!supabase/migrations/20260912071651_tighten_chzzk_oauth_table_privileges.sql
 supabase/.temp/
 
 # test
