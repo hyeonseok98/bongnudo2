@@ -1,6 +1,7 @@
 "use client";
 
-import { Menu } from "lucide-react";
+import { Popover } from "@base-ui/react/popover";
+import { ChevronDown, CircleUserRound, LogOut, Menu } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { type MouseEvent, useState, useTransition } from "react";
@@ -83,19 +84,43 @@ export function Header({
           </span>
         ) : null}
         {currentUser ? (
-          <>
-            <span className="max-w-24 truncate text-body-sm text-secondary sm:max-w-40">
-              {currentUser.channelName}
-            </span>
-            <Button
-              disabled={isLoggingOut}
-              onClick={handleLogout}
-              size="sm"
-              variant="ghost"
+          <Popover.Root>
+            <Popover.Trigger
+              aria-label={`${currentUser.channelName} 계정 메뉴`}
+              className="flex h-10 min-w-0 cursor-pointer items-center gap-2 rounded-lg border border-transparent px-2 text-primary transition-[background-color,border-color] duration-default hover:border-default hover:bg-surface-muted focus-visible:border-focus-ring motion-reduce:transition-none"
             >
-              로그아웃
-            </Button>
-          </>
+              <span className="flex size-7 shrink-0 items-center justify-center rounded-full border border-default bg-surface-muted text-secondary">
+                <CircleUserRound aria-hidden="true" className="size-4" />
+              </span>
+              <span className="max-w-24 truncate text-body-sm font-medium sm:max-w-40">
+                {currentUser.channelName}
+              </span>
+              <ChevronDown aria-hidden="true" className="size-4 shrink-0 text-secondary" />
+            </Popover.Trigger>
+            <Popover.Portal>
+              <Popover.Positioner
+                align="end"
+                className="z-popover"
+                collisionPadding={12}
+                side="bottom"
+                sideOffset={8}
+              >
+                <Popover.Popup className="w-40 rounded-lg border border-default bg-surface-raised p-1 shadow-lg outline-none">
+                  <Popover.Title className="sr-only">계정 메뉴</Popover.Title>
+                  <Button
+                    className="w-full justify-start text-status-danger hover:text-status-danger"
+                    disabled={isLoggingOut}
+                    onClick={handleLogout}
+                    size="sm"
+                    variant="ghost"
+                  >
+                    <LogOut aria-hidden="true" />
+                    {isLoggingOut ? "로그아웃 중..." : "로그아웃"}
+                  </Button>
+                </Popover.Popup>
+              </Popover.Positioner>
+            </Popover.Portal>
+          </Popover.Root>
         ) : (
           <a
             className={buttonVariants({ size: "sm" })}
