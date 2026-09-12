@@ -145,7 +145,7 @@
   --status-success: var(--green-700);
   --status-warning: var(--yellow-700);
   --status-danger: var(--red-700);
-  --focus-ring: var(--blue-700);
+  --focus-ring: var(--brand);
 }
 
 .dark {
@@ -169,7 +169,7 @@
   --status-success: var(--green-500);
   --status-warning: var(--yellow-600);
   --status-danger: var(--red-500);
-  --focus-ring: var(--blue-500);
+  --focus-ring: var(--brand);
 }
 
 @utility text-primary {
