@@ -9,7 +9,7 @@ const mocks = vi.hoisted(() => ({
   userUpsert: vi.fn(),
   userSelect: vi.fn(),
   userSingle: vi.fn(),
-  sessionInsert: vi.fn(),
+  sessionUpsert: vi.fn(),
 }));
 
 vi.mock("@/lib/chzzk", () => ({
@@ -36,6 +36,7 @@ describe("GET /api/auth/chzzk/callback", () => {
     vi.clearAllMocks();
     vi.stubEnv("SITE_URL", "http://localhost:3000");
     vi.spyOn(console, "error").mockImplementation(() => undefined);
+    vi.spyOn(console, "info").mockImplementation(() => undefined);
     mocks.exchangeChzzkAuthorizationCode.mockResolvedValue("access-token");
     mocks.getChzzkCurrentUser.mockResolvedValue({
       channelId: "channel-id",
@@ -47,13 +48,13 @@ describe("GET /api/auth/chzzk/callback", () => {
       data: createDatabaseUser(),
       error: null,
     });
-    mocks.sessionInsert.mockResolvedValue({ error: null });
+    mocks.sessionUpsert.mockResolvedValue({ error: null, status: 201 });
     mocks.from.mockImplementation((table: string) => {
       if (table === "users") {
         return { upsert: mocks.userUpsert };
       }
 
-      return { insert: mocks.sessionInsert };
+      return { upsert: mocks.sessionUpsert };
     });
     mocks.getSupabaseAdminClient.mockReturnValue({ from: mocks.from });
   });
@@ -89,11 +90,17 @@ describe("GET /api/auth/chzzk/callback", () => {
       },
     );
     expect(sessionCookie?.value).toMatch(/^[A-Za-z0-9_-]{43}$/);
-    expect(mocks.sessionInsert).toHaveBeenCalledWith({
-      user_id: "user-id",
-      token_hash: hashSessionToken(sessionCookie?.value ?? ""),
-      expires_at: expect.any(String),
-    });
+    expect(mocks.sessionUpsert).toHaveBeenCalledWith(
+      {
+        user_id: "user-id",
+        token_hash: hashSessionToken(sessionCookie?.value ?? ""),
+        expires_at: expect.any(String),
+      },
+      {
+        ignoreDuplicates: true,
+        onConflict: "token_hash",
+      },
+    );
     expect(response.headers.get("set-cookie")).toContain("HttpOnly");
     expect(response.headers.get("set-cookie")).toContain("SameSite=lax");
     expect(response.headers.get("set-cookie")).toContain("Secure");
@@ -102,7 +109,7 @@ describe("GET /api/auth/chzzk/callback", () => {
     );
     expect(JSON.stringify([
       mocks.userUpsert.mock.calls,
-      mocks.sessionInsert.mock.calls,
+      mocks.sessionUpsert.mock.calls,
     ])).not.toContain("access-token");
     expect(response.cookies.get(OAUTH_STATE_COOKIE_NAME)?.value).toBe("");
     expect(response.cookies.get(OAUTH_RETURN_TO_COOKIE_NAME)?.value).toBe("");
@@ -134,7 +141,7 @@ describe("GET /api/auth/chzzk/callback", () => {
       message: "인증 요청이 올바르지 않음.",
     });
     expect(mocks.exchangeChzzkAuthorizationCode).not.toHaveBeenCalled();
-    expect(mocks.sessionInsert).not.toHaveBeenCalled();
+    expect(mocks.sessionUpsert).not.toHaveBeenCalled();
     expect(response.cookies.get(OAUTH_STATE_COOKIE_NAME)?.value).toBe("");
   });
 
@@ -143,7 +150,7 @@ describe("GET /api/auth/chzzk/callback", () => {
 
     expect(response.status).toBe(400);
     expect(mocks.exchangeChzzkAuthorizationCode).not.toHaveBeenCalled();
-    expect(mocks.sessionInsert).not.toHaveBeenCalled();
+    expect(mocks.sessionUpsert).not.toHaveBeenCalled();
   });
 
   it("code가 없는 취소 callback은 로그인 이전 페이지로 복귀함", async () => {
@@ -154,7 +161,7 @@ describe("GET /api/auth/chzzk/callback", () => {
       "http://localhost:3000/characters",
     );
     expect(mocks.exchangeChzzkAuthorizationCode).not.toHaveBeenCalled();
-    expect(mocks.sessionInsert).not.toHaveBeenCalled();
+    expect(mocks.sessionUpsert).not.toHaveBeenCalled();
     expect(response.cookies.get(OAUTH_STATE_COOKIE_NAME)?.value).toBe("");
     expect(response.cookies.get(OAUTH_RETURN_TO_COOKIE_NAME)?.value).toBe("");
   });
@@ -171,7 +178,28 @@ describe("GET /api/auth/chzzk/callback", () => {
       "http://localhost:3000/login?returnTo=%2Fcharacters&error=failed",
     );
     expect(mocks.userUpsert).not.toHaveBeenCalled();
-    expect(mocks.sessionInsert).not.toHaveBeenCalled();
+    expect(mocks.sessionUpsert).not.toHaveBeenCalled();
+  });
+
+  it("users upsert의 일시적인 504를 재시도함", async () => {
+    vi.spyOn(Math, "random").mockReturnValue(0);
+    mocks.userSingle
+      .mockResolvedValueOnce({
+        data: null,
+        error: { code: "PGRST003" },
+        status: 504,
+      })
+      .mockResolvedValueOnce({
+        data: createDatabaseUser(),
+        error: null,
+        status: 200,
+      });
+
+    const response = await GET(createCallbackRequest());
+
+    expect(response.status).toBe(307);
+    expect(mocks.userUpsert).toHaveBeenCalledTimes(2);
+    expect(mocks.sessionUpsert).toHaveBeenCalledTimes(1);
   });
 });
 

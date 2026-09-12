@@ -1,6 +1,13 @@
 import { NextRequest } from "next/server";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
+const mocks = vi.hoisted(() => ({ getUserBySessionToken: vi.fn() }));
+
+vi.mock("@/features/auth/session", () => ({
+  getUserBySessionToken: mocks.getUserBySessionToken,
+  SESSION_COOKIE_NAME: "bongnurok_session",
+}));
+
 import {
   OAUTH_RETURN_TO_COOKIE_NAME,
   OAUTH_STATE_COOKIE_NAME,
@@ -10,9 +17,11 @@ import { GET, POST } from "./route";
 
 describe("/api/auth/chzzk", () => {
   beforeEach(() => {
+    vi.clearAllMocks();
     vi.stubEnv("CHZZK_CLIENT_ID", "client-id");
     vi.stubEnv("CHZZK_CLIENT_SECRET", "client-secret");
     vi.stubEnv("SITE_URL", "http://localhost:3000");
+    mocks.getUserBySessionToken.mockResolvedValue(null);
   });
 
   afterEach(() => vi.unstubAllEnvs());
@@ -58,16 +67,35 @@ describe("/api/auth/chzzk", () => {
     );
     expect(response.cookies.get(OAUTH_STATE_COOKIE_NAME)).toBeUndefined();
   });
+
+  it("유효한 session이 있으면 OAuth를 다시 시작하지 않음", async () => {
+    mocks.getUserBySessionToken.mockResolvedValue({
+      id: "user-id",
+      channelId: "channel-id",
+      channelName: "채널 이름",
+      role: "user",
+      status: "active",
+    });
+    const response = await POST(createStartRequest({ session: true }));
+
+    expect(response.status).toBe(303);
+    expect(response.headers.get("location")).toBe(
+      "http://localhost:3000/characters?view=grid",
+    );
+    expect(response.cookies.get(OAUTH_STATE_COOKIE_NAME)).toBeUndefined();
+  });
 });
 
 function createStartRequest({
   terms = true,
   privacy = true,
   age = true,
+  session = false,
 }: {
   terms?: boolean;
   privacy?: boolean;
   age?: boolean;
+  session?: boolean;
 } = {}): NextRequest {
   const formData = new FormData();
   formData.set("returnTo", "/characters?view=grid");
@@ -86,6 +114,9 @@ function createStartRequest({
 
   return new NextRequest("http://localhost:3000/api/auth/chzzk", {
     body: formData,
+    headers: session
+      ? { cookie: "bongnurok_session=valid-session-token" }
+      : undefined,
     method: "POST",
   });
 }

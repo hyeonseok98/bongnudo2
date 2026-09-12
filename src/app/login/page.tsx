@@ -43,7 +43,10 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
     : undefined;
 
   return (
-    <main className="relative isolate -mx-4 flex min-h-full items-center justify-center overflow-hidden px-4 py-8 md:-mx-6 md:px-6 lg:-mx-8 lg:px-8">
+    <main
+      data-login-page
+      className="relative isolate flex min-h-full items-center justify-center overflow-hidden px-4 py-8 md:px-6 lg:px-8"
+    >
       <Image
         alt=""
         className="-z-20 object-cover opacity-50"

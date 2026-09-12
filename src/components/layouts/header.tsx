@@ -26,16 +26,14 @@ export function Header({
       try {
         const response = await fetch("/api/auth/logout", { method: "POST" });
 
-        if (response.ok) {
-          router.refresh();
-          return;
+        if (!response.ok) {
+          setLogoutError("서버 세션 정리가 지연되고 있습니다.");
         }
       } catch {
         setLogoutError("로그아웃하지 못함.");
-        return;
+      } finally {
+        router.refresh();
       }
-
-      setLogoutError("로그아웃하지 못함.");
     });
   }
 

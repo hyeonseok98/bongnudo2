@@ -3,8 +3,12 @@ import "server-only";
 import { createHash, randomBytes } from "node:crypto";
 
 import { cookies } from "next/headers";
+import { cache } from "react";
 
 import { getSupabaseAdminClient } from "@/lib/supabase/server";
+
+import { createAuthRequestId } from "./auth-observability";
+import { executeWithTransientSupabaseRetry } from "./supabase-retry";
 
 export const SESSION_COOKIE_NAME = "bongnurok_session";
 export const SESSION_MAX_AGE_SECONDS = 30 * 24 * 60 * 60;
@@ -27,16 +31,26 @@ export interface CreatedUserSession {
 
 export async function createUserSession(
   userId: string,
+  { requestId = createAuthRequestId() }: { requestId?: string } = {},
 ): Promise<CreatedUserSession> {
   const token = randomBytes(32).toString("base64url");
   const expiresAt = new Date(Date.now() + SESSION_MAX_AGE_SECONDS * 1000);
-  const result = await getSupabaseAdminClient()
-    .from("user_sessions")
-    .insert({
-      user_id: userId,
-      token_hash: hashSessionToken(token),
-      expires_at: expiresAt.toISOString(),
-    });
+  const sessionRow = {
+    user_id: userId,
+    token_hash: hashSessionToken(token),
+    expires_at: expiresAt.toISOString(),
+  };
+  const supabase = getSupabaseAdminClient();
+  const result = await executeWithTransientSupabaseRetry({
+    operation: "auth.session.create",
+    requestId,
+    run: () => supabase
+      .from("user_sessions")
+      .upsert(sessionRow, {
+        ignoreDuplicates: true,
+        onConflict: "token_hash",
+      }),
+  });
 
   if (result.error) {
     throw new Error("로그인 세션을 생성하지 못함.", {
@@ -47,39 +61,62 @@ export async function createUserSession(
   return { token, expiresAt };
 }
 
-export async function deleteUserSession(token: string): Promise<void> {
-  const result = await getSupabaseAdminClient()
-    .from("user_sessions")
-    .delete()
-    .eq("token_hash", hashSessionToken(token));
+export async function deleteUserSession(
+  token: string,
+  { requestId = createAuthRequestId() }: { requestId?: string } = {},
+): Promise<void> {
+  const supabase = getSupabaseAdminClient();
+  const tokenHash = hashSessionToken(token);
+  const result = await executeWithTransientSupabaseRetry({
+    operation: "auth.session.delete",
+    requestId,
+    run: () => supabase
+      .from("user_sessions")
+      .delete()
+      .eq("token_hash", tokenHash),
+  });
 
   if (result.error) {
     throw new Error("로그아웃하지 못함.", { cause: result.error });
   }
 }
 
-export async function getCurrentUser(): Promise<AuthenticatedUser | null> {
-  const cookieStore = await cookies();
-  const token = cookieStore.get(SESSION_COOKIE_NAME)?.value;
+export const getCurrentUser = cache(
+  async (): Promise<AuthenticatedUser | null> => {
+    const cookieStore = await cookies();
+    const token = cookieStore.get(SESSION_COOKIE_NAME)?.value;
 
-  if (!token) {
-    return null;
-  }
+    if (!token) {
+      return null;
+    }
 
-  const result = await getSupabaseAdminClient()
-    .from("user_sessions")
-    .select(`
-      expires_at,
-      user:users!user_sessions_user_id_fkey (
-        id,
-        chzzk_channel_id,
-        chzzk_channel_name,
-        role,
-        status
-      )
-    `)
-    .eq("token_hash", hashSessionToken(token))
-    .maybeSingle();
+    return getUserBySessionToken(token);
+  },
+);
+
+export async function getUserBySessionToken(
+  token: string,
+  { requestId = createAuthRequestId() }: { requestId?: string } = {},
+): Promise<AuthenticatedUser | null> {
+  const supabase = getSupabaseAdminClient();
+  const result = await executeWithTransientSupabaseRetry({
+    operation: "auth.session.validate",
+    requestId,
+    run: () => supabase
+      .from("user_sessions")
+      .select(`
+        expires_at,
+        user:users!user_sessions_user_id_fkey (
+          id,
+          chzzk_channel_id,
+          chzzk_channel_name,
+          role,
+          status
+        )
+      `)
+      .eq("token_hash", hashSessionToken(token))
+      .maybeSingle(),
+  });
 
   if (result.error) {
     console.error("Failed to validate user session", result.error);

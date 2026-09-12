@@ -29,6 +29,7 @@ export function LoginConsentForm({
   errorMessage?: string;
 }) {
   const [agreements, setAgreements] = useState(INITIAL_AGREEMENTS);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const formRef = useRef<HTMLFormElement>(null);
   const allAgreed = AGREEMENTS.every(({ id }) => agreements[id]);
 
@@ -46,6 +47,7 @@ export function LoginConsentForm({
         privacy: formData.get("privacy") === "true",
         age: formData.get("age") === "true",
       });
+      setIsSubmitting(false);
     }
 
     window.addEventListener("pageshow", syncRestoredAgreements);
@@ -79,6 +81,7 @@ export function LoginConsentForm({
       ref={formRef}
       action="/api/auth/chzzk"
       method="post"
+      onSubmit={() => setIsSubmitting(true)}
       className="space-y-5"
     >
       <input name="returnTo" type="hidden" value={returnTo} />
@@ -129,13 +132,13 @@ export function LoginConsentForm({
           buttonVariants(),
           "h-12 w-full border-chzzk bg-chzzk text-body font-semibold text-chzzk-foreground hover:opacity-90 focus-visible:border-chzzk",
         )}
-        disabled={!allAgreed}
+        disabled={!allAgreed || isSubmitting}
         type="submit"
       >
         <span className="flex size-7 items-center justify-center rounded-md bg-chzzk-foreground text-chzzk">
           <ChzzkIcon />
         </span>
-        치지직으로 로그인
+        {isSubmitting ? "로그인 중..." : "치지직으로 로그인"}
       </button>
 
       {errorMessage ? (
@@ -144,8 +147,8 @@ export function LoginConsentForm({
         </p>
       ) : null}
 
-      <p className="flex items-start justify-center gap-2 text-caption text-secondary">
-        <Info aria-hidden="true" className="mt-0.5 size-4 shrink-0" />
+      <p className="flex items-center justify-center gap-2 text-caption text-secondary">
+        <Info aria-hidden="true" className="size-4 shrink-0" />
         <span>위 필수 항목에 모두 동의해야 로그인할 수 있습니다.</span>
       </p>
     </form>

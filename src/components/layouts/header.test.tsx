@@ -36,9 +36,7 @@ describe("Header auth UI", () => {
     render(<Header currentUser={null} />);
 
     expect(
-      screen.getByRole("link", { name: "치지직으로 로그인" }).getAttribute(
-        "href",
-      ),
+      screen.getByRole("link", { name: "로그인" }).getAttribute("href"),
     ).toBe("/login");
   });
 
@@ -46,7 +44,7 @@ describe("Header auth UI", () => {
     window.history.pushState(null, "", "/live?job=police#current");
     render(<Header currentUser={null} />);
 
-    fireEvent.click(screen.getByRole("link", { name: "치지직으로 로그인" }));
+    fireEvent.click(screen.getByRole("link", { name: "로그인" }));
 
     expect(mocks.push).toHaveBeenCalledWith(
       "/login?returnTo=%2Flive%3Fjob%3Dpolice%23current",
@@ -76,6 +74,52 @@ describe("Header auth UI", () => {
         method: "POST",
       });
       expect(mocks.refresh).toHaveBeenCalled();
+    });
+  });
+
+  it("로그아웃 API가 실패해도 cookie 반영을 위해 화면을 갱신함", async () => {
+    const fetchMock = vi.fn().mockResolvedValue(new Response(null, { status: 500 }));
+    vi.stubGlobal("fetch", fetchMock);
+    render(
+      <Header
+        currentUser={{
+          id: "user-id",
+          channelId: "channel-id",
+          channelName: "채널 이름",
+          role: "user",
+          status: "active",
+        }}
+      />,
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: "로그아웃" }));
+
+    await waitFor(() => {
+      expect(mocks.refresh).toHaveBeenCalled();
+      expect(screen.getByText("서버 세션 정리가 지연되고 있습니다.")).toBeTruthy();
+    });
+  });
+
+  it("로그아웃 응답을 받지 못해도 cookie 반영 여부를 다시 확인함", async () => {
+    const fetchMock = vi.fn().mockRejectedValue(new TypeError("fetch failed"));
+    vi.stubGlobal("fetch", fetchMock);
+    render(
+      <Header
+        currentUser={{
+          id: "user-id",
+          channelId: "channel-id",
+          channelName: "채널 이름",
+          role: "user",
+          status: "active",
+        }}
+      />,
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: "로그아웃" }));
+
+    await waitFor(() => {
+      expect(mocks.refresh).toHaveBeenCalled();
+      expect(screen.getByText("로그아웃하지 못함.")).toBeTruthy();
     });
   });
 });

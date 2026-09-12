@@ -283,3 +283,8 @@
     @apply bg-background text-primary font-sans;
   }
 }
+
+.main-container:has([data-login-page]) {
+  max-width: none;
+  padding-inline: 0;
+}

@@ -2,6 +2,13 @@ import type { NextRequest } from "next/server";
 import { NextResponse } from "next/server";
 
 import {
+  createAuthRequestId,
+  getDurationMs,
+  getSafeErrorCode,
+  logAuthTiming,
+  measureAuthOperation,
+} from "@/features/auth/auth-observability";
+import {
   getLoginPageUrl,
   getSafeCookieReturnTo,
   getSiteUrl,
@@ -15,6 +22,7 @@ import {
   SESSION_MAX_AGE_SECONDS,
   toAuthenticatedUser,
 } from "@/features/auth/session";
+import { executeWithTransientSupabaseRetry } from "@/features/auth/supabase-retry";
 import {
   exchangeChzzkAuthorizationCode,
   getChzzkCurrentUser,
@@ -22,6 +30,8 @@ import {
 import { getSupabaseAdminClient } from "@/lib/supabase/server";
 
 export async function GET(request: NextRequest) {
+  const requestId = createAuthRequestId();
+  const callbackStartedAt = performance.now();
   const code = request.nextUrl.searchParams.get("code");
   const state = request.nextUrl.searchParams.get("state");
   const storedState = request.cookies.get(OAUTH_STATE_COOKIE_NAME)?.value;
@@ -42,25 +52,38 @@ export async function GET(request: NextRequest) {
   }
 
   try {
-    const accessToken = await exchangeChzzkAuthorizationCode({ code, state });
-    const chzzkUser = await getChzzkCurrentUser(accessToken);
+    const accessToken = await measureAuthOperation({
+      operation: "auth.callback.token_exchange",
+      requestId,
+      run: () => exchangeChzzkAuthorizationCode({ code, state }),
+    });
+    const chzzkUser = await measureAuthOperation({
+      operation: "auth.callback.current_user",
+      requestId,
+      run: () => getChzzkCurrentUser(accessToken),
+    });
     const loggedInAt = new Date().toISOString();
-    const userResult = await getSupabaseAdminClient()
-      .from("users")
-      .upsert(
-        {
-          chzzk_channel_id: chzzkUser.channelId,
-          chzzk_channel_name: chzzkUser.channelName,
-          last_login_at: loggedInAt,
-          updated_at: loggedInAt,
-        },
-        {
-          defaultToNull: false,
-          onConflict: "chzzk_channel_id",
-        },
-      )
-      .select("id, chzzk_channel_id, chzzk_channel_name, role, status")
-      .single();
+    const supabase = getSupabaseAdminClient();
+    const userResult = await executeWithTransientSupabaseRetry({
+      operation: "auth.callback.user_upsert",
+      requestId,
+      run: () => supabase
+        .from("users")
+        .upsert(
+          {
+            chzzk_channel_id: chzzkUser.channelId,
+            chzzk_channel_name: chzzkUser.channelName,
+            last_login_at: loggedInAt,
+            updated_at: loggedInAt,
+          },
+          {
+            defaultToNull: false,
+            onConflict: "chzzk_channel_id",
+          },
+        )
+        .select("id, chzzk_channel_id, chzzk_channel_name, role, status")
+        .single(),
+    });
 
     if (userResult.error) {
       throw new Error("사용자 정보를 저장하지 못함.", {
@@ -69,7 +92,7 @@ export async function GET(request: NextRequest) {
     }
 
     const user = toAuthenticatedUser(userResult.data);
-    const session = await createUserSession(user.id);
+    const session = await createUserSession(user.id, { requestId });
     const response = NextResponse.redirect(new URL(returnTo, getSiteUrl()));
     response.cookies.set(SESSION_COOKIE_NAME, session.token, {
       httpOnly: true,
@@ -80,9 +103,22 @@ export async function GET(request: NextRequest) {
       expires: session.expiresAt,
     });
     clearOAuthCookies(response);
+    logAuthTiming({
+      durationMs: getDurationMs(callbackStartedAt),
+      operation: "auth.callback.total",
+      outcome: "success",
+      requestId,
+    });
 
     return response;
   } catch (error) {
+    logAuthTiming({
+      durationMs: getDurationMs(callbackStartedAt),
+      errorCode: getSafeErrorCode(error),
+      operation: "auth.callback.total",
+      outcome: "error",
+      requestId,
+    });
     console.error("Failed to complete Chzzk OAuth", error);
     return createOAuthRedirectResponse({ error: "failed", returnTo });
   }

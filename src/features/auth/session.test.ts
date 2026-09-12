@@ -23,6 +23,7 @@ describe("봉누록 user session", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mocks.getSupabaseAdminClient.mockReturnValue({ from: mocks.from });
+    vi.spyOn(console, "info").mockImplementation(() => undefined);
   });
 
   afterEach(() => {
@@ -81,18 +82,24 @@ describe("봉누록 user session", () => {
   it("원본 session token 대신 SHA-256 hash만 저장함", async () => {
     vi.useFakeTimers();
     vi.setSystemTime(new Date("2026-09-12T08:00:00.000Z"));
-    const insert = vi.fn().mockResolvedValue({ error: null });
-    mocks.from.mockReturnValue({ insert });
+    const upsert = vi.fn().mockResolvedValue({ error: null, status: 201 });
+    mocks.from.mockReturnValue({ upsert });
 
     const session = await createUserSession("user-id");
 
     expect(session.token).toMatch(/^[A-Za-z0-9_-]{43}$/);
-    expect(insert).toHaveBeenCalledWith({
-      user_id: "user-id",
-      token_hash: hashSessionToken(session.token),
-      expires_at: "2026-10-12T08:00:00.000Z",
-    });
-    expect(JSON.stringify(insert.mock.calls)).not.toContain(session.token);
+    expect(upsert).toHaveBeenCalledWith(
+      {
+        user_id: "user-id",
+        token_hash: hashSessionToken(session.token),
+        expires_at: "2026-10-12T08:00:00.000Z",
+      },
+      {
+        ignoreDuplicates: true,
+        onConflict: "token_hash",
+      },
+    );
+    expect(JSON.stringify(upsert.mock.calls)).not.toContain(session.token);
   });
 
   it("logout 시 session token hash로 DB 행을 삭제함", async () => {
