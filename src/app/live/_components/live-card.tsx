@@ -39,7 +39,7 @@ export function LiveCard({ stream }: LiveCardProps) {
           style={{ backgroundImage: `url(${JSON.stringify(thumbnailUrl)})` }}
         >
           <div className="absolute inset-x-0 top-0 flex items-start justify-between gap-2 p-2.5">
-            <Badge className="gap-1 bg-status-danger font-bold text-white">
+            <Badge className="gap-1 bg-status-danger font-bold text-background">
               <Radio aria-hidden="true" className="size-3" />
               LIVE
             </Badge>
@@ -77,8 +77,10 @@ export function LiveCard({ stream }: LiveCardProps) {
               <Badge
                 className={cn(
                   "max-w-full truncate",
-                  RP_AFFILIATION_BADGE_STYLES[primaryAffiliation.slug] ??
-                    RP_AFFILIATION_BADGE_FALLBACK,
+                  (
+                    RP_AFFILIATION_BADGE_STYLES[primaryAffiliation.slug] ??
+                    RP_AFFILIATION_BADGE_FALLBACK
+                  ).surface,
                 )}
               >
                 {primaryAffiliation.name}
@@ -87,8 +89,10 @@ export function LiveCard({ stream }: LiveCardProps) {
                 <Badge
                   className={cn(
                     "max-w-full truncate",
-                    RP_AFFILIATION_BADGE_STYLES[primaryAffiliation.slug] ??
-                      RP_AFFILIATION_BADGE_FALLBACK,
+                    (
+                      RP_AFFILIATION_BADGE_STYLES[primaryAffiliation.slug] ??
+                      RP_AFFILIATION_BADGE_FALLBACK
+                    ).surface,
                   )}
                 >
                   {primaryAffiliation.role}

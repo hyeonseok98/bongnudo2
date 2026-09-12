@@ -632,8 +632,10 @@ function AffiliationBadge({
   return (
     <Badge
       className={
-        RP_AFFILIATION_BADGE_STYLES[affiliation.slug] ??
-        RP_AFFILIATION_BADGE_FALLBACK
+        (
+          RP_AFFILIATION_BADGE_STYLES[affiliation.slug] ??
+          RP_AFFILIATION_BADGE_FALLBACK
+        ).surface
       }
     >
       {affiliation.name}

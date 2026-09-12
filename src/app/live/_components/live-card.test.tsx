@@ -60,6 +60,7 @@ describe("LiveCard", () => {
       screen.getByRole("link", { name: "스트리머 방송 시청하기" })
         .className,
     ).toContain("focus-visible:outline-focus-ring");
+    expect(screen.getByText("LIVE").className).toContain("text-background");
 
     unmount();
   });
@@ -78,6 +79,39 @@ describe("LiveCard", () => {
     expect(screen.getAllByText("스트리머")[0].className).toContain(
       "text-body-sm",
     );
+
+    unmount();
+  });
+
+  it("일반 surface에서는 라이트 모드용 고대비 배지 스타일을 사용함", () => {
+    const { unmount } = render(
+      <LiveCard
+        stream={{
+          ...stream,
+          character: {
+            ...stream.character,
+            affiliations: [
+              {
+                id: "ems",
+                slug: "ems",
+                name: "EMS",
+                category: "public-service",
+                role: "병원장",
+                isPrimary: true,
+                displayOrder: 1,
+                isLeader: true,
+              },
+            ],
+          },
+        }}
+      />,
+    );
+
+    for (const badge of [screen.getByText("EMS"), screen.getByText("병원장 ✦")]) {
+      expect(badge.className).toContain("bg-job-ems/15");
+      expect(badge.className).toContain("text-primary");
+      expect(badge.className).toContain("dark:bg-job-ems/55");
+    }
 
     unmount();
   });

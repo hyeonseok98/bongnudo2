@@ -72,8 +72,10 @@ export function CharacterCard({ item }: CharacterCardProps) {
                       <Badge
                         className={cn(
                           "max-w-full truncate",
-                          RP_AFFILIATION_BADGE_STYLES[affiliation.slug] ??
-                            RP_AFFILIATION_BADGE_FALLBACK,
+                          (
+                            RP_AFFILIATION_BADGE_STYLES[affiliation.slug] ??
+                            RP_AFFILIATION_BADGE_FALLBACK
+                          ).overlay,
                         )}
                       >
                         {affiliation.name}
@@ -82,8 +84,10 @@ export function CharacterCard({ item }: CharacterCardProps) {
                         <Badge
                           className={cn(
                             "max-w-full truncate",
-                            RP_AFFILIATION_BADGE_STYLES[affiliation.slug] ??
-                              RP_AFFILIATION_BADGE_FALLBACK,
+                            (
+                              RP_AFFILIATION_BADGE_STYLES[affiliation.slug] ??
+                              RP_AFFILIATION_BADGE_FALLBACK
+                            ).overlay,
                           )}
                         >
                           {affiliation.role}
