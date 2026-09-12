@@ -8,5 +8,6 @@ export const liveQueries = {
     queryOptions({
       queryKey: [...liveQueries.all(), "list"] as const,
       queryFn: getLiveBroadcasts,
+      refetchInterval: 30_000,
     }),
 };

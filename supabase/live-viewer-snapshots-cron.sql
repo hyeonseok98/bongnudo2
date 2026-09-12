@@ -1,6 +1,8 @@
--- Run only after the production endpoint returns 401 without Authorization.
+-- Run manually only after the production refresh endpoint is deployed and
+-- returns 401 without Authorization.
 -- Required Vault secret names:
 --   live_viewer_snapshots_url
+--     Value: https://www.bongnurok.site/api/internal/live-refresh
 --   live_viewer_snapshots_cron_secret
 
 do $setup$
@@ -33,12 +35,16 @@ begin
   from cron.job
   where jobname in (
     'collect-live-viewer-snapshots-evening-kst',
-    'collect-live-viewer-snapshots-after-midnight-kst'
+    'collect-live-viewer-snapshots-after-midnight-kst',
+    'refresh-live-current-peak-kst',
+    'refresh-live-current-0400-kst',
+    'refresh-live-current-off-hours-0405-kst',
+    'refresh-live-current-off-hours-kst'
   );
 
   perform cron.schedule(
-    'collect-live-viewer-snapshots-evening-kst',
-    '* 8-14 * * *',
+    'refresh-live-current-peak-kst',
+    '* 8-18 * * *',
     $job$
       select net.http_post(
         url := (
@@ -55,14 +61,14 @@ begin
           )
         ),
         body := '{}'::jsonb,
-        timeout_milliseconds := 30000
+        timeout_milliseconds := 120000
       );
     $job$
   );
 
   perform cron.schedule(
-    'collect-live-viewer-snapshots-after-midnight-kst',
-    '* 15-18 * * *',
+    'refresh-live-current-0400-kst',
+    '0 19 * * *',
     $job$
       select net.http_post(
         url := (
@@ -79,7 +85,55 @@ begin
           )
         ),
         body := '{}'::jsonb,
-        timeout_milliseconds := 30000
+        timeout_milliseconds := 120000
+      );
+    $job$
+  );
+
+  perform cron.schedule(
+    'refresh-live-current-off-hours-0405-kst',
+    '5-55/5 19 * * *',
+    $job$
+      select net.http_post(
+        url := (
+          select decrypted_secret
+          from vault.decrypted_secrets
+          where name = 'live_viewer_snapshots_url'
+        ),
+        headers := jsonb_build_object(
+          'Content-Type', 'application/json',
+          'Authorization', 'Bearer ' || (
+            select decrypted_secret
+            from vault.decrypted_secrets
+            where name = 'live_viewer_snapshots_cron_secret'
+          )
+        ),
+        body := '{}'::jsonb,
+        timeout_milliseconds := 120000
+      );
+    $job$
+  );
+
+  perform cron.schedule(
+    'refresh-live-current-off-hours-kst',
+    '*/5 20-23,0-7 * * *',
+    $job$
+      select net.http_post(
+        url := (
+          select decrypted_secret
+          from vault.decrypted_secrets
+          where name = 'live_viewer_snapshots_url'
+        ),
+        headers := jsonb_build_object(
+          'Content-Type', 'application/json',
+          'Authorization', 'Bearer ' || (
+            select decrypted_secret
+            from vault.decrypted_secrets
+            where name = 'live_viewer_snapshots_cron_secret'
+          )
+        ),
+        body := '{}'::jsonb,
+        timeout_milliseconds := 120000
       );
     $job$
   );

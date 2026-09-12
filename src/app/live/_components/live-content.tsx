@@ -30,7 +30,10 @@ export function LiveContent() {
   const broadcastsQuery = useLiveBroadcasts();
   const characters = charactersQuery.data?.characters ?? [];
   const streamerAffiliations = charactersQuery.data?.streamerAffiliations ?? [];
-  const streams = buildLiveStreams(broadcastsQuery.data ?? [], characters);
+  const streams = buildLiveStreams(
+    broadcastsQuery.data?.broadcasts ?? [],
+    characters,
+  );
   const liveCharacters = streams.map((stream) => stream.character);
   const filterCriteria = {
     query: directory.q,
@@ -83,7 +86,10 @@ export function LiveContent() {
     ).length;
   }
 
-  if (charactersQuery.isPending || broadcastsQuery.isPending) {
+  if (
+    charactersQuery.isPending
+    || (broadcastsQuery.isPending && !broadcastsQuery.data)
+  ) {
     return (
       <div className="space-y-6">
         <LiveDirectoryHeading />
@@ -94,7 +100,10 @@ export function LiveContent() {
     );
   }
 
-  if (charactersQuery.isError || broadcastsQuery.isError) {
+  if (
+    charactersQuery.isError
+    || (broadcastsQuery.isError && !broadcastsQuery.data)
+  ) {
     return (
       <div className="space-y-6">
         <LiveDirectoryHeading />

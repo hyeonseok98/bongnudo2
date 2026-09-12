@@ -9,6 +9,11 @@ export interface LiveBroadcast {
   channelName: string;
 }
 
+export interface LiveBroadcastsResponse {
+  broadcasts: LiveBroadcast[];
+  refreshedAt: string | null;
+}
+
 export type LiveStreamCharacter = CharacterListItem & {
   chzzkChannelId: string;
 };

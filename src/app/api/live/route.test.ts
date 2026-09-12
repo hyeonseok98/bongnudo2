@@ -1,11 +1,11 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 const mocks = vi.hoisted(() => ({
-  getCurrentLiveStreams: vi.fn(),
+  getCachedLiveBroadcasts: vi.fn(),
 }));
 
-vi.mock("@/features/live/get-current-live-streams", () => ({
-  getCurrentLiveStreams: mocks.getCurrentLiveStreams,
+vi.mock("@/features/live/live-current", () => ({
+  getCachedLiveBroadcasts: mocks.getCachedLiveBroadcasts,
 }));
 
 import { GET } from "./route";
@@ -13,7 +13,7 @@ import { GET } from "./route";
 describe("GET /api/live", () => {
   afterEach(() => vi.restoreAllMocks());
 
-  it("공유 LIVE 조회 결과에서 기존 broadcasts 응답을 유지함", async () => {
+  it("CHZZK 조회 없이 저장된 broadcasts와 refreshedAt을 반환함", async () => {
     const broadcast = {
       liveId: 1,
       title: "방송 제목",
@@ -22,13 +22,18 @@ describe("GET /api/live", () => {
       channelId: "channel-1",
       channelName: "스트리머",
     };
-    mocks.getCurrentLiveStreams.mockResolvedValue([
-      { seasonParticipantId: "participant-1", broadcast },
-    ]);
+    mocks.getCachedLiveBroadcasts.mockResolvedValue({
+      broadcasts: [broadcast],
+      refreshedAt: "2026-09-12T10:00:00.000Z",
+    });
 
     const response = await GET();
 
     expect(response.status).toBe(200);
-    await expect(response.json()).resolves.toEqual({ broadcasts: [broadcast] });
+    await expect(response.json()).resolves.toEqual({
+      broadcasts: [broadcast],
+      refreshedAt: "2026-09-12T10:00:00.000Z",
+    });
+    expect(mocks.getCachedLiveBroadcasts).toHaveBeenCalledTimes(1);
   });
 });
