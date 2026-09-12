@@ -13,7 +13,7 @@ export const metadata: Metadata = {
 
 export default function CharactersPage() {
   return (
-    <main className="space-y-6 py-5 sm:py-6 lg:py-8">
+    <main className="space-y-6 pb-5 sm:pb-6 lg:pb-8">
       <CharactersBanner />
       <CharactersContent />
     </main>

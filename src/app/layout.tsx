@@ -43,7 +43,7 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
                 <Header />
                 <div className="flex min-h-0 flex-1">
                   <Sidebar />
-                  <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-y-auto bg-background">
+                  <div className="@container flex min-h-0 min-w-0 flex-1 flex-col overflow-y-auto bg-background">
                     <NuqsAdapter>
                       <QueryProvider>
                         <MainContainer>{children}</MainContainer>

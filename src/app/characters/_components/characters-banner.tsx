@@ -1,31 +1,45 @@
 import Image from "next/image";
 
+import { inkLiquid } from "@/styles/fonts/fonts";
+
+import styles from "./characters-banner.module.css";
+
 export function CharactersBanner() {
   return (
-    <header className="relative min-h-40 overflow-hidden bg-surface-raised sm:min-h-44">
+    <header
+      className={`${styles.hero} relative min-h-56 overflow-hidden bg-surface-raised sm:min-h-64 lg:min-h-72`}
+    >
       <Image
         fill
         priority
         alt=""
         aria-hidden="true"
-        className="object-cover opacity-60 dark:opacity-45"
+        className="object-cover opacity-70 dark:opacity-70"
         sizes="(min-width: 1600px) 1536px, 100vw"
         src="/banner/city.png"
       />
       <div
         aria-hidden="true"
-        className="absolute inset-0 bg-linear-to-r from-background via-background/80 to-background/25"
+        className="absolute inset-0 bg-linear-to-b from-transparent via-background/25 to-background/85"
       />
-      <div className="relative flex min-h-40 flex-col justify-end p-5 sm:min-h-44 sm:p-7">
-        <p className="text-caption font-semibold text-brand-text">
-          BONGNUDO 2
-        </p>
-        <p className="mt-2 text-heading-sm font-semibold text-primary">
-          각자의 이야기로 완성되는, 봉누도2
-        </p>
-        <p className="mt-1 text-body-sm text-secondary">
-          사람이 모여, 또 하나의 세상이 됩니다.
-        </p>
+      <div
+        aria-hidden="true"
+        className="absolute inset-0 bg-linear-to-r from-background/70 via-background/35 to-transparent"
+      />
+      <div className="relative mx-auto flex min-h-56 w-full max-w-400 flex-col justify-center px-4 sm:min-h-64 md:px-6 lg:min-h-72 lg:px-8">
+        <div>
+          <p className="text-body-sm font-semibold text-brand-text">
+            BONGNUDO2
+          </p>
+          <p
+            className={`${inkLiquid.className} flex flex-wrap items-baseline gap-x-3 text-primary`}
+          >
+            <span className="text-title">각자의 이야기로 완성되는,</span>
+            <span className="whitespace-nowrap text-hero--line-height">
+              봉누도2
+            </span>
+          </p>
+        </div>
       </div>
     </header>
   );

@@ -1,0 +1,4 @@
+.hero {
+  width: calc(100cqw - 1rem);
+  margin-inline: calc((100% - (100cqw - 1rem)) / 2);
+}
