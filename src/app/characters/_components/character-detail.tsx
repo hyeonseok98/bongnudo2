@@ -16,7 +16,6 @@ import {
   UsersRound,
   type LucideIcon,
 } from "lucide-react";
-import Image from "next/image";
 import Link from "next/link";
 import type { ReactNode } from "react";
 
@@ -37,12 +36,16 @@ import { cn } from "@/utils/cn";
 import { useCharacters } from "../_hooks/use-characters";
 import {
   buildCharacterDirectoryItems,
-  getCharacterAffiliationDetailAssets,
-  type CharacterAffiliationDetailAssets,
   type CharacterDirectoryItem,
 } from "../_utils/character-directory";
+import {
+  getCharacterAffiliationDetailAssets,
+  type CharacterAffiliationDetailAssets,
+} from "../_utils/character-visual-assets";
 import { CharacterAvatar } from "./character-avatar";
 import { CharacterModeSwitch } from "./character-mode-switch";
+import { CharacterVisualImage } from "./character-visual-image";
+import styles from "./character-detail.module.css";
 
 interface CharacterDetailProps {
   kind: "streamer" | "rp";
@@ -53,6 +56,11 @@ interface DetailField {
   label: string;
   value: ReactNode;
   icon: LucideIcon;
+}
+
+interface DetailVisualAssets {
+  dark: CharacterAffiliationDetailAssets;
+  light: CharacterAffiliationDetailAssets;
 }
 
 const FIRST_ENTRY_DATE = "2026.09.14";
@@ -96,60 +104,64 @@ export function CharacterDetail({ kind, identifier }: CharacterDetailProps) {
     rpItems.find((item) => item.id === character.id)?.href ??
     rpItems[0]?.href ??
     "/characters?mode=rp";
-  const detailAssets = getCharacterAffiliationDetailAssets(character);
+  const detailAssets = {
+    dark: getCharacterAffiliationDetailAssets(character, "dark"),
+    light: getCharacterAffiliationDetailAssets(character, "light"),
+  };
 
   return (
-    <div className="space-y-1">
-      <DetailBanner assets={detailAssets} />
-      <Link
-        className="mb-3 flex w-fit cursor-pointer items-center gap-2 text-body-sm font-medium text-secondary transition-colors hover:text-brand-text"
-        href="/characters"
-      >
-        <ArrowLeft aria-hidden="true" className="size-4" />
-        인물 도감으로
-      </Link>
-      {kind === "streamer" ? (
-        <StreamerDetail
-          assets={detailAssets}
-          character={character}
-          rpHref={rpHref}
-          rpItems={rpItems}
-          streamerHref={streamerHref}
-        />
-      ) : (
-        <RpDetail
-          assets={detailAssets}
-          character={character}
-          rpHref={rpHref}
-          streamerHref={streamerHref}
-        />
-      )}
+    <div className="relative">
+      <DetailBackdrop assets={detailAssets} />
+      <div className="relative z-10 pt-20 sm:pt-24">
+        <Link
+          className="mb-3 flex w-fit cursor-pointer items-center gap-2 rounded-md bg-background/80 px-3 py-2 text-body-sm font-semibold text-primary shadow-sm backdrop-blur-sm transition-colors hover:text-brand-text dark:rounded-none dark:bg-transparent dark:px-0 dark:py-0 dark:text-white dark:shadow-none dark:backdrop-blur-none"
+          href="/characters"
+        >
+          <ArrowLeft aria-hidden="true" className="size-4" />
+          인물 도감으로
+        </Link>
+        {kind === "streamer" ? (
+          <StreamerDetail
+            assets={detailAssets}
+            character={character}
+            rpHref={rpHref}
+            rpItems={rpItems}
+            streamerHref={streamerHref}
+          />
+        ) : (
+          <RpDetail
+            assets={detailAssets}
+            character={character}
+            rpHref={rpHref}
+            streamerHref={streamerHref}
+          />
+        )}
+      </div>
     </div>
   );
 }
 
-function DetailBanner({
+function DetailBackdrop({
   assets,
 }: {
-  assets: CharacterAffiliationDetailAssets;
+  assets: DetailVisualAssets;
 }) {
   return (
-    <div className="relative h-16 overflow-hidden rounded-xl bg-linear-to-r from-surface-raised via-surface-muted to-surface-inset sm:h-20">
-      {assets.bannerDarkUrl ? (
-        <Image
-          fill
-          alt=""
-          aria-hidden="true"
-          className="pointer-events-none hidden object-cover opacity-90 dark:block"
-          sizes="(min-width: 1600px) 1536px, 100vw"
-          src={assets.bannerDarkUrl}
-        />
-      ) : null}
+    <div
+      aria-hidden="true"
+      className={`${styles.backdrop} pointer-events-none absolute top-0 left-1/2 h-48 -translate-x-1/2 overflow-hidden bg-surface-raised sm:h-56`}
+    >
+      <CharacterVisualImage
+        className="object-cover opacity-80 dark:opacity-85"
+        darkSrc={assets.dark.heroSrc}
+        lightSrc={assets.light.heroSrc}
+        sizes="(min-width: 1600px) 1536px, 100vw"
+      />
       <div
         aria-hidden="true"
-        className="pointer-events-none absolute inset-0 bg-linear-to-b from-background/10 via-background/45 to-background"
+        className="absolute inset-0 bg-linear-to-b from-background/5 via-background/25 to-background"
       />
-      <div className="pointer-events-none absolute inset-0 bg-linear-to-r from-background/70 via-transparent to-background/60" />
+      <div className="absolute inset-0 bg-linear-to-r from-background/45 via-transparent to-background/35" />
     </div>
   );
 }
@@ -161,7 +173,7 @@ function StreamerDetail({
   rpItems,
   streamerHref,
 }: {
-  assets: CharacterAffiliationDetailAssets;
+  assets: DetailVisualAssets;
   character: CharacterListItem;
   rpHref: string;
   rpItems: CharacterDirectoryItem[];
@@ -228,7 +240,7 @@ function RpDetail({
   rpHref,
   streamerHref,
 }: {
-  assets: CharacterAffiliationDetailAssets;
+  assets: DetailVisualAssets;
   character: CharacterListItem;
   rpHref: string;
   streamerHref: string;
@@ -314,26 +326,22 @@ function IdentityPanel({
   name,
 }: {
   affiliation?: CharacterAffiliation;
-  assets: CharacterAffiliationDetailAssets;
+  assets: DetailVisualAssets;
   eyebrow: string;
   fields: DetailField[];
   name: string;
 }) {
   return (
     <section className="relative isolate flex h-full min-h-0 flex-col overflow-hidden rounded-xl border border-default bg-surface-raised/90 p-5 shadow-sm sm:p-6">
-      {assets.backgroundDarkUrl ? (
-        <Image
-          fill
-          alt=""
-          aria-hidden="true"
-          className="pointer-events-none z-base hidden object-cover object-[70%_center] opacity-[0.34] dark:block"
-          sizes="320px"
-          src={assets.backgroundDarkUrl}
-        />
-      ) : null}
+      <CharacterVisualImage
+        className="z-base object-cover object-[70%_center] opacity-25 dark:opacity-[0.34]"
+        darkSrc={assets.dark.cardBackgroundSrc}
+        lightSrc={assets.light.cardBackgroundSrc}
+        sizes="320px"
+      />
       <div
         aria-hidden="true"
-        className="pointer-events-none absolute inset-0 z-base hidden bg-linear-to-br from-background/95 via-background/72 to-background/30 dark:block"
+        className="pointer-events-none absolute inset-0 z-base bg-linear-to-br from-background/95 via-background/72 to-background/30"
       />
       <div className="relative z-10 border-b border-default pb-5">
         <div className="flex flex-wrap gap-2">
@@ -374,7 +382,7 @@ function ProfileColumn({
   rpHref,
   streamerHref,
 }: {
-  assets: CharacterAffiliationDetailAssets;
+  assets: DetailVisualAssets;
   isRpAvailable?: boolean;
   mode: "streamer" | "rp";
   name: string;
@@ -385,16 +393,12 @@ function ProfileColumn({
   return (
     <div className="space-y-3">
       <section className="relative aspect-6/7 w-full overflow-hidden rounded-xl border border-default bg-surface-inset shadow-xl">
-        {assets.backgroundDarkUrl ? (
-          <Image
-            fill
-            alt=""
-            aria-hidden="true"
-            className="pointer-events-none hidden object-cover object-[70%_center] opacity-50 dark:block"
-            sizes="(min-width: 1280px) 34vw, 100vw"
-            src={assets.backgroundDarkUrl}
-          />
-        ) : null}
+        <CharacterVisualImage
+          className="object-cover object-[70%_center] opacity-35 dark:opacity-50"
+          darkSrc={assets.dark.cardBackgroundSrc}
+          lightSrc={assets.light.cardBackgroundSrc}
+          sizes="(min-width: 1280px) 34vw, 100vw"
+        />
         <div className="pointer-events-none absolute inset-0 bg-linear-to-br from-background/35 via-background/20 to-background/75" />
         <CharacterAvatar
           className="absolute inset-0 z-10 size-full rounded-none bg-transparent text-hero text-primary/70"

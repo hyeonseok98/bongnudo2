@@ -1,7 +1,9 @@
-import Image from "next/image";
+"use client";
 
 import { inkLiquid } from "@/styles/fonts/fonts";
 
+import { getCharactersHeroBanner } from "../_utils/character-visual-assets";
+import { CharacterVisualImage } from "./character-visual-image";
 import styles from "./characters-banner.module.css";
 
 export function CharactersBanner() {
@@ -9,14 +11,12 @@ export function CharactersBanner() {
     <header
       className={`${styles.hero} relative min-h-36 overflow-hidden bg-surface-raised sm:min-h-64 lg:min-h-72`}
     >
-      <Image
-        fill
+      <CharacterVisualImage
         priority
-        alt=""
-        aria-hidden="true"
-        className="object-cover opacity-70 dark:opacity-70"
+        className="object-cover opacity-80 dark:opacity-70"
+        darkSrc={getCharactersHeroBanner("dark")}
+        lightSrc={getCharactersHeroBanner("light")}
         sizes="(min-width: 1600px) 1536px, 100vw"
-        src="/banner/city.png"
       />
       <div
         aria-hidden="true"
@@ -35,7 +35,7 @@ export function CharactersBanner() {
             className={`${inkLiquid.className} flex flex-wrap items-baseline gap-x-3 text-primary`}
           >
             <span className="text-title">각자의 이야기로 완성되는,</span>
-            <span className="whitespace-nowrap text-hero--line-height">
+            <span className="whitespace-nowrap text-hero--line-height font-semibold">
               봉누도2
             </span>
           </p>

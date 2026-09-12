@@ -31,10 +31,8 @@ export function CharacterModeSwitch({
     <div
       aria-label="인물 도감 모드"
       className={cn(
-        "inline-grid shrink-0 grid-cols-2 overflow-hidden backdrop-blur-md",
-        isDetail
-          ? "w-full rounded-xl border border-control bg-black/70 shadow-sm"
-          : "rounded-xl border border-brand/35 bg-background/90 p-1 shadow-lg",
+        "inline-grid shrink-0 grid-cols-2 overflow-hidden rounded-xl border border-brand/35 bg-background/90 p-1 backdrop-blur-md",
+        isDetail ? "w-full shadow-sm" : "shadow-lg",
       )}
       role="group"
     >
@@ -43,15 +41,10 @@ export function CharacterModeSwitch({
         const className = cn(
           "inline-flex cursor-pointer items-center justify-center border border-transparent px-5 text-body-sm font-semibold transition-[background-color,border-color,color,box-shadow] duration-default",
           isDetail ? "h-12" : "h-10",
-          isDetail && "first:border-r-control",
-          !isDetail && "rounded-lg",
-          mode === option.value && isDetail
-            ? "border-brand/55 bg-brand/10 text-brand-text shadow-[inset_0_0_18px_rgba(30,210,120,0.08)]"
-            : mode === option.value
-              ? "border-brand/70 bg-brand/20 text-brand-text shadow-sm"
-              : isDetail
-                ? "text-secondary hover:border-brand/25 hover:text-brand-text"
-                : "text-secondary hover:border-brand/30 hover:bg-brand/10 hover:text-brand-text",
+          "rounded-lg",
+          mode === option.value
+            ? "border-brand/70 bg-brand/20 text-brand-text shadow-sm"
+            : "text-secondary hover:border-brand/30 hover:bg-brand/10 hover:text-brand-text",
           isDisabled &&
             "cursor-not-allowed border-transparent bg-transparent text-tertiary opacity-55 shadow-none hover:border-transparent hover:bg-transparent hover:text-tertiary",
         );

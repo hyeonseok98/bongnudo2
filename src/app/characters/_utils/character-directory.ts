@@ -13,11 +13,10 @@ import type {
   HierarchicalFilterSelection,
   QuickFilterOption,
 } from "@/components/filters/hierarchical-filter";
-import {
-  getOrderedAffiliations,
-  type CharacterAffiliation,
-  type CharacterListItem,
-  type StreamerAffiliation,
+import type {
+  CharacterAffiliation,
+  CharacterListItem,
+  StreamerAffiliation,
 } from "@/features/characters/character";
 import { matchesKoreanSearch } from "@/utils/korean-search";
 
@@ -411,31 +410,6 @@ export function sortCharacterDirectoryItems(
     (left, right) =>
       left.primaryName.localeCompare(right.primaryName, "ko-KR") * direction,
   );
-}
-
-export interface CharacterAffiliationDetailAssets {
-  bannerDarkUrl: string | null;
-  backgroundDarkUrl: string | null;
-}
-
-export function getCharacterAffiliationDetailAssets(
-  character: CharacterListItem,
-): CharacterAffiliationDetailAssets {
-  const affiliation = getOrderedAffiliations(character.affiliations)[0];
-
-  if (
-    !affiliation ||
-    !PUBLIC_SERVICE_AFFILIATION_ORDER.some(
-      (slug) => slug === affiliation.slug,
-    )
-  ) {
-    return { bannerDarkUrl: null, backgroundDarkUrl: null };
-  }
-
-  return {
-    bannerDarkUrl: `/images/affiliations/organizations/${affiliation.slug}_dark.webp`,
-    backgroundDarkUrl: `/images/affiliations/organizations/detail-background/${affiliation.slug}_bg_dark.webp`,
-  };
 }
 
 function getPublicServiceOrder(slug: string): number {

@@ -14,7 +14,7 @@ export default async function StreamerDetailPage({
   const { slug } = await params;
 
   return (
-    <main className="py-1 sm:py-2">
+    <main>
       <CharacterDetail identifier={slug} kind="streamer" />
     </main>
   );

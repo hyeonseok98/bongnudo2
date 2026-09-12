@@ -14,7 +14,7 @@ export default async function RpDetailPage({
   const { stableId } = await params;
 
   return (
-    <main className="py-1 sm:py-2">
+    <main>
       <CharacterDetail identifier={stableId} kind="rp" />
     </main>
   );
