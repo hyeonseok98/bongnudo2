@@ -8,6 +8,8 @@ import { useTheme } from "next-themes";
 import {
   type CSSProperties,
   type MouseEvent,
+  useEffect,
+  useRef,
   useState,
   useTransition,
 } from "react";
@@ -26,11 +28,22 @@ export function Header({
   const router = useRouter();
   const [logoutError, setLogoutError] = useState<string | null>(null);
   const [isLoggingOut, startLogoutTransition] = useTransition();
+  const themeTransitionTimeoutRef = useRef<number | null>(null);
   const isExpanded = isMobile ? isMobileOpen : isOpen;
   const isDarkMode = resolvedTheme !== "light";
   const headerStyle = {
     "--header-sidebar-width": isOpen ? "14rem" : "4.5rem",
   } as CSSProperties;
+
+  useEffect(() => {
+    return () => {
+      if (themeTransitionTimeoutRef.current !== null) {
+        window.clearTimeout(themeTransitionTimeoutRef.current);
+      }
+
+      document.documentElement.classList.remove("theme-transition");
+    };
+  }, []);
 
   function handleLogout(): void {
     setLogoutError(null);
@@ -66,7 +79,19 @@ export function Header({
   }
 
   function handleThemeToggle(): void {
+    const rootElement = document.documentElement;
+
+    rootElement.classList.add("theme-transition");
+
+    if (themeTransitionTimeoutRef.current !== null) {
+      window.clearTimeout(themeTransitionTimeoutRef.current);
+    }
+
     setTheme(isDarkMode ? "light" : "dark");
+    themeTransitionTimeoutRef.current = window.setTimeout(() => {
+      rootElement.classList.remove("theme-transition");
+      themeTransitionTimeoutRef.current = null;
+    }, 250);
   }
 
   return (

@@ -227,9 +227,29 @@
   }
 }
 
+.theme-transition,
+.theme-transition *,
+.theme-transition::before,
+.theme-transition::after,
+.theme-transition *::before,
+.theme-transition *::after {
+  transition-duration: var(--duration-slow);
+  transition-property: background-color, border-color, color, fill, stroke, box-shadow;
+  transition-timing-function: ease-out;
+}
+
 @media (prefers-reduced-motion: reduce) {
   .animate-profile-image-shimmer {
     animation: none;
+  }
+
+  .theme-transition,
+  .theme-transition *,
+  .theme-transition::before,
+  .theme-transition::after,
+  .theme-transition *::before,
+  .theme-transition *::after {
+    transition-duration: 0ms;
   }
 }
 
