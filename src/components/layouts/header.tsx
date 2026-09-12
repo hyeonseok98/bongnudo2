@@ -1,10 +1,15 @@
 "use client";
 
 import { Popover } from "@base-ui/react/popover";
-import { ChevronDown, CircleUserRound, LogOut, Menu } from "lucide-react";
+import { ChevronDown, LogOut, Menu } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { type MouseEvent, useState, useTransition } from "react";
+import {
+  type CSSProperties,
+  type MouseEvent,
+  useState,
+  useTransition,
+} from "react";
 
 import { Button, buttonVariants } from "@/components/ui/button";
 import type { AuthenticatedUser } from "@/features/auth/session";
@@ -20,6 +25,9 @@ export function Header({
   const [logoutError, setLogoutError] = useState<string | null>(null);
   const [isLoggingOut, startLogoutTransition] = useTransition();
   const isExpanded = isMobile ? isMobileOpen : isOpen;
+  const headerStyle = {
+    "--header-sidebar-width": isOpen ? "14rem" : "4.5rem",
+  } as CSSProperties;
 
   function handleLogout(): void {
     setLogoutError(null);
@@ -55,7 +63,10 @@ export function Header({
   }
 
   return (
-    <header className="z-header flex h-14 shrink-0 items-center border-b border-default bg-background px-3">
+    <header
+      className="z-header flex h-14 shrink-0 items-center border-b border-default bg-background px-3"
+      style={headerStyle}
+    >
       <button
         type="button"
         aria-label={isExpanded ? "사이드바 접기" : "사이드바 펼치기"}
@@ -77,7 +88,10 @@ export function Header({
         </span> */}
         <span className="text-body-lg font-semibold">봉누도2</span>
       </Link>
-      <div className="ml-auto flex min-w-0 items-center gap-2">
+      <div
+        className="header-account-menu ml-auto flex min-w-0 items-center gap-2"
+        data-slot="header-account-menu"
+      >
         {logoutError ? (
           <span className="text-caption text-status-danger" role="status">
             {logoutError}
@@ -87,11 +101,8 @@ export function Header({
           <Popover.Root>
             <Popover.Trigger
               aria-label={`${currentUser.channelName} 계정 메뉴`}
-              className="flex h-10 min-w-0 cursor-pointer items-center gap-2 rounded-lg border border-transparent px-2 text-primary transition-[background-color,border-color] duration-default hover:border-default hover:bg-surface-muted focus-visible:border-focus-ring motion-reduce:transition-none"
+              className="flex h-10 min-w-0 cursor-pointer items-center gap-1 rounded-lg border border-transparent px-2 text-primary transition-[background-color,border-color] duration-default hover:border-default hover:bg-surface-muted focus-visible:border-focus-ring motion-reduce:transition-none"
             >
-              <span className="flex size-7 shrink-0 items-center justify-center rounded-full border border-default bg-surface-muted text-secondary">
-                <CircleUserRound aria-hidden="true" className="size-4" />
-              </span>
               <span className="max-w-24 truncate text-body-sm font-medium sm:max-w-40">
                 {currentUser.channelName}
               </span>

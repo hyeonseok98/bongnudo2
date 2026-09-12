@@ -288,3 +288,25 @@
   max-width: none;
   padding-inline: 0;
 }
+
+@media (min-width: 48rem) {
+  .header-account-menu {
+    margin-inline-end: max(
+      0.75rem,
+      calc(
+        (100vw - var(--header-sidebar-width) - 100rem) / 2 + 0.75rem
+      )
+    );
+  }
+}
+
+@media (min-width: 64rem) {
+  .header-account-menu {
+    margin-inline-end: max(
+      1.25rem,
+      calc(
+        (100vw - var(--header-sidebar-width) - 100rem) / 2 + 1.25rem
+      )
+    );
+  }
+}

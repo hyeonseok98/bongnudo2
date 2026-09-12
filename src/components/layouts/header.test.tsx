@@ -54,7 +54,7 @@ describe("Header auth UI", () => {
   it("로그인 사용자의 계정 메뉴를 누르면 로그아웃을 표시함", async () => {
     const fetchMock = vi.fn().mockResolvedValue(new Response(null, { status: 200 }));
     vi.stubGlobal("fetch", fetchMock);
-    render(
+    const { container } = render(
       <Header
         currentUser={{
           id: "user-id",
@@ -67,6 +67,9 @@ describe("Header auth UI", () => {
     );
 
     expect(screen.getByText("채널 이름")).toBeTruthy();
+    expect(
+      container.querySelector("[data-slot='header-account-menu'] .rounded-full"),
+    ).toBeNull();
     expect(screen.queryByRole("button", { name: "로그아웃" })).toBeNull();
     fireEvent.click(screen.getByRole("button", { name: "채널 이름 계정 메뉴" }));
     fireEvent.click(screen.getByRole("button", { name: "로그아웃" }));
