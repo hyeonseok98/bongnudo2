@@ -193,6 +193,65 @@ export type Database = {
           },
         ]
       }
+      live_current: {
+        Row: {
+          live_id: number
+          live_started_at: string | null
+          live_title: string
+          refreshed_at: string
+          season_participant_id: string
+          thumbnail_url: string
+          viewer_count: number
+        }
+        Insert: {
+          live_id: number
+          live_started_at?: string | null
+          live_title: string
+          refreshed_at: string
+          season_participant_id: string
+          thumbnail_url: string
+          viewer_count: number
+        }
+        Update: {
+          live_id?: number
+          live_started_at?: string | null
+          live_title?: string
+          refreshed_at?: string
+          season_participant_id?: string
+          thumbnail_url?: string
+          viewer_count?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "live_current_season_participant_id_fkey"
+            columns: ["season_participant_id"]
+            isOneToOne: true
+            referencedRelation: "season_participants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      live_refresh_state: {
+        Row: {
+          lock_expires_at: string | null
+          lock_owner: string | null
+          refreshed_at: string | null
+          singleton: boolean
+        }
+        Insert: {
+          lock_expires_at?: string | null
+          lock_owner?: string | null
+          refreshed_at?: string | null
+          singleton?: boolean
+        }
+        Update: {
+          lock_expires_at?: string | null
+          lock_owner?: string | null
+          refreshed_at?: string | null
+          singleton?: boolean
+        }
+        Relationships: []
+      }
       live_viewer_snapshots: {
         Row: {
           id: string
@@ -757,7 +816,15 @@ export type Database = {
       }
     }
     Functions: {
-      [_ in never]: never
+      release_live_refresh: { Args: { p_run_id: string }; Returns: undefined }
+      replace_live_current: {
+        Args: { p_live_streams: Json; p_refreshed_at: string; p_run_id: string }
+        Returns: number
+      }
+      try_acquire_live_refresh: {
+        Args: { p_lease_seconds?: number; p_run_id: string }
+        Returns: boolean
+      }
     }
     Enums: {
       job_application_result:
