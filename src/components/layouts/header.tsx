@@ -1,9 +1,10 @@
 "use client";
 
 import { Popover } from "@base-ui/react/popover";
-import { ChevronDown, LogOut, Menu } from "lucide-react";
+import { ChevronDown, LogOut, Menu, Moon, Sun } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { useTheme } from "next-themes";
 import {
   type CSSProperties,
   type MouseEvent,
@@ -21,10 +22,12 @@ export function Header({
   currentUser: AuthenticatedUser | null;
 }) {
   const { isOpen, isMobileOpen, isMobile, toggleSidebar } = useSidebar();
+  const { resolvedTheme, setTheme } = useTheme();
   const router = useRouter();
   const [logoutError, setLogoutError] = useState<string | null>(null);
   const [isLoggingOut, startLogoutTransition] = useTransition();
   const isExpanded = isMobile ? isMobileOpen : isOpen;
+  const isDarkMode = resolvedTheme !== "light";
   const headerStyle = {
     "--header-sidebar-width": isOpen ? "14rem" : "4.5rem",
   } as CSSProperties;
@@ -62,6 +65,10 @@ export function Header({
     router.push(`/login?returnTo=${encodeURIComponent(returnTo)}`);
   }
 
+  function handleThemeToggle(): void {
+    setTheme(isDarkMode ? "light" : "dark");
+  }
+
   return (
     <header
       className="z-header flex h-14 shrink-0 items-center border-b border-default bg-background px-3"
@@ -92,6 +99,16 @@ export function Header({
         className="header-account-menu ml-auto flex min-w-0 items-center gap-2"
         data-slot="header-account-menu"
       >
+        <Button
+          aria-label={isDarkMode ? "라이트 모드로 전환" : "다크 모드로 전환"}
+          aria-pressed={isDarkMode}
+          onClick={handleThemeToggle}
+          size="icon-sm"
+          title={isDarkMode ? "라이트 모드로 전환" : "다크 모드로 전환"}
+          variant="ghost"
+        >
+          {isDarkMode ? <Sun aria-hidden="true" /> : <Moon aria-hidden="true" />}
+        </Button>
         {logoutError ? (
           <span className="text-caption text-status-danger" role="status">
             {logoutError}

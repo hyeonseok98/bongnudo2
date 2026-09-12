@@ -15,7 +15,7 @@ import {
 
 export interface SidebarNavigationItem {
   label: string;
-  href?: string;
+  href?: `/${string}`;
   icon: LucideIcon;
 }
 
@@ -36,7 +36,7 @@ export const SIDEBAR_NAV: SidebarNavigationGroup[] = [
   {
     label: "탐색",
     items: [
-      { label: "인물 도감", href: "characters", icon: Users },
+      { label: "인물 도감", href: "/characters", icon: Users },
       { label: "조직 도감", icon: Building2 },
       { label: "지도", icon: Map },
     ],
