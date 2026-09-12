@@ -85,7 +85,7 @@ function SidebarNavigation({ isOpen, onNavigate }: SidebarNavigationProps) {
   return (
     <nav
       aria-label="주요 메뉴"
-      className="flex min-h-0 flex-1 flex-col overflow-y-auto p-3"
+      className="scrollbar-hidden flex min-h-0 flex-1 flex-col overflow-y-auto p-3"
     >
       {SIDEBAR_NAV.map((group, index) => (
         <div key={group.label ?? "홈"}>

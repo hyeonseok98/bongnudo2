@@ -214,6 +214,15 @@
   animation: profile-image-shimmer 1.4s ease-in-out infinite;
 }
 
+@utility scrollbar-hidden {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+
+  &::-webkit-scrollbar {
+    display: none;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .animate-profile-image-shimmer {
     animation: none;
