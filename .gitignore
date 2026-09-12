@@ -58,6 +58,7 @@ supabase/migrations/*
 !supabase/migrations/20260912070700_create_chzzk_oauth_users.sql
 !supabase/migrations/20260912071651_tighten_chzzk_oauth_table_privileges.sql
 !supabase/migrations/20260912111601_create_live_current_cache.sql
+!supabase/migrations/20260912125541_fix_replace_live_current_delete.sql
 supabase/.temp/
 
 # test
