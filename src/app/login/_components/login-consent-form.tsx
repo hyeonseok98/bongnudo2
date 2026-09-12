@@ -147,9 +147,11 @@ export function LoginConsentForm({
         </p>
       ) : null}
 
-      <p className="flex items-center justify-center gap-2 text-caption text-secondary">
+      <p className="flex min-h-4 items-center justify-center gap-2 text-caption text-secondary">
         <Info aria-hidden="true" className="size-4 shrink-0" />
-        <span>위 필수 항목에 모두 동의해야 로그인할 수 있습니다.</span>
+        <span className="leading-none">
+          위 필수 항목에 모두 동의해야 로그인할 수 있습니다.
+        </span>
       </p>
     </form>
   );

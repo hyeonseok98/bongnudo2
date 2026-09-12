@@ -59,7 +59,7 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
 
       <section className="w-full max-w-lg rounded-2xl border border-brand/50 bg-surface-raised/95 p-5 shadow-sm backdrop-blur-sm sm:p-8">
         <div className="mb-6 text-center">
-          <p className="text-caption font-semibold text-brand-text">BONGNUDO2</p>
+          <p className="text-caption font-semibold text-brand-text">BONGNUROK</p>
           <h1 className="mt-2 text-title font-bold text-primary">로그인</h1>
           <p className="mt-2 text-body-sm text-secondary">
             치지직 계정으로 안전하고 간편하게 시작해 보세요.
