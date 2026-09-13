@@ -1,0 +1,179 @@
+"use client";
+
+import Link from "next/link";
+
+import {
+  buildJobAffiliationFilterNodes,
+  buildStreamerAffiliationFilterData,
+} from "@/app/characters/_utils/character-directory";
+import type { FilterSelectOption } from "@/components/filters/filter-select";
+import type { FilterTreeNode } from "@/components/filters/hierarchical-filter";
+import { Select } from "@/components/ui/select";
+import { buttonVariants } from "@/components/ui/button";
+import type { TimelineQueryFilters } from "@/features/timeline/timeline";
+import { hasTimelineFilters } from "@/features/timeline/timeline-params";
+import { useDebouncedValue } from "@/hooks/use-debounced-value";
+
+import { useCharacters } from "../../characters/_hooks/use-characters";
+import { useTimeline } from "../_hooks/use-timeline";
+import { useTimelineDirectory } from "../_hooks/use-timeline-directory";
+import { TimelineFilters } from "./timeline-filters";
+import { TimelineList } from "./timeline-list";
+
+interface TimelineContentProps {
+  today: string;
+}
+
+export function TimelineContent({ today }: TimelineContentProps) {
+  const directory = useTimelineDirectory(today);
+  const debouncedQuery = useDebouncedValue(directory.query, 300);
+  const queryFilters: TimelineQueryFilters = {
+    affiliation: directory.affiliation,
+    category: directory.category,
+    date: directory.date,
+    job: directory.job,
+    participant: directory.participant,
+    query: debouncedQuery,
+    sort: directory.sort,
+    tag: directory.tag,
+  };
+  const timelineQuery = useTimeline(queryFilters);
+  const charactersQuery = useCharacters();
+  const characters = charactersQuery.data?.characters ?? [];
+  const streamerAffiliations =
+    charactersQuery.data?.streamerAffiliations ?? [];
+  const jobOptions = toFilterOptions(
+    buildJobAffiliationFilterNodes(characters),
+    "직업 전체",
+  );
+  const affiliationOptions = toFilterOptions(
+    buildStreamerAffiliationFilterData(characters, streamerAffiliations).nodes,
+    "소속 전체",
+  );
+  const selectedParticipant = characters.find(
+    (character) => character.id === directory.participant,
+  );
+  const selectedParticipantLabel = selectedParticipant
+    ? (selectedParticipant.rpName ?? selectedParticipant.streamerName)
+    : null;
+  const timeline = timelineQuery.data;
+
+  return (
+    <div className="space-y-6">
+      <header className="flex flex-wrap items-start justify-between gap-4">
+        <div className="space-y-2">
+          <h1 className="text-title font-bold text-primary">전체 타임라인</h1>
+          <p className="text-body text-secondary">
+            봉누도에서 벌어지는 모든 순간, 사람들이 만들어가는 이야기를 한눈에.
+          </p>
+        </div>
+        <Link className={buttonVariants()} href="/login?returnTo=%2Ftimeline">
+          제보하기
+        </Link>
+      </header>
+
+      <TimelineFilters
+        affiliationOptions={affiliationOptions}
+        categories={timeline?.categories ?? []}
+        directory={directory}
+        jobOptions={jobOptions}
+        popularTags={timeline?.popularTags ?? []}
+        selectedParticipantLabel={selectedParticipantLabel}
+        today={today}
+      />
+
+      <section aria-labelledby="timeline-results-heading" className="space-y-4">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <h2
+            className="text-body-sm text-secondary"
+            id="timeline-results-heading"
+          >
+            {directory.date} 타임라인
+            {timeline ? (
+              <strong className="ml-1 font-semibold text-brand-text">
+                {timeline.totalCount}건
+              </strong>
+            ) : null}
+          </h2>
+          <div className="flex items-center gap-2">
+            <span className="text-body-sm text-secondary">정렬</span>
+            <Select
+              label="타임라인 정렬"
+              onChange={(event) => {
+                if (
+                  event.target.value === "asc" ||
+                  event.target.value === "desc"
+                ) {
+                  directory.changeSort(event.target.value);
+                }
+              }}
+              value={directory.sort}
+            >
+              <option value="desc">최신순</option>
+              <option value="asc">시간순</option>
+            </Select>
+          </div>
+        </div>
+
+        {timelineQuery.isError ? (
+          <TimelineStatus isError>
+            타임라인을 불러오지 못했습니다.
+          </TimelineStatus>
+        ) : !timeline ? (
+          <TimelineStatus>타임라인을 불러오는 중입니다.</TimelineStatus>
+        ) : timeline.events.length > 0 ? (
+          <>
+            <TimelineList
+              events={timeline.events}
+              onTagChange={directory.changeTag}
+            />
+            {timeline.isTruncated ? (
+              <p className="text-center text-body-sm text-secondary">
+                이벤트가 많아 최근 200건까지만 표시합니다.
+              </p>
+            ) : null}
+          </>
+        ) : (
+          <TimelineStatus>
+            {hasTimelineFilters(queryFilters)
+              ? "조건에 맞는 타임라인이 없습니다."
+              : "해당 날짜에 등록된 타임라인이 없습니다."}
+          </TimelineStatus>
+        )}
+      </section>
+    </div>
+  );
+}
+
+function TimelineStatus({
+  children,
+  isError = false,
+}: {
+  children: string;
+  isError?: boolean;
+}) {
+  return (
+    <div
+      className="grid min-h-64 place-items-center rounded-xl border border-default bg-surface-raised px-4 text-center text-body-sm text-secondary"
+      role={isError ? "alert" : "status"}
+    >
+      <p className={isError ? "text-status-danger" : undefined}>{children}</p>
+    </div>
+  );
+}
+
+function toFilterOptions(
+  nodes: FilterTreeNode[],
+  allLabel: string,
+): FilterSelectOption[] {
+  return [
+    { label: allLabel, value: "" },
+    ...nodes.flatMap((node) => [
+      { label: node.label, value: node.id },
+      ...(node.children ?? []).map((child) => ({
+        label: `${node.label} · ${child.label}`,
+        value: child.id,
+      })),
+    ]),
+  ];
+}

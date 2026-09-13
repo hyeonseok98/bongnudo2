@@ -1,12 +1,10 @@
 import { NextResponse } from "next/server";
 
 import { ReportRequestError } from "@/features/reports/report-validation";
-import { requireReportUser } from "@/features/reports/report-user";
 import { searchReportParticipants } from "@/features/reports/search-report-participants";
 
 export async function GET(request: Request) {
   try {
-    await requireReportUser();
     const query = new URL(request.url).searchParams.get("query") ?? "";
     const participants = await searchReportParticipants(query);
 

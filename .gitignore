@@ -65,6 +65,7 @@ supabase/migrations/*
 !supabase/migrations/20260913070455_preserve_report_original_content.sql
 !supabase/migrations/20260913072349_create_report_backend_functions.sql
 !supabase/migrations/20260913073253_add_json_report_rpc_entrypoint.sql
+!supabase/migrations/20260913080541_create_timeline_page_query.sql
 supabase/.temp/
 
 # test

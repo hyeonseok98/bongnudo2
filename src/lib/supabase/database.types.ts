@@ -1374,6 +1374,7 @@ export type Database = {
               created_timeline_event_id: string
             }[]
           }
+      get_timeline_page: { Args: { p_filters: Json }; Returns: Json }
       release_live_refresh: { Args: { p_run_id: string }; Returns: undefined }
       replace_live_current: {
         Args: { p_live_streams: Json; p_refreshed_at: string; p_run_id: string }
