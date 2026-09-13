@@ -171,7 +171,8 @@ export function LiveContent() {
               }}
               value={directory.sort}
             >
-              <option value="viewers">시청자순</option>
+              <option value="viewers">시청자순 ↓</option>
+              <option value="viewers-asc">시청자순 ↑</option>
               <option value="asc">가나다순 ↑</option>
               <option value="desc">가나다순 ↓</option>
             </Select>

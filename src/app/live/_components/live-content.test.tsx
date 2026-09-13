@@ -1,5 +1,5 @@
-import { cleanup, render, screen } from "@testing-library/react";
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { cleanup, fireEvent, render, screen } from "@testing-library/react";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 const mocks = vi.hoisted(() => ({
   useCharacters: vi.fn(),
@@ -25,9 +25,8 @@ vi.mock("../../characters/_components/selected-filter-summary", () => ({
 import { LiveContent } from "./live-content";
 
 describe("LiveContent", () => {
-  afterEach(cleanup);
-
-  it("background refetch가 실패해도 기존 성공 데이터를 유지함", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
     mocks.useCharacters.mockReturnValue({
       data: {
         characters: [{
@@ -60,7 +59,7 @@ describe("LiveContent", () => {
         }],
         refreshedAt: "2026-09-12T10:00:00.000Z",
       },
-      isError: true,
+      isError: false,
       isPending: false,
     });
     mocks.useLiveDirectory.mockReturnValue({
@@ -76,10 +75,36 @@ describe("LiveContent", () => {
       changeSort: vi.fn(),
       resetFilters: vi.fn(),
     });
+  });
+
+  afterEach(() => {
+    cleanup();
+  });
+
+  it("background refetch가 실패해도 기존 성공 데이터를 유지함", () => {
+    mocks.useLiveBroadcasts.mockReturnValue({
+      ...mocks.useLiveBroadcasts(),
+      isError: true,
+    });
 
     render(<LiveContent />);
 
     expect(screen.queryByRole("alert")).toBeNull();
     expect(screen.getByText("LIVE grid")).toBeTruthy();
+  });
+
+  it("시청자 수 오름차순과 내림차순을 선택할 수 있음", () => {
+    render(<LiveContent />);
+
+    expect(screen.getByRole("option", { name: "시청자순 ↓" })).toBeTruthy();
+    expect(screen.getByRole("option", { name: "시청자순 ↑" })).toBeTruthy();
+
+    fireEvent.change(screen.getByRole("combobox", { name: "LIVE 정렬" }), {
+      target: { value: "viewers-asc" },
+    });
+
+    expect(mocks.useLiveDirectory().changeSort).toHaveBeenCalledWith(
+      "viewers-asc",
+    );
   });
 });

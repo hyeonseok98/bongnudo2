@@ -39,6 +39,7 @@ begin
     'refresh-live-current-peak-kst',
     'refresh-live-current-0400-kst',
     'refresh-live-current-off-hours-0405-kst',
+    'refresh-live-current-off-hours-0401-kst',
     'refresh-live-current-off-hours-kst'
   );
 
@@ -91,8 +92,8 @@ begin
   );
 
   perform cron.schedule(
-    'refresh-live-current-off-hours-0405-kst',
-    '5-55/5 19 * * *',
+    'refresh-live-current-off-hours-0401-kst',
+    '1-59/2 19 * * *',
     $job$
       select net.http_post(
         url := (
@@ -116,7 +117,7 @@ begin
 
   perform cron.schedule(
     'refresh-live-current-off-hours-kst',
-    '*/5 20-23,0-7 * * *',
+    '1-59/2 20-23,0-7 * * *',
     $job$
       select net.http_post(
         url := (

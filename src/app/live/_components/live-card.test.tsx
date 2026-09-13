@@ -61,6 +61,7 @@ describe("LiveCard", () => {
         .className,
     ).toContain("focus-visible:outline-focus-ring");
     expect(screen.getByText("LIVE").className).toContain("text-background");
+    expect(screen.getByText("120명")).toBeTruthy();
 
     unmount();
   });

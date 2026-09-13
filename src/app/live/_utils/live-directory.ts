@@ -57,11 +57,15 @@ export function sortLiveStreams(
   sort: LiveSort,
 ): LiveStream[] {
   return [...streams].sort((left, right) => {
-    if (sort === "viewers") {
-      return (
-        right.broadcast.concurrentUserCount -
-          left.broadcast.concurrentUserCount ||
-        compareLiveStreamNames(left, right)
+    if (sort === "viewers" || sort === "viewers-asc") {
+      const viewerCountDifference =
+        left.broadcast.concurrentUserCount -
+        right.broadcast.concurrentUserCount;
+      const direction = sort === "viewers-asc" ? 1 : -1;
+
+      return viewerCountDifference * direction || compareLiveStreamNames(
+        left,
+        right,
       );
     }
 

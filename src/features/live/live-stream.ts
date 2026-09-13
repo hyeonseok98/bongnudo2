@@ -23,7 +23,12 @@ export interface LiveStream {
   character: LiveStreamCharacter;
 }
 
-export const LIVE_SORT_VALUES = ["viewers", "asc", "desc"] as const;
+export const LIVE_SORT_VALUES = [
+  "viewers",
+  "viewers-asc",
+  "asc",
+  "desc",
+] as const;
 
 export type LiveSort = (typeof LIVE_SORT_VALUES)[number];
 

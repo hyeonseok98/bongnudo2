@@ -10,9 +10,9 @@ import {
   type CurrentLiveStreamsMetrics,
 } from "./get-current-live-streams";
 import { getLiveDatabaseClient } from "./live-database";
+import { isBongnudoServerHours } from "./server-hours";
 
 const LIVE_REFRESH_LEASE_SECONDS = 180;
-const KST_OFFSET_MS = 9 * 60 * 60 * 1000;
 
 export interface LiveRefreshResult {
   currentStored: number;
@@ -32,7 +32,7 @@ export async function refreshLiveStreams(
   let acquired = false;
   let metrics: CurrentLiveStreamsMetrics | undefined;
   let replaceCurrentMs = 0;
-  const snapshotSkipped = !shouldCollectViewerSnapshot(startedAt);
+  const snapshotSkipped = !isBongnudoServerHours(startedAt);
   let snapshotStoredCount = 0;
 
   try {
@@ -153,14 +153,6 @@ export async function refreshLiveStreams(
       }
     }
   }
-}
-
-export function shouldCollectViewerSnapshot(date: Date): boolean {
-  const kstDate = new Date(date.getTime() + KST_OFFSET_MS);
-  const hour = kstDate.getUTCHours();
-  const minute = kstDate.getUTCMinutes();
-
-  return hour >= 17 || hour < 4 || (hour === 4 && minute === 0);
 }
 
 export function getMinuteSampledAt(date: Date): string {

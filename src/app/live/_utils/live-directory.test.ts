@@ -72,6 +72,10 @@ describe("live directory", () => {
       "apple",
       "potato",
     ]);
+    expect(sortLiveStreams(streams, "viewers-asc").map(getStreamId)).toEqual([
+      "potato",
+      "apple",
+    ]);
     expect(sortLiveStreams(streams, "desc").map(getStreamId)).toEqual([
       "potato",
       "apple",
