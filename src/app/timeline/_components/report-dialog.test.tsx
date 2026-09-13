@@ -20,13 +20,20 @@ vi.mock("@/queries/report-queries", () => ({
             slug: "daily",
           },
         ],
-        tags: [],
       }),
       queryKey: ["reports", "options"],
     }),
     participantSearch: (query: string) => ({
       enabled: Boolean(query),
-      queryFn: async () => [],
+      queryFn: async () => [
+        {
+          organizationName: "EMS",
+          role: "원장",
+          rpName: "도현정",
+          seasonParticipantId: "00000000-0000-4000-8000-000000000002",
+          streamerName: "강지",
+        },
+      ],
       queryKey: ["reports", "participants", "search", query],
     }),
   },
@@ -102,5 +109,31 @@ describe("ReportDialog", () => {
 
     expect((titleInput as HTMLInputElement).maxLength).toBe(100);
     expect((contentInput as HTMLTextAreaElement).maxLength).toBe(200);
+    expect((contentInput as HTMLTextAreaElement).className).toContain("resize-none");
+  });
+
+  it("이미 추가한 인물을 검색 결과에 추가됨 상태로 유지함", async () => {
+    const user = userEvent.setup();
+    renderReportDialog();
+
+    await user.type(screen.getByLabelText("관련 인물 검색"), "강지");
+    const participant = await screen.findByRole("button", { name: /도현정/ });
+    await user.click(participant);
+
+    const selectedResult = await screen.findByRole("button", {
+      name: /도현정.*추가됨/,
+    });
+    expect((selectedResult as HTMLButtonElement).disabled).toBe(true);
+  });
+
+  it("클립이 하나면 삭제 버튼을 숨기고 둘 이상이면 표시함", async () => {
+    const user = userEvent.setup();
+    renderReportDialog();
+
+    expect(screen.queryByRole("button", { name: "클립 URL 1 삭제" })).toBeNull();
+    await user.click(screen.getByRole("button", { name: "클립 추가" }));
+    expect(screen.getByRole("button", { name: "클립 URL 1 삭제" })).toBeTruthy();
+    await user.click(screen.getByRole("button", { name: "클립 URL 2 삭제" }));
+    expect(screen.queryByRole("button", { name: "클립 URL 1 삭제" })).toBeNull();
   });
 });

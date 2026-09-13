@@ -2,9 +2,11 @@
 
 import { AlertDialog as AlertDialogPrimitive } from "@base-ui/react/alert-dialog";
 import { Dialog as DialogPrimitive } from "@base-ui/react/dialog";
+import { Popover } from "@base-ui/react/popover";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   FileImage,
+  Hash,
   Link as LinkIcon,
   Plus,
   Search,
@@ -13,16 +15,18 @@ import {
   X,
 } from "lucide-react";
 import Image from "next/image";
-import { useEffect, useId, useState } from "react";
+import { useEffect, useId, useRef, useState } from "react";
 
 import { uploadReportImages } from "@/apis/reports/report-uploads";
 import { CharacterAvatar } from "@/app/characters/_components/character-avatar";
 import { Button } from "@/components/ui/button";
+import { DatePicker } from "@/components/ui/date-picker";
 import { Input } from "@/components/ui/input";
-import { PickerInput } from "@/components/ui/picker-input";
 import { Select } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
+import { TimePicker } from "@/components/ui/time-picker";
 import {
+  addReportTag,
   buildReportRequest,
   createInitialReportForm,
   getActiveReportDraft,
@@ -30,6 +34,8 @@ import {
   isReportFormReady,
   MAX_REPORT_CLIP_COUNT,
   MAX_REPORT_IMAGE_COUNT,
+  MAX_REPORT_TAG_COUNT,
+  removeReportClipField,
   type ReportClipField,
   type ReportConfirmations,
   type ReportFormErrors,
@@ -39,11 +45,7 @@ import {
   compressReportImages,
   validateReportImageFiles,
 } from "@/features/reports/report-image";
-import type {
-  ReportOptions,
-  ReportTagOption,
-  UserReportType,
-} from "@/features/reports/report-options";
+import type { ReportOptions, UserReportType } from "@/features/reports/report-options";
 import type { ReportParticipantSearchResult } from "@/features/reports/search-report-participants";
 import { useDebouncedValue } from "@/hooks/use-debounced-value";
 import { reportMutations } from "@/queries/report-mutations";
@@ -76,13 +78,7 @@ const REPORT_TYPES: {
 const CONFIRMATIONS: {
   id: keyof ReportConfirmations;
   label: string;
-  timelineOnly?: boolean;
 }[] = [
-  {
-    id: "isNotDuplicate",
-    label: "동일하거나 매우 유사한 제보가 없는지 확인했습니다.",
-    timelineOnly: true,
-  },
   {
     id: "isRespectful",
     label: "사실에 기반해 타인을 존중하는 표현으로 작성했습니다.",
@@ -106,10 +102,6 @@ export function ReportDialog({ onClose, onSuccess, today }: ReportDialogProps) {
   const isPending = submissionStep !== "idle";
   const draft = getActiveReportDraft(form);
   const confirmations = form.confirmations[form.reportType];
-  const visibleConfirmations = CONFIRMATIONS.filter(
-    (confirmation) =>
-      !confirmation.timelineOnly || form.reportType === "timeline",
-  );
 
   function updateForm(update: Partial<ReportFormState>): void {
     setForm((current) => ({ ...current, ...update }));
@@ -235,10 +227,7 @@ export function ReportDialog({ onClose, onSuccess, today }: ReportDialogProps) {
         <DialogPrimitive.Portal>
           <DialogPrimitive.Backdrop className="fixed inset-0 z-modal bg-black/70" />
           <DialogPrimitive.Popup
-            className={cn(
-              "fixed top-1/2 left-1/2 z-modal flex max-h-[calc(100dvh-1rem)] w-[calc(100vw-1rem)] -translate-x-1/2 -translate-y-1/2 flex-col overflow-hidden rounded-xl border border-default bg-surface-raised shadow-2xl outline-none sm:max-h-[calc(100dvh-2rem)] sm:w-[calc(100vw-2rem)]",
-              form.reportType === "timeline" ? "max-w-6xl" : "max-w-4xl",
-            )}
+            className="fixed top-1/2 left-1/2 z-modal flex h-[min(59rem,calc(100dvh-1rem))] w-[calc(100vw-1rem)] max-w-6xl -translate-x-1/2 -translate-y-1/2 flex-col overflow-hidden rounded-xl border border-default bg-surface-raised shadow-2xl outline-none sm:h-[min(59rem,calc(100dvh-2rem))] sm:w-[calc(100vw-2rem)]"
           >
             <header className="flex shrink-0 items-start gap-3 border-b border-default bg-surface-muted px-5 py-3.5 sm:px-6">
               <span className="min-w-0 flex-1">
@@ -263,13 +252,10 @@ export function ReportDialog({ onClose, onSuccess, today }: ReportDialogProps) {
             <form className="flex min-h-0 flex-1 flex-col" onSubmit={handleSubmit}>
               <div
                 className={cn(
-                  "min-h-0 flex-1 overflow-y-auto p-5 sm:p-6",
-                  form.reportType === "timeline"
-                    ? "grid gap-6 lg:grid-cols-[minmax(0,1.45fr)_minmax(18rem,0.8fr)]"
-                    : "grid gap-5",
+                  "grid min-h-0 flex-1 gap-4 overflow-y-auto p-4 lg:grid-cols-[minmax(0,1.45fr)_minmax(18rem,0.8fr)]",
                 )}
               >
-                <div className="min-w-0 space-y-4">
+                <div className="min-w-0 space-y-1.5">
                   <fieldset className="space-y-2">
                     <legend className="text-caption font-semibold text-secondary">
                       제보 유형
@@ -278,7 +264,7 @@ export function ReportDialog({ onClose, onSuccess, today }: ReportDialogProps) {
                       {REPORT_TYPES.map((reportType) => (
                         <button
                           aria-pressed={form.reportType === reportType.value}
-                          className="cursor-pointer rounded-lg border border-default bg-background p-3 text-left transition-colors hover:bg-surface-muted focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus-ring aria-pressed:border-brand aria-pressed:bg-surface-selected"
+                          className="cursor-pointer rounded-lg border border-default bg-background px-3 py-2.5 text-left transition-colors hover:bg-surface-muted focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus-ring aria-pressed:border-brand aria-pressed:bg-surface-selected"
                           key={reportType.value}
                           onClick={() => handleTypeChange(reportType.value)}
                           type="button"
@@ -294,13 +280,7 @@ export function ReportDialog({ onClose, onSuccess, today }: ReportDialogProps) {
                     </div>
                   </fieldset>
 
-                  <div
-                    className={
-                      form.reportType === "timeline"
-                        ? "grid gap-4 sm:grid-cols-2"
-                        : "grid gap-4"
-                    }
-                  >
+                  <div className="grid gap-3 sm:grid-cols-[minmax(0,0.8fr)_minmax(0,1.2fr)]">
                     <FieldLabel error={fieldErrors.categoryId} label="분류" required>
                       <CategorySelect
                         onChange={(categoryId) => {
@@ -316,35 +296,33 @@ export function ReportDialog({ onClose, onSuccess, today }: ReportDialogProps) {
                       />
                     </FieldLabel>
                     {form.reportType === "timeline" ? (
-                      <div className="grid grid-cols-[minmax(0,1fr)_7.5rem] gap-2">
+                      <div className="grid grid-cols-[minmax(0,1fr)_8rem] gap-2">
                         <FieldLabel error={fieldErrors.occurredAt} label="발생 날짜" required>
-                          <PickerInput
-                            aria-invalid={Boolean(fieldErrors.occurredAt)}
+                          <DatePicker
+                            isInvalid={Boolean(fieldErrors.occurredAt)}
+                            label="발생 날짜"
                             max={today}
-                            onChange={(changeEvent) => {
-                              updateForm({ occurredDate: changeEvent.target.value });
+                            onValueChange={(occurredDate) => {
+                              updateForm({ occurredDate });
                               setFieldErrors((current) => ({
                                 ...current,
                                 occurredAt: undefined,
                               }));
                             }}
-                            required
-                            type="date"
                             value={form.occurredDate}
                           />
                         </FieldLabel>
                         <FieldLabel label="시간" required>
-                          <PickerInput
-                            aria-invalid={Boolean(fieldErrors.occurredAt)}
-                            onChange={(changeEvent) => {
-                              updateForm({ occurredTime: changeEvent.target.value });
+                          <TimePicker
+                            isInvalid={Boolean(fieldErrors.occurredAt)}
+                            label="발생 시간"
+                            onValueChange={(occurredTime) => {
+                              updateForm({ occurredTime });
                               setFieldErrors((current) => ({
                                 ...current,
                                 occurredAt: undefined,
                               }));
                             }}
-                            required
-                            type="time"
                             value={form.occurredTime}
                           />
                         </FieldLabel>
@@ -383,6 +361,7 @@ export function ReportDialog({ onClose, onSuccess, today }: ReportDialogProps) {
                       }}
                       placeholder={getContentPlaceholder(form.reportType)}
                       required
+                      className="h-24 min-h-24"
                       value={draft.content}
                     />
                     <CharacterCount current={draft.content.length} max={200} />
@@ -394,24 +373,15 @@ export function ReportDialog({ onClose, onSuccess, today }: ReportDialogProps) {
                         onChange={(participants) => updateForm({ participants })}
                         participants={form.participants}
                       />
-                      <TagPicker
-                        isError={optionsQuery.isError}
-                        isLoading={optionsQuery.isPending}
-                        onChange={(tagIds) => updateForm({ tagIds })}
-                        options={optionsQuery.data}
-                        tagIds={form.tagIds}
+                      <TagInput
+                        onChange={(tags) => updateForm({ tags })}
+                        tags={form.tags}
                       />
                     </>
                   ) : null}
                 </div>
 
-                <aside
-                  className={cn(
-                    "min-w-0 space-y-4",
-                    form.reportType === "timeline" &&
-                      "rounded-lg bg-surface-inset p-4 lg:p-5",
-                  )}
-                >
+                <aside className="grid min-w-0 grid-rows-[auto_minmax(0,1fr)_auto] gap-3 rounded-lg bg-surface-inset p-4">
                   <ImageUploader
                     error={fieldErrors.images}
                     files={form.files}
@@ -426,7 +396,8 @@ export function ReportDialog({ onClose, onSuccess, today }: ReportDialogProps) {
                       setFieldErrors((current) => ({ ...current, images }))
                     }
                   />
-                  {form.reportType === "timeline" ? (
+                  <div className="min-h-0">
+                    {form.reportType === "timeline" ? (
                     <ClipFields
                       errors={fieldErrors.clips}
                       onChange={(clipFields) => {
@@ -438,35 +409,36 @@ export function ReportDialog({ onClose, onSuccess, today }: ReportDialogProps) {
                       }}
                       values={form.clipFields}
                     />
-                  ) : null}
+                    ) : null}
+                  </div>
                   {form.reportType === "timeline" ? (
-                    <div className="rounded-lg bg-surface-selected p-3 text-caption leading-relaxed text-primary">
-                      <p>등록한 제보는 타임라인에 바로 반영됩니다.</p>
-                      <p>같은 사건이나 내용이 이미 등록되어 있지 않은지 먼저 확인해주세요.</p>
-                      <p>개인정보나 민감한 정보가 포함되지 않았는지 확인해주세요.</p>
+                    <div className="rounded-lg bg-surface-muted p-3 text-body-sm leading-relaxed text-secondary break-keep">
+                      <p>타임라인 제보는 등록 즉시 공개됩니다.</p>
+                      <p>중복 제보와 개인정보·민감정보 포함 여부를 한 번 더 확인해주세요.</p>
                     </div>
                   ) : null}
                 </aside>
               </div>
 
-              <footer className="shrink-0 border-t border-default bg-surface-muted px-5 py-3.5 sm:px-6">
-                <ConfirmationFields
-                  confirmations={confirmations}
-                  error={fieldErrors.confirmations}
-                  onChange={updateConfirmations}
-                  visibleConfirmations={visibleConfirmations}
-                />
-                {optionsQuery.isError ? (
-                  <p className="mt-2 text-caption text-status-danger" role="alert">
-                    제보 선택 항목을 불러오지 못했습니다.
-                  </p>
-                ) : null}
-                {submissionError ? (
-                  <p className="mt-2 text-caption text-status-danger" role="alert">
-                    {submissionError}
-                  </p>
-                ) : null}
-                <div className="mt-3 flex justify-end gap-2">
+              <footer className="grid shrink-0 gap-3 border-t border-default bg-surface-muted px-5 py-3 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-center sm:px-6">
+                <div>
+                  <ConfirmationFields
+                    confirmations={confirmations}
+                    error={fieldErrors.confirmations}
+                    onChange={updateConfirmations}
+                  />
+                  {optionsQuery.isError ? (
+                    <p className="mt-1 text-caption text-status-danger" role="alert">
+                      제보 선택 항목을 불러오지 못했습니다.
+                    </p>
+                  ) : null}
+                  {submissionError ? (
+                    <p className="mt-1 text-caption text-status-danger" role="alert">
+                      {submissionError}
+                    </p>
+                  ) : null}
+                </div>
+                <div className="flex justify-end gap-2">
                   <Button
                     disabled={isPending}
                     onClick={requestClose}
@@ -579,37 +551,24 @@ function ParticipantPicker({
   participants: ReportParticipantSearchResult[];
 }) {
   const [query, setQuery] = useState("");
+  const [isOpen, setIsOpen] = useState(false);
   const debouncedQuery = useDebouncedValue(query, 300);
   const searchQuery = useQuery(reportQueries.participantSearch(debouncedQuery));
   const selectedIds = new Set(
     participants.map((participant) => participant.seasonParticipantId),
   );
-  const results = (searchQuery.data ?? []).filter(
-    (participant) => !selectedIds.has(participant.seasonParticipantId),
-  );
+  const results = searchQuery.data ?? [];
 
   return (
     <fieldset className="space-y-2">
       <legend className="text-caption font-semibold text-secondary">
         관련 인물 <span className="font-normal text-tertiary">(선택)</span>
       </legend>
-      <div className="relative">
-        <Search
-          aria-hidden="true"
-          className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-tertiary"
-        />
-        <Input
-          className="pl-9"
-          onChange={(event) => setQuery(event.target.value)}
-          placeholder="RP명 또는 스트리머명을 검색하세요."
-          value={query}
-        />
-      </div>
       {participants.length > 0 ? (
-        <ul aria-label="선택한 관련 인물" className="flex flex-wrap gap-2">
+        <ul aria-label="선택한 관련 인물" className="flex flex-wrap gap-1.5">
           {participants.map((participant, index) => (
             <li
-              className="inline-flex items-center gap-2 rounded-full bg-surface-muted py-1 pr-2 pl-1"
+              className="inline-flex items-center gap-1.5 rounded-full bg-surface-muted py-0.5 pr-2 pl-0.5"
               key={participant.seasonParticipantId}
             >
               <CharacterAvatar
@@ -619,8 +578,8 @@ function ParticipantPicker({
                 sizes="28px"
               />
               <span className="text-caption text-primary">
+                {index === 0 ? <strong className="mr-1 text-brand-text">[대표]</strong> : null}
                 {participant.rpName ?? participant.streamerName}
-                {index === 0 ? " · 대표 인물" : ""}
               </span>
               <button
                 aria-label={`${participant.rpName ?? participant.streamerName} 선택 해제`}
@@ -641,54 +600,98 @@ function ParticipantPicker({
           ))}
         </ul>
       ) : null}
-      {!query.trim() ? (
-        <p className="text-caption text-tertiary">
-          검색어를 입력하면 현재 시즌의 RP와 스트리머를 찾을 수 있습니다.
-        </p>
-      ) : (
-        <div className="max-h-48 overflow-y-auto rounded-lg border border-default bg-background p-1">
-          {searchQuery.isPending ? (
-            <p className="p-3 text-caption text-tertiary" role="status">
-              인물을 검색하고 있습니다.
-            </p>
-          ) : searchQuery.isError ? (
-            <p className="p-3 text-caption text-status-danger" role="alert">
-              인물 검색 결과를 불러오지 못했습니다. 잠시 후 다시 시도해주세요.
-            </p>
-          ) : results.length > 0 ? (
-            results.map((participant) => (
-              <button
-                className="flex w-full cursor-pointer items-center gap-3 rounded-md p-2 text-left hover:bg-surface-muted focus-visible:outline-2 focus-visible:outline-focus-ring"
-                key={participant.seasonParticipantId}
-                onClick={() => {
-                  onChange([...participants, participant]);
-                  setQuery("");
+      <Popover.Root
+        onOpenChange={setIsOpen}
+        open={isOpen && Boolean(query.trim())}
+      >
+        <div className="relative">
+          <Search
+            aria-hidden="true"
+            className="pointer-events-none absolute top-1/2 left-3 z-base size-4 -translate-y-1/2 text-tertiary"
+          />
+          <Popover.Trigger
+            nativeButton={false}
+            render={
+              <Input
+                aria-label="관련 인물 검색"
+                className="pl-9"
+                onChange={(event) => {
+                  const nextQuery = event.target.value;
+                  setQuery(nextQuery);
+                  setIsOpen(Boolean(nextQuery.trim()));
                 }}
-                type="button"
-              >
-                <CharacterAvatar
-                  className="size-8 rounded-full"
-                  name={participant.rpName ?? participant.streamerName}
-                  profileImageUrl={null}
-                  sizes="32px"
-                />
-                <span className="min-w-0">
-                  <strong className="block truncate text-body-sm text-primary">
-                    {participant.rpName ?? "RP명 없음"}
-                  </strong>
-                  <span className="block truncate text-caption text-tertiary">
-                    {getParticipantDescription(participant)}
-                  </span>
-                </span>
-              </button>
-            ))
-          ) : (
-            <p className="p-3 text-caption text-tertiary">
-              일치하는 인물이 없습니다. RP명과 스트리머명을 다시 확인해주세요.
-            </p>
-          )}
+                onFocus={() => setIsOpen(Boolean(query.trim()))}
+                placeholder="RP명 또는 스트리머명을 검색하세요."
+                value={query}
+              />
+            }
+          />
         </div>
-      )}
+        <Popover.Portal>
+          <Popover.Positioner
+            align="start"
+            className="z-popover"
+            collisionPadding={16}
+            sideOffset={6}
+          >
+            <Popover.Popup className="max-h-56 min-w-[var(--anchor-width)] overflow-y-auto rounded-lg border border-default bg-surface-raised p-1 shadow-xl outline-none">
+              <Popover.Title className="sr-only">관련 인물 검색 결과</Popover.Title>
+              {searchQuery.isPending ? (
+                <p className="p-3 text-caption text-secondary" role="status">
+                  인물을 검색하고 있습니다.
+                </p>
+              ) : searchQuery.isError ? (
+                <p className="p-3 text-caption text-status-danger" role="alert">
+                  인물 검색 결과를 불러오지 못했습니다. 잠시 후 다시 시도해주세요.
+                </p>
+              ) : results.length > 0 ? (
+                results.map((participant) => {
+                  const isSelected = selectedIds.has(participant.seasonParticipantId);
+                  return (
+                    <button
+                      aria-disabled={isSelected}
+                      className={cn(
+                        "flex w-full items-center gap-3 rounded-md p-2 text-left outline-none focus-visible:outline-2 focus-visible:outline-focus-ring",
+                        isSelected
+                          ? "cursor-default bg-surface-selected"
+                          : "cursor-pointer hover:bg-surface-muted",
+                      )}
+                      disabled={isSelected}
+                      key={participant.seasonParticipantId}
+                      onClick={() => onChange([...participants, participant])}
+                      type="button"
+                    >
+                      <CharacterAvatar
+                        className="size-8 rounded-full"
+                        name={participant.rpName ?? participant.streamerName}
+                        profileImageUrl={null}
+                        sizes="32px"
+                      />
+                      <span className="min-w-0 flex-1">
+                        <strong className="block truncate text-body-sm text-primary">
+                          {participant.rpName ?? "RP명 없음"}
+                        </strong>
+                        <span className="block truncate text-caption text-secondary">
+                          {getParticipantDescription(participant)}
+                        </span>
+                      </span>
+                      {isSelected ? (
+                        <span className="shrink-0 text-caption font-semibold text-brand-text">
+                          추가됨
+                        </span>
+                      ) : null}
+                    </button>
+                  );
+                })
+              ) : (
+                <p className="p-3 text-caption text-secondary">
+                  일치하는 인물이 없습니다. RP명과 스트리머명을 다시 확인해주세요.
+                </p>
+              )}
+            </Popover.Popup>
+          </Popover.Positioner>
+        </Popover.Portal>
+      </Popover.Root>
       <p className="text-caption text-tertiary">
         가장 먼저 추가한 인물이 대표 인물로 설정됩니다.
       </p>
@@ -703,125 +706,76 @@ function getParticipantDescription(
     .filter(Boolean)
     .join(" · ");
   return affiliation
-    ? `${affiliation} · 스트리머 ${participant.streamerName}`
-    : `스트리머 ${participant.streamerName}`;
+    ? `${affiliation} · 스트리머: ${participant.streamerName}`
+    : `스트리머: ${participant.streamerName}`;
 }
 
-function TagPicker({
-  isError,
-  isLoading,
+function TagInput({
   onChange,
-  options,
-  tagIds,
+  tags,
 }: {
-  isError: boolean;
-  isLoading: boolean;
-  onChange: (tagIds: string[]) => void;
-  options: ReportOptions | undefined;
-  tagIds: string[];
+  onChange: (tags: string[]) => void;
+  tags: string[];
 }) {
-  const [query, setQuery] = useState("");
-  const tags = options?.tags ?? [];
-  const selectedTags = tagIds.flatMap((tagId) => {
-    const tag = tags.find((candidate) => candidate.id === tagId);
-    return tag ? [tag] : [];
-  });
-  const normalizedQuery = query.trim().toLocaleLowerCase("ko-KR");
-  const resultTags = tags
-    .filter((tag) => !tagIds.includes(tag.id))
-    .filter(
-      (tag) =>
-        !normalizedQuery ||
-        tag.name.toLocaleLowerCase("ko-KR").includes(normalizedQuery) ||
-        tag.slug.toLocaleLowerCase("ko-KR").includes(normalizedQuery),
-    )
-    .slice(0, 12);
+  const [value, setValue] = useState("");
+
+  function commitTag(): void {
+    const nextTags = addReportTag(tags, value);
+    if (nextTags.length !== tags.length) onChange(nextTags);
+    setValue("");
+  }
 
   return (
     <fieldset className="space-y-2">
       <legend className="text-caption font-semibold text-secondary">
         태그 <span className="font-normal text-tertiary">(선택)</span>
       </legend>
-      {selectedTags.length > 0 ? (
-        <ul aria-label="선택한 태그" className="flex flex-wrap gap-2">
-          {selectedTags.map((tag) => (
-            <li key={tag.id}>
-              <TagButton
-                isSelected
-                onClick={() => onChange(tagIds.filter((id) => id !== tag.id))}
-                tag={tag}
-              />
+      {tags.length > 0 ? (
+        <ul aria-label="선택한 태그" className="flex flex-wrap gap-1.5">
+          {tags.map((tag) => (
+            <li
+              className="inline-flex items-center gap-1 rounded-full bg-surface-muted px-2.5 py-1 text-caption text-primary"
+              key={tag.toLocaleLowerCase("ko-KR")}
+            >
+              #{tag}
+              <button
+                aria-label={`${tag} 태그 삭제`}
+                className="cursor-pointer rounded-full text-tertiary hover:text-primary"
+                onClick={() => onChange(tags.filter((candidate) => candidate !== tag))}
+                type="button"
+              >
+                <X aria-hidden="true" className="size-3" />
+              </button>
             </li>
           ))}
         </ul>
       ) : null}
       <div className="relative">
-        <Search
+        <Hash
           aria-hidden="true"
           className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-tertiary"
         />
         <Input
           className="pl-9"
-          onChange={(event) => setQuery(event.target.value)}
-          placeholder="태그 이름을 검색하세요."
-          value={query}
+          disabled={tags.length >= MAX_REPORT_TAG_COUNT}
+          onChange={(event) => setValue(event.target.value)}
+          onKeyDown={(event) => {
+            if (event.key === "Enter") {
+              event.preventDefault();
+              commitTag();
+            }
+            if (event.key === "Backspace" && !value && tags.length > 0) {
+              onChange(tags.slice(0, -1));
+            }
+          }}
+          placeholder="태그를 입력하고 Enter를 눌러 추가해주세요."
+          value={value}
         />
       </div>
-      {isLoading ? (
-        <p className="text-caption text-tertiary" role="status">
-          태그를 불러오고 있습니다.
-        </p>
-      ) : isError ? (
-        <p className="text-caption text-status-danger" role="alert">
-          태그를 불러오지 못했습니다.
-        </p>
-      ) : (
-        <div>
-          <p className="mb-2 text-caption text-tertiary">
-            {normalizedQuery ? "검색 결과" : "추천 태그"}
-          </p>
-          {resultTags.length > 0 ? (
-            <ul className="flex flex-wrap gap-2">
-              {resultTags.map((tag) => (
-                <li key={tag.id}>
-                  <TagButton
-                    onClick={() => {
-                      onChange([...tagIds, tag.id]);
-                      setQuery("");
-                    }}
-                    tag={tag}
-                  />
-                </li>
-              ))}
-            </ul>
-          ) : (
-            <p className="text-caption text-tertiary">일치하는 태그가 없습니다.</p>
-          )}
-        </div>
-      )}
+      <p className="text-caption text-tertiary">
+        #은 자동으로 정리되며 최대 {MAX_REPORT_TAG_COUNT}개까지 추가할 수 있습니다.
+      </p>
     </fieldset>
-  );
-}
-
-function TagButton({
-  isSelected = false,
-  onClick,
-  tag,
-}: {
-  isSelected?: boolean;
-  onClick: () => void;
-  tag: ReportTagOption;
-}) {
-  return (
-    <button
-      aria-pressed={isSelected}
-      className="inline-flex cursor-pointer items-center gap-1 rounded-full border border-default bg-background px-3 py-1.5 text-caption text-secondary hover:bg-surface-muted focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus-ring aria-pressed:border-brand aria-pressed:bg-surface-selected aria-pressed:text-brand-text"
-      onClick={onClick}
-      type="button"
-    >
-      #{tag.name}
-      {isSelected ? <X aria-hidden="true" className="size-3" /> : null}
-    </button>
   );
 }
 
@@ -862,7 +816,7 @@ function ImageUploader({
   }
 
   return (
-    <fieldset className="space-y-3">
+    <fieldset className="space-y-2">
       <legend className="text-body-sm font-semibold text-primary">
         <span className="inline-flex items-center gap-2">
           <FileImage aria-hidden="true" className="size-4 text-brand-text" />
@@ -873,7 +827,7 @@ function ImageUploader({
         </span>
       </legend>
       <label
-        className="grid min-h-28 cursor-pointer place-items-center rounded-lg border border-dashed border-control bg-background p-4 text-center hover:border-brand focus-within:outline-2 focus-within:outline-offset-2 focus-within:outline-focus-ring"
+        className="grid min-h-20 cursor-pointer place-items-center rounded-lg border border-dashed border-control bg-background p-3 text-center hover:border-brand focus-within:outline-2 focus-within:outline-offset-2 focus-within:outline-focus-ring"
         htmlFor={inputId}
         onDragOver={(event) => event.preventDefault()}
         onDrop={(event) => {
@@ -881,16 +835,18 @@ function ImageUploader({
           addFiles(event.dataTransfer.files);
         }}
       >
-        <span className="space-y-2">
+        <span className="flex items-center justify-center gap-3 text-left">
           <UploadCloud
             aria-hidden="true"
-            className="mx-auto size-7 text-brand-text"
+            className="size-6 shrink-0 text-brand-text"
           />
-          <strong className="block text-body-sm text-primary">
-            이미지를 드래그하거나 클릭해 선택하세요.
-          </strong>
-          <span className="block text-caption text-tertiary">
-            JPG, PNG, WEBP · 파일당 10MB 이하
+          <span>
+            <strong className="block text-body-sm text-primary">
+              이미지를 드래그하거나 클릭해 선택하세요.
+            </strong>
+            <span className="mt-1 block text-caption text-tertiary">
+              JPG, PNG, WEBP · 파일당 10MB 이하
+            </span>
           </span>
         </span>
       </label>
@@ -946,18 +902,37 @@ function ImagePreview({
   index: number;
   onRemove: (index: number) => void;
 }) {
-  const [url] = useState(() => URL.createObjectURL(file));
-  useEffect(() => () => URL.revokeObjectURL(url), [url]);
+  const [url, setUrl] = useState<string | null>(null);
+
+  useEffect(() => {
+    const reader = new FileReader();
+
+    function handleLoad(): void {
+      if (typeof reader.result === "string") {
+        setUrl(reader.result);
+      }
+    }
+
+    reader.addEventListener("load", handleLoad);
+    reader.readAsDataURL(file);
+
+    return () => {
+      reader.removeEventListener("load", handleLoad);
+      reader.abort();
+    };
+  }, [file]);
 
   return (
-    <li className="group relative aspect-square overflow-hidden rounded-lg border border-default">
-      <Image
-        fill
-        alt={`첨부 이미지 ${index + 1} 미리보기`}
-        className="object-cover"
-        sizes="120px"
-        src={url}
-      />
+    <li className="group relative h-14 overflow-hidden rounded-lg border border-default">
+      {url ? (
+        <Image
+          fill
+          alt={`첨부 이미지 ${index + 1} 미리보기`}
+          className="object-cover"
+          sizes="120px"
+          src={url}
+        />
+      ) : null}
       <button
         aria-label={`첨부 이미지 ${index + 1} 삭제`}
         className="absolute top-1 right-1 grid size-7 cursor-pointer place-items-center rounded-full bg-black/70 text-white focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white"
@@ -979,36 +954,25 @@ function ClipFields({
   onChange: (values: ReportClipField[]) => void;
   values: ReportClipField[];
 }) {
-  function removeField(field: ReportClipField, index: number): void {
-    if (index === 0) {
-      onChange(
-        values.map((candidate) =>
-          candidate.id === field.id ? { ...candidate, value: "" } : candidate,
-        ),
-      );
-      return;
-    }
-    onChange(values.filter((candidate) => candidate.id !== field.id));
-  }
-
   return (
-    <fieldset className="space-y-3 border-t border-default pt-4">
+    <fieldset className="space-y-2.5">
       <legend className="text-body-sm font-semibold text-primary">
         <span className="inline-flex items-center gap-2">
           <LinkIcon aria-hidden="true" className="size-4 text-brand-text" />
-          CHZZK 클립
+          치지직 클립 <span className="font-normal text-tertiary">(선택)</span>
           <span className="font-normal text-tertiary">
-            {values.length}/{MAX_REPORT_CLIP_COUNT}
+            {values.length} / {MAX_REPORT_CLIP_COUNT}
           </span>
         </span>
       </legend>
-      <div className="space-y-2">
+      <div className="space-y-1.5">
         {values.map((field, index) => (
           <div key={field.id}>
-            <div className="flex gap-2">
+            <div className="flex gap-1.5">
               <Input
                 aria-invalid={Boolean(errors?.[field.id])}
                 aria-label={`클립 URL ${index + 1}`}
+                className="h-9"
                 onChange={(event) =>
                   onChange(
                     values.map((candidate) =>
@@ -1022,16 +986,20 @@ function ClipFields({
                 type="url"
                 value={field.value}
               />
-              <Button
-                aria-label={`클립 URL ${index + 1} ${index === 0 ? "지우기" : "삭제"}`}
-                disabled={index === 0 && !field.value}
-                onClick={() => removeField(field, index)}
-                size="icon"
-                type="button"
-                variant="ghost"
-              >
-                <X aria-hidden="true" />
-              </Button>
+              {values.length > 1 ? (
+                <Button
+                  aria-label={`클립 URL ${index + 1} 삭제`}
+                  className="size-9"
+                  onClick={() =>
+                    onChange(removeReportClipField(values, field.id))
+                  }
+                  size="icon"
+                  type="button"
+                  variant="ghost"
+                >
+                  <X aria-hidden="true" />
+                </Button>
+              ) : null}
             </div>
             {errors?.[field.id] ? <FieldError>{errors[field.id]}</FieldError> : null}
           </div>
@@ -1053,7 +1021,7 @@ function ClipFields({
         클립 추가
       </Button>
       <p className="text-caption text-tertiary">
-        CHZZK 공식 클립 주소만 등록할 수 있습니다.
+        치지직 공식 클립 주소만 등록할 수 있습니다.
       </p>
     </fieldset>
   );
@@ -1063,22 +1031,20 @@ function ConfirmationFields({
   confirmations,
   error,
   onChange,
-  visibleConfirmations,
 }: {
   confirmations: ReportConfirmations;
   error?: string;
   onChange: (update: Partial<ReportConfirmations>) => void;
-  visibleConfirmations: typeof CONFIRMATIONS;
 }) {
-  const isAllChecked = visibleConfirmations.every(
+  const isAllChecked = CONFIRMATIONS.every(
     (confirmation) => confirmations[confirmation.id],
   );
-  const isPartiallyChecked = visibleConfirmations.some(
+  const isPartiallyChecked = CONFIRMATIONS.some(
     (confirmation) => confirmations[confirmation.id],
   );
 
   return (
-    <fieldset className="space-y-2">
+    <fieldset className="space-y-1.5">
       <legend className="sr-only">제출 전 확인</legend>
       <label className="flex cursor-pointer items-start gap-2 text-caption font-semibold text-primary">
         <input
@@ -1088,7 +1054,7 @@ function ConfirmationFields({
             const nextValue = !isAllChecked;
             onChange(
               Object.fromEntries(
-                visibleConfirmations.map((confirmation) => [
+                CONFIRMATIONS.map((confirmation) => [
                   confirmation.id,
                   nextValue,
                 ]),
@@ -1102,8 +1068,8 @@ function ConfirmationFields({
         />
         모두 동의합니다.
       </label>
-      <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
-        {visibleConfirmations.map((confirmation) => (
+      <div className="grid gap-1.5">
+        {CONFIRMATIONS.map((confirmation) => (
           <label
             className="flex cursor-pointer items-start gap-2 text-caption text-secondary"
             key={confirmation.id}
@@ -1136,19 +1102,28 @@ function DiscardReportDialog({
   onCancel: () => void;
   onDiscard: () => void;
 }) {
+  const titleRef = useRef<HTMLHeadingElement>(null);
+
   return (
     <AlertDialogPrimitive.Root onOpenChange={(open) => !open && onCancel()} open={isOpen}>
       <AlertDialogPrimitive.Portal>
         <AlertDialogPrimitive.Backdrop className="fixed inset-0 z-popover bg-black/60" />
-        <AlertDialogPrimitive.Popup className="fixed top-1/2 left-1/2 z-popover w-[calc(100vw-2rem)] max-w-sm -translate-x-1/2 -translate-y-1/2 rounded-xl border border-default bg-surface-raised p-5 shadow-2xl outline-none">
-          <AlertDialogPrimitive.Title className="text-title-sm font-bold text-primary">
+        <AlertDialogPrimitive.Popup
+          className="fixed top-1/2 left-1/2 z-popover w-[calc(100vw-2rem)] max-w-sm -translate-x-1/2 -translate-y-1/2 rounded-xl border border-default bg-surface-raised p-5 shadow-2xl outline-none"
+          initialFocus={titleRef}
+        >
+          <AlertDialogPrimitive.Title
+            className="text-title-sm font-bold text-primary outline-none"
+            ref={titleRef}
+            tabIndex={-1}
+          >
             작성 중인 내용을 버릴까요?
           </AlertDialogPrimitive.Title>
           <AlertDialogPrimitive.Description className="mt-2 text-body-sm text-secondary">
             저장하지 않은 제보 내용은 복구할 수 없습니다.
           </AlertDialogPrimitive.Description>
           <div className="mt-5 flex justify-end gap-2">
-            <Button autoFocus onClick={onCancel} type="button" variant="outline">
+            <Button onClick={onCancel} type="button" variant="outline">
               계속 작성
             </Button>
             <Button onClick={onDiscard} type="button">

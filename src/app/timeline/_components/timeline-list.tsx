@@ -300,14 +300,14 @@ function MediaPreview({
 
   return (
     <button
-      aria-label={eventTitle + " CHZZK 클립 상세 보기"}
+      aria-label={eventTitle + " 치지직 클립 상세 보기"}
       className="flex aspect-video w-full max-w-xl cursor-pointer items-center justify-center rounded-lg border border-default bg-surface-inset text-secondary transition-[border-color,background-color] duration-default hover:border-brand hover:bg-surface-muted focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus-ring motion-reduce:transition-none"
       onClick={onOpen}
       type="button"
     >
       <span className="flex flex-col items-center gap-2 text-body-sm font-medium">
         <PlayCircle aria-hidden="true" className="size-8 text-brand-text" />
-        CHZZK 클립
+        치지직 클립
       </span>
     </button>
   );

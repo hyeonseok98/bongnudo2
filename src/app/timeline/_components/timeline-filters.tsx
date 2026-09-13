@@ -12,8 +12,8 @@ import {
   type QuickFilterOption,
 } from "@/components/filters/hierarchical-filter";
 import { FilterBar } from "@/components/filters/filter-bar";
+import { DatePicker } from "@/components/ui/date-picker";
 import { SearchField } from "@/components/ui/search-field";
-import { PickerInput } from "@/components/ui/picker-input";
 import type {
   TimelineCategory,
   TimelinePopularTag,
@@ -67,12 +67,11 @@ export function TimelineFilters({
         >
           <ChevronLeft aria-hidden="true" />
         </Button>
-        <PickerInput
-          aria-label="타임라인 날짜"
-          className="h-10 w-auto cursor-pointer font-semibold"
+        <DatePicker
+          className="h-10 w-40 font-semibold"
+          label="타임라인 날짜"
           max={today}
-          onChange={(event) => directory.changeDate(event.target.value)}
-          type="date"
+          onValueChange={directory.changeDate}
           value={directory.date}
         />
         <Button

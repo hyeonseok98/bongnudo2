@@ -1,11 +1,14 @@
 import { describe, expect, it } from "vitest";
 
 import {
+  addReportTag,
   buildCorrectionRequest,
   buildReportRequest,
   createInitialReportForm,
   getReportClipErrors,
   isReportFormReady,
+  normalizeReportTag,
+  removeReportClipField,
   validateReportForm,
 } from "./report-form";
 
@@ -20,7 +23,6 @@ function createValidForm() {
       ...initial.confirmations,
       timeline: {
         canUseAsRecord: true,
-        isNotDuplicate: true,
         isRespectful: true,
       },
     },
@@ -42,7 +44,7 @@ describe("report form", () => {
     expect(request).toMatchObject({
       occurredAt: "2026-09-13T03:00:00.000Z",
       participantIds: [],
-      tagIds: [],
+      tags: [],
     });
   });
 
@@ -57,7 +59,6 @@ describe("report form", () => {
             ...form.confirmations,
             [reportType]: {
               canUseAsRecord: true,
-              isNotDuplicate: false,
               isRespectful: true,
             },
           },
@@ -79,7 +80,7 @@ describe("report form", () => {
     },
   );
 
-  it("중복 CHZZK 클립을 제출 전에 차단함", () => {
+  it("중복 치지직 클립을 제출 전에 차단함", () => {
     const url = "https://chzzk.naver.com/clips/abcdef";
     expect(
       validateReportForm({
@@ -98,7 +99,7 @@ describe("report form", () => {
         { id: "valid", value: "https://chzzk.naver.com/clips/abcdef" },
         { id: "invalid", value: "https://example.com/video" },
       ]),
-    ).toEqual({ invalid: "CHZZK 공식 클립 주소를 입력해주세요." });
+    ).toEqual({ invalid: "치지직 공식 클립 주소를 입력해주세요." });
   });
 
   it("현재 유형의 필수 입력과 동의가 완료되어야 제출 가능함", () => {
@@ -113,6 +114,32 @@ describe("report form", () => {
         },
       }),
     ).toBe(false);
+    expect(
+      isReportFormReady({
+        ...validForm,
+        confirmations: {
+          ...validForm.confirmations,
+          timeline: {
+            ...validForm.confirmations.timeline,
+            isRespectful: false,
+          },
+        },
+      }),
+    ).toBe(false);
+  });
+
+  it("태그의 #과 공백을 정리하고 대소문자 중복을 막음", () => {
+    expect(normalizeReportTag("  ##경찰  ")).toBe("경찰");
+    expect(addReportTag(["Police"], " #police ")).toEqual(["Police"]);
+    expect(addReportTag([], " #경찰 ")).toEqual(["경찰"]);
+    expect(addReportTag(["경찰"], "###  ")).toEqual(["경찰"]);
+  });
+
+  it("클립 입력은 두 개 이상일 때만 제거함", () => {
+    const first = { id: "first", value: "first" };
+    const second = { id: "second", value: "second" };
+    expect(removeReportClipField([first], "first")).toEqual([first]);
+    expect(removeReportClipField([first, second], "first")).toEqual([second]);
   });
 
   it("제보 유형별 작성 내용을 독립적으로 유지함", () => {

@@ -11,13 +11,6 @@ const reportOptionsResponseSchema: z.ZodType<ReportOptions> = z.object({
       slug: z.string(),
     }),
   ),
-  tags: z.array(
-    z.object({
-      id: z.string().uuid(),
-      name: z.string(),
-      slug: z.string(),
-    }),
-  ),
 });
 
 export async function getReportOptions(): Promise<ReportOptions> {

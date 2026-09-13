@@ -8,6 +8,11 @@ import {
 const KST_OFFSET_MILLISECONDS = 9 * 60 * 60 * 1000;
 const DATE_PATTERN = /^(\d{4})-(\d{2})-(\d{2})$/;
 
+export const TIMELINE_SORT_OPTIONS = [
+  { label: "최신순 ↓", value: "desc" },
+  { label: "최신순 ↑", value: "asc" },
+] as const;
+
 const timelineSearchParamsSchema = z.object({
   affiliation: z.string().trim().max(100).catch(""),
   category: z.string().trim().max(100).catch(""),

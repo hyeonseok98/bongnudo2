@@ -5,13 +5,13 @@ import type { ReportRequest } from "./report-validation";
 import {
   MAX_REPORT_CLIP_COUNT,
   MAX_REPORT_IMAGE_COUNT,
+  MAX_REPORT_TAG_COUNT,
   validateReportRequest,
 } from "./report-validation";
 import type { UserReportType } from "./report-options";
 
 export interface ReportConfirmations {
   canUseAsRecord: boolean;
-  isNotDuplicate: boolean;
   isRespectful: boolean;
 }
 
@@ -35,7 +35,7 @@ export interface ReportFormState {
   occurredTime: string;
   participants: ReportParticipantSearchResult[];
   reportType: UserReportType;
-  tagIds: string[];
+  tags: string[];
 }
 
 export interface ReportFormErrors {
@@ -50,7 +50,6 @@ export interface ReportFormErrors {
 
 const EMPTY_CONFIRMATIONS: ReportConfirmations = {
   canUseAsRecord: false,
-  isNotDuplicate: false,
   isRespectful: false,
 };
 
@@ -76,7 +75,7 @@ export function createInitialReportForm(today: string): ReportFormState {
     occurredTime: "12:00",
     participants: [],
     reportType: "timeline",
-    tagIds: [],
+    tags: [],
   };
 }
 
@@ -102,9 +101,6 @@ export function getReportFormErrors(state: ReportFormState): ReportFormErrors {
   if (state.reportType === "timeline") {
     if (!state.occurredDate || !state.occurredTime)
       errors.occurredAt = "발생 시간을 확인해주세요.";
-    if (!confirmations.isNotDuplicate)
-      errors.confirmations = "필수 확인 항목에 모두 동의해주세요.";
-
     const clipErrors = getReportClipErrors(state.clipFields);
     if (Object.keys(clipErrors).length > 0) errors.clips = clipErrors;
   }
@@ -144,9 +140,7 @@ export function isReportFormReady(state: ReportFormState): boolean {
       confirmations.isRespectful &&
       confirmations.canUseAsRecord &&
       (state.reportType !== "timeline" ||
-        (state.occurredDate &&
-          state.occurredTime &&
-          confirmations.isNotDuplicate)),
+        (state.occurredDate && state.occurredTime)),
   );
 }
 
@@ -168,7 +162,7 @@ export function getReportClipErrors(
 
     const clip = parseChzzkClipUrl(value);
     if (!clip) {
-      errors[field.id] = "CHZZK 공식 클립 주소를 입력해주세요.";
+      errors[field.id] = "치지직 공식 클립 주소를 입력해주세요.";
       continue;
     }
 
@@ -210,15 +204,43 @@ export function buildReportRequest(
     clipUrls: normalizeClipUrls(state.clipFields),
     confirmations: {
       canUseAsRecord: true,
-      isNotDuplicate: true,
       isRespectful: true,
     },
     occurredAt: `${state.occurredDate}T${state.occurredTime}`,
     participantIds: state.participants.map(
       (participant) => participant.seasonParticipantId,
     ),
-    tagIds: state.tagIds,
+    tags: state.tags,
   });
+}
+
+export function normalizeReportTag(value: string): string {
+  return value.trim().replace(/^#+/, "").trim();
+}
+
+export function addReportTag(tags: readonly string[], value: string): string[] {
+  const tag = normalizeReportTag(value);
+  if (!tag) return [...tags];
+
+  const normalizedTag = tag.toLocaleLowerCase("ko-KR");
+  if (
+    tags.some(
+      (candidate) =>
+        candidate.toLocaleLowerCase("ko-KR") === normalizedTag,
+    )
+  ) {
+    return [...tags];
+  }
+
+  return [...tags, tag];
+}
+
+export function removeReportClipField(
+  fields: readonly ReportClipField[],
+  fieldId: string,
+): ReportClipField[] {
+  if (fields.length <= 1) return [...fields];
+  return fields.filter((field) => field.id !== fieldId);
 }
 
 export function buildCorrectionRequest(
@@ -245,4 +267,8 @@ function normalizeClipUrls(fields: readonly ReportClipField[]): string[] {
   });
 }
 
-export { MAX_REPORT_CLIP_COUNT, MAX_REPORT_IMAGE_COUNT };
+export {
+  MAX_REPORT_CLIP_COUNT,
+  MAX_REPORT_IMAGE_COUNT,
+  MAX_REPORT_TAG_COUNT,
+};

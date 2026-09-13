@@ -1,6 +1,6 @@
 import "server-only";
 
-import { randomUUID } from "node:crypto";
+import { createHash, randomUUID } from "node:crypto";
 
 import type { Json } from "@/lib/supabase/database.types";
 import { verifyReportImageObject } from "@/lib/r2-server";
@@ -86,11 +86,11 @@ async function prepareReportWritePayload(
 
   if (request.reportType === "timeline") {
     const seasonId = await getActiveSeasonId();
-    const [images] = await Promise.all([
+    const [images, tagIds] = await Promise.all([
       verifyReportImages(request.imageObjectKeys, user.id),
+      resolveTimelineTagIds(request.tags),
       assertValidCategory(request.categoryId, request.reportType),
       assertValidParticipants(request.participantIds, seasonId),
-      assertValidTags(request.tagIds),
     ]);
 
     return {
@@ -104,7 +104,7 @@ async function prepareReportWritePayload(
       content: request.content,
       occurredAt: request.occurredAt,
       participantIds: request.participantIds,
-      tagIds: request.tagIds,
+      tagIds,
       images,
       clipUrls: request.clipUrls,
     };
@@ -243,27 +243,75 @@ async function assertValidParticipants(
   }
 }
 
-async function assertValidTags(tagIds: string[]): Promise<void> {
-  if (tagIds.length === 0) {
-    return;
-  }
+async function resolveTimelineTagIds(tagNames: string[]): Promise<string[]> {
+  if (tagNames.length === 0) return [];
 
   const supabase = getSupabaseAdminClient();
-  const result = await supabase
+  const existingResult = await supabase
     .from("timeline_tags")
-    .select("id")
-    .eq("is_active", true)
-    .in("id", tagIds);
+    .select("id, name, is_active")
+    .in("name", tagNames);
 
-  if (result.error) {
+  if (existingResult.error) {
     throw new ReportRequestError("태그를 확인하지 못했습니다.", 500, {
-      cause: result.error,
+      cause: existingResult.error,
     });
   }
 
-  if (result.data.length !== tagIds.length) {
-    throw new ReportRequestError("올바른 태그를 선택해주세요.");
+  const existingNames = new Set(
+    existingResult.data.map((tag) => tag.name),
+  );
+  const missingTags = tagNames.filter((tag) => !existingNames.has(tag));
+
+  if (missingTags.length > 0) {
+    const upsertResult = await supabase.from("timeline_tags").upsert(
+      missingTags.map((name) => ({
+        name,
+        slug: createUserTagSlug(name),
+      })),
+      { ignoreDuplicates: true, onConflict: "name" },
+    );
+
+    if (upsertResult.error) {
+      throw new ReportRequestError("태그를 저장하지 못했습니다.", 500, {
+        cause: upsertResult.error,
+      });
+    }
   }
+
+  const resolvedResult = await supabase
+    .from("timeline_tags")
+    .select("id, name")
+    .eq("is_active", true)
+    .in("name", tagNames);
+
+  if (resolvedResult.error) {
+    throw new ReportRequestError("태그를 확인하지 못했습니다.", 500, {
+      cause: resolvedResult.error,
+    });
+  }
+
+  const idsByName = new Map(
+    resolvedResult.data.map((tag) => [tag.name, tag.id]),
+  );
+  const tagIds = tagNames.flatMap((name) => {
+    const id = idsByName.get(name);
+    return id ? [id] : [];
+  });
+
+  if (tagIds.length !== tagNames.length) {
+    throw new ReportRequestError("사용할 수 없는 태그가 포함되어 있습니다.");
+  }
+
+  return tagIds;
+}
+
+function createUserTagSlug(name: string): string {
+  const digest = createHash("sha256")
+    .update(name)
+    .digest("hex")
+    .slice(0, 24);
+  return `user-${digest}`;
 }
 
 async function verifyReportImages(

@@ -6,6 +6,7 @@ import {
   getKstDateRange,
   parseTimelineSearchParams,
   shiftKstDate,
+  TIMELINE_SORT_OPTIONS,
 } from "./timeline-params";
 
 describe("timeline params", () => {
@@ -53,5 +54,12 @@ describe("timeline params", () => {
         "2026-09-13",
       ),
     ).toMatchObject({ date: "2026-09-13", sort: "desc" });
+  });
+
+  it("정렬 값을 최근순 방향이 드러나는 라벨과 연결한다", () => {
+    expect(TIMELINE_SORT_OPTIONS).toEqual([
+      { label: "최신순 ↓", value: "desc" },
+      { label: "최신순 ↑", value: "asc" },
+    ]);
   });
 });

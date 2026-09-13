@@ -7,13 +7,6 @@ export interface ReportCategoryOption {
   slug: string;
 }
 
-export interface ReportTagOption {
-  id: string;
-  name: string;
-  slug: string;
-}
-
 export interface ReportOptions {
   categories: ReportCategoryOption[];
-  tags: ReportTagOption[];
 }

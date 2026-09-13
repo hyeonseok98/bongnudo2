@@ -258,7 +258,7 @@ function MediaViewer({
       allowFullScreen
       className="size-full border-0"
       src={embedUrl}
-      title={eventTitle + " CHZZK 클립"}
+      title={eventTitle + " 치지직 클립"}
     />
   );
 }

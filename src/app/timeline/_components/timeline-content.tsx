@@ -11,8 +11,12 @@ import type { HierarchicalFilterSelection } from "@/components/filters/hierarchi
 import { Select } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
 import type { TimelineQueryFilters } from "@/features/timeline/timeline";
-import { hasTimelineFilters } from "@/features/timeline/timeline-params";
+import {
+  hasTimelineFilters,
+  TIMELINE_SORT_OPTIONS,
+} from "@/features/timeline/timeline-params";
 import { useDebouncedValue } from "@/hooks/use-debounced-value";
+import { cn } from "@/utils/cn";
 
 import { useCharacters } from "../../characters/_hooks/use-characters";
 import { useTimeline } from "../_hooks/use-timeline";
@@ -177,12 +181,11 @@ export function TimelineContent({
           <div className="flex items-center gap-2">
             <span className="text-body-sm text-secondary">정렬</span>
             <Select
-              label="타임라인 정렬"
+              label={
+                directory.sort === "desc" ? "최근 기록부터" : "처음 기록부터"
+              }
               onValueChange={directory.changeSort}
-              options={[
-                { label: "최신순", value: "desc" },
-                { label: "시간순", value: "asc" },
-              ]}
+              options={TIMELINE_SORT_OPTIONS}
               value={directory.sort}
             />
           </div>
@@ -212,6 +215,11 @@ export function TimelineContent({
           <TimelineStatus
             actionLabel={
               hasTimelineFilters(queryFilters) ? "필터 초기화" : "제보하기"
+            }
+            description={
+              hasTimelineFilters(queryFilters)
+                ? "검색어나 선택한 조건을 조정해보세요."
+                : "아직 기록이 없다면 첫 제보를 남겨보세요."
             }
             onAction={
               hasTimelineFilters(queryFilters)
@@ -269,21 +277,33 @@ export function TimelineContent({
 function TimelineStatus({
   actionLabel,
   children,
+  description,
   isError = false,
   onAction,
 }: {
   actionLabel?: string;
   children: string;
+  description?: string;
   isError?: boolean;
   onAction?: () => void;
 }) {
   return (
     <div
-      className="grid min-h-64 place-items-center rounded-xl border border-default bg-surface-raised px-4 text-center text-body-sm text-secondary"
+      className="grid min-h-72 place-items-center rounded-xl bg-surface-muted px-4 text-center"
       role={isError ? "alert" : "status"}
     >
-      <div className="space-y-4">
-        <p className={isError ? "text-status-danger" : undefined}>{children}</p>
+      <div className="space-y-3">
+        <p
+          className={cn(
+            "text-body font-semibold text-primary",
+            isError && "text-status-danger",
+          )}
+        >
+          {children}
+        </p>
+        {description ? (
+          <p className="text-body-sm text-secondary">{description}</p>
+        ) : null}
         {actionLabel && onAction ? (
           <Button onClick={onAction} size="sm" variant="outline">
             {actionLabel}

@@ -7,7 +7,6 @@ import {
 
 const CATEGORY_ID = "00000000-0000-4000-8000-000000000001";
 const PARTICIPANT_ID = "00000000-0000-4000-8000-000000000002";
-const TAG_ID = "00000000-0000-4000-8000-000000000003";
 
 describe("validateReportRequest", () => {
   it("timeline 제보의 KST 시각과 클립 주소를 정규화함", () => {
@@ -18,11 +17,10 @@ describe("validateReportRequest", () => {
       content: "사건이 발생했습니다.",
       occurredAt: "2026-09-13T10:30",
       participantIds: [PARTICIPANT_ID],
-      tagIds: [TAG_ID],
+      tags: ["경찰"],
       imageObjectKeys: [],
       clipUrls: ["https://chzzk.naver.com/clips/99ymxtsjqP?share=1"],
       confirmations: {
-        isNotDuplicate: true,
         isRespectful: true,
         canUseAsRecord: true,
       },
@@ -43,11 +41,10 @@ describe("validateReportRequest", () => {
       content: "사건이 발생했습니다.",
       occurredAt: "2026-09-13T10:30",
       participantIds: [],
-      tagIds: [],
+      tags: [],
       imageObjectKeys: [],
       clipUrls: [],
       confirmations: {
-        isNotDuplicate: true,
         isRespectful: true,
         canUseAsRecord: true,
       },
@@ -67,11 +64,10 @@ describe("validateReportRequest", () => {
         content: "사건이 발생했습니다.",
         occurredAt: "2026-09-13T10:30",
         participantIds: [PARTICIPANT_ID, PARTICIPANT_ID],
-        tagIds: [],
+        tags: [],
         imageObjectKeys: [],
         clipUrls: [],
         confirmations: {
-          isNotDuplicate: true,
           isRespectful: true,
           canUseAsRecord: true,
         },

@@ -4,6 +4,7 @@ import { parseChzzkClipUrl } from "./chzzk-clip";
 
 export const MAX_REPORT_IMAGE_COUNT = 3;
 export const MAX_REPORT_CLIP_COUNT = 5;
+export const MAX_REPORT_TAG_COUNT = 10;
 
 const titleSchema = z
   .string()
@@ -28,7 +29,7 @@ const clipUrlSchema = z.string().transform((value, context) => {
   if (!clip) {
     context.addIssue({
       code: "custom",
-      message: "CHZZK 공식 클립 주소를 입력해주세요.",
+      message: "치지직 공식 클립 주소를 입력해주세요.",
     });
     return z.NEVER;
   }
@@ -52,6 +53,17 @@ const kstDateTimeSchema = z.string().trim().transform((value, context) => {
   return isoString;
 });
 
+const tagSchema = z
+  .string()
+  .trim()
+  .transform((value) => value.replace(/^#+/, "").trim())
+  .pipe(
+    z
+      .string()
+      .min(1, "빈 태그는 등록할 수 없습니다.")
+      .max(30, "태그는 30자 이하로 입력해주세요."),
+  );
+
 const sharedCategoryFields = {
   categoryId: z.uuid("올바른 카테고리를 선택해주세요."),
   title: titleSchema,
@@ -65,15 +77,15 @@ const timelineReportSchema = z
     ...sharedCategoryFields,
     occurredAt: kstDateTimeSchema,
     participantIds: z.array(z.uuid()).default([]),
-    tagIds: z.array(z.uuid()).default([]),
+    tags: z
+      .array(tagSchema)
+      .max(MAX_REPORT_TAG_COUNT, "태그는 최대 10개까지 등록할 수 있습니다.")
+      .default([]),
     clipUrls: z
       .array(clipUrlSchema)
       .max(MAX_REPORT_CLIP_COUNT, "클립은 최대 5개까지 등록할 수 있습니다.")
       .default([]),
     confirmations: z.strictObject({
-      isNotDuplicate: z.literal(true, {
-        error: "필수 확인 항목에 동의해주세요.",
-      }),
       isRespectful: z.literal(true, {
         error: "필수 확인 항목에 동의해주세요.",
       }),
@@ -90,9 +102,9 @@ const timelineReportSchema = z
       context,
     );
     addDuplicateIssue(
-      value.tagIds,
+      value.tags.map((tag) => tag.toLocaleLowerCase("ko-KR")),
       "같은 태그를 중복으로 선택할 수 없습니다.",
-      ["tagIds"],
+      ["tags"],
       context,
     );
     addDuplicateIssue(
