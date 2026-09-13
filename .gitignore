@@ -63,6 +63,8 @@ supabase/migrations/*
 !supabase/migrations/20260913065302_index_timeline_reporting_foreign_keys.sql
 !supabase/migrations/20260913065911_tighten_timeline_reporting_privileges.sql
 !supabase/migrations/20260913070455_preserve_report_original_content.sql
+!supabase/migrations/20260913072349_create_report_backend_functions.sql
+!supabase/migrations/20260913073253_add_json_report_rpc_entrypoint.sql
 supabase/.temp/
 
 # test

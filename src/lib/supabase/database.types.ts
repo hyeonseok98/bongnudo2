@@ -1345,10 +1345,49 @@ export type Database = {
       }
     }
     Functions: {
+      create_report:
+        | {
+            Args: { p_payload: Json }
+            Returns: {
+              created_report_id: string
+              created_timeline_event_id: string
+            }[]
+          }
+        | {
+            Args: {
+              p_category_id: string
+              p_clip_urls: string[]
+              p_content: string
+              p_images: Json
+              p_occurred_at: string
+              p_participant_ids: string[]
+              p_report_id: string
+              p_report_type: string
+              p_reporter_user_id: string
+              p_season_id: number
+              p_tag_ids: string[]
+              p_timeline_event_id: string
+              p_title: string
+            }
+            Returns: {
+              created_report_id: string
+              created_timeline_event_id: string
+            }[]
+          }
       release_live_refresh: { Args: { p_run_id: string }; Returns: undefined }
       replace_live_current: {
         Args: { p_live_streams: Json; p_refreshed_at: string; p_run_id: string }
         Returns: number
+      }
+      search_report_participants: {
+        Args: { p_limit?: number; p_query: string }
+        Returns: {
+          organization_name: string
+          role: string
+          rp_name: string
+          season_participant_id: string
+          streamer_name: string
+        }[]
       }
       try_acquire_live_refresh: {
         Args: { p_lease_seconds?: number; p_run_id: string }
