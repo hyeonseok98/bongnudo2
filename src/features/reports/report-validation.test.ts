@@ -35,6 +35,29 @@ describe("validateReportRequest", () => {
     ]);
   });
 
+  it("정규화된 timeline 제보를 서버에서 다시 검증할 수 있음", () => {
+    const clientResult = validateReportRequest({
+      reportType: "timeline",
+      categoryId: CATEGORY_ID,
+      title: "도시의 사건",
+      content: "사건이 발생했습니다.",
+      occurredAt: "2026-09-13T10:30",
+      participantIds: [],
+      tagIds: [],
+      imageObjectKeys: [],
+      clipUrls: [],
+      confirmations: {
+        isNotDuplicate: true,
+        isRespectful: true,
+        canUseAsRecord: true,
+      },
+    });
+
+    const serverResult = validateReportRequest(clientResult);
+
+    expect(serverResult.occurredAt).toBe("2026-09-13T01:30:00.000Z");
+  });
+
   it("중복 participant를 거부함", () => {
     expect(() =>
       validateReportRequest({

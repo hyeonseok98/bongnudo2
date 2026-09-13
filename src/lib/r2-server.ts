@@ -24,6 +24,13 @@ interface R2Configuration {
   client: S3Client;
 }
 
+export interface ReportUploadConfigurationDiagnostics {
+  configured: boolean;
+  hasCustomEndpoint: boolean;
+  isEndpointValid: boolean;
+  missingVariables: string[];
+}
+
 export interface PreparedReportUpload {
   objectKey: string;
   uploadUrl: string;
@@ -52,6 +59,10 @@ export async function prepareReportImageUpload(
   });
   const uploadUrl = await getSignedUrl(client, command, {
     expiresIn: REPORT_UPLOAD_EXPIRES_IN_SECONDS,
+    signableHeaders: new Set(["content-type"]),
+    unhoistableHeaders: new Set([
+      `x-amz-meta-${REPORT_UPLOAD_METADATA_KEY}`,
+    ]),
   });
 
   return {
@@ -108,14 +119,18 @@ export async function verifyReportImageObject(
 }
 
 function getR2Configuration(): R2Configuration {
-  const accountId = process.env.R2_ACCOUNT_ID;
-  const accessKeyId = process.env.R2_ACCESS_KEY_ID;
-  const secretAccessKey = process.env.R2_SECRET_ACCESS_KEY;
-  const bucketName = process.env.R2_BUCKET_NAME;
-  const endpoint = process.env.R2_ENDPOINT;
+  const accountId = readEnvironmentVariable("R2_ACCOUNT_ID");
+  const accessKeyId = readEnvironmentVariable("R2_ACCESS_KEY_ID");
+  const secretAccessKey = readEnvironmentVariable("R2_SECRET_ACCESS_KEY");
+  const bucketName = readEnvironmentVariable("R2_BUCKET_NAME");
+  const endpoint = readEnvironmentVariable("R2_ENDPOINT");
 
   if (!accountId || !accessKeyId || !secretAccessKey || !bucketName) {
     throw new Error("R2 환경변수가 설정되지 않음.");
+  }
+
+  if (endpoint && !isValidHttpsUrl(endpoint)) {
+    throw new Error("R2 endpoint 설정이 올바르지 않음.");
   }
 
   return {
@@ -124,6 +139,40 @@ function getR2Configuration(): R2Configuration {
       region: "auto",
       endpoint: endpoint || `https://${accountId}.r2.cloudflarestorage.com`,
       credentials: { accessKeyId, secretAccessKey },
+      requestChecksumCalculation: "WHEN_REQUIRED",
     }),
   };
+}
+
+export function getReportUploadConfigurationDiagnostics(): ReportUploadConfigurationDiagnostics {
+  const requiredVariables = [
+    "R2_ACCOUNT_ID",
+    "R2_ACCESS_KEY_ID",
+    "R2_SECRET_ACCESS_KEY",
+    "R2_BUCKET_NAME",
+  ];
+  const missingVariables = requiredVariables.filter(
+    (name) => !readEnvironmentVariable(name),
+  );
+  const endpoint = readEnvironmentVariable("R2_ENDPOINT");
+
+  return {
+    configured: missingVariables.length === 0,
+    hasCustomEndpoint: Boolean(endpoint),
+    isEndpointValid: endpoint ? isValidHttpsUrl(endpoint) : true,
+    missingVariables,
+  };
+}
+
+function readEnvironmentVariable(name: string): string | undefined {
+  const value = process.env[name]?.trim();
+  return value || undefined;
+}
+
+function isValidHttpsUrl(value: string): boolean {
+  try {
+    return new URL(value).protocol === "https:";
+  } catch {
+    return false;
+  }
 }

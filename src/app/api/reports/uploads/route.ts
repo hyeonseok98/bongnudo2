@@ -7,7 +7,10 @@ import {
   ReportRequestError,
 } from "@/features/reports/report-validation";
 import { requireReportUser } from "@/features/reports/report-user";
-import { prepareReportImageUpload } from "@/lib/r2-server";
+import {
+  getReportUploadConfigurationDiagnostics,
+  prepareReportImageUpload,
+} from "@/lib/r2-server";
 
 const uploadRequestSchema = z.strictObject({
   files: z
@@ -42,7 +45,7 @@ export async function POST(request: Request) {
   } catch (error) {
     if (error instanceof ReportRequestError) {
       if (error.status >= 500) {
-        console.error("Failed to prepare report uploads", error);
+        logUploadPreparationError(error);
       }
 
       return NextResponse.json(
@@ -51,10 +54,20 @@ export async function POST(request: Request) {
       );
     }
 
-    console.error("Failed to prepare report uploads", error);
+    logUploadPreparationError(error);
     return NextResponse.json(
       { error: "이미지 업로드를 준비하지 못했습니다." },
       { status: 500 },
     );
   }
+}
+
+function logUploadPreparationError(error: unknown): void {
+  console.error("Failed to prepare report uploads", {
+    configuration: getReportUploadConfigurationDiagnostics(),
+    error:
+      error instanceof Error
+        ? { message: error.message, name: error.name }
+        : { type: typeof error },
+  });
 }

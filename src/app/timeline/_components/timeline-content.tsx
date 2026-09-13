@@ -209,7 +209,16 @@ export function TimelineContent({
             ) : null}
           </>
         ) : (
-          <TimelineStatus>
+          <TimelineStatus
+            actionLabel={
+              hasTimelineFilters(queryFilters) ? "필터 초기화" : "제보하기"
+            }
+            onAction={
+              hasTimelineFilters(queryFilters)
+                ? directory.clearFilters
+                : directory.openReport
+            }
+          >
             {hasTimelineFilters(queryFilters)
               ? "조건에 맞는 타임라인이 없습니다."
               : "해당 날짜에 등록된 타임라인이 없습니다."}
@@ -258,18 +267,29 @@ export function TimelineContent({
 }
 
 function TimelineStatus({
+  actionLabel,
   children,
   isError = false,
+  onAction,
 }: {
+  actionLabel?: string;
   children: string;
   isError?: boolean;
+  onAction?: () => void;
 }) {
   return (
     <div
       className="grid min-h-64 place-items-center rounded-xl border border-default bg-surface-raised px-4 text-center text-body-sm text-secondary"
       role={isError ? "alert" : "status"}
     >
-      <p className={isError ? "text-status-danger" : undefined}>{children}</p>
+      <div className="space-y-4">
+        <p className={isError ? "text-status-danger" : undefined}>{children}</p>
+        {actionLabel && onAction ? (
+          <Button onClick={onAction} size="sm" variant="outline">
+            {actionLabel}
+          </Button>
+        ) : null}
+      </div>
     </div>
   );
 }

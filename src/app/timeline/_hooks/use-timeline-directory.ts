@@ -49,6 +49,7 @@ export interface TimelineDirectory extends TimelineQueryFilters {
   changeTag: (tag: string) => void;
   changeMedia: (mediaId: string) => void;
   changeMediaType: (mediaType: TimelineMediaFilter) => void;
+  clearFilters: () => void;
   closeMedia: () => void;
   closeReportIntent: () => void;
   openMedia: (eventId: string, mediaId: string) => void;
@@ -112,6 +113,19 @@ export function useTimelineDirectory(initialDate: string): TimelineDirectory {
     changeMediaType: (value) => {
       void setParams(
         { mediaType: value === "all" ? null : value },
+        { history: "replace" },
+      );
+    },
+    clearFilters: () => {
+      void setParams(
+        {
+          affiliation: null,
+          category: null,
+          job: null,
+          participant: null,
+          q: null,
+          tag: null,
+        },
         { history: "replace" },
       );
     },

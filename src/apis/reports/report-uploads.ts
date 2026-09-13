@@ -1,15 +1,16 @@
 import type { CompressedReportImage } from "@/features/reports/report-image";
+import { z } from "zod";
 
-interface PreparedReportUpload {
-  objectKey: string;
-  uploadUrl: string;
-  requiredHeaders: Record<string, string>;
-  expiresInSeconds: number;
-}
-
-interface PrepareReportUploadsResponse {
-  uploads: PreparedReportUpload[];
-}
+const prepareReportUploadsResponseSchema = z.object({
+  uploads: z.array(
+    z.object({
+      objectKey: z.string().min(1),
+      uploadUrl: z.url(),
+      requiredHeaders: z.record(z.string(), z.string()),
+      expiresInSeconds: z.number().positive(),
+    }),
+  ),
+});
 
 export async function uploadReportImages(
   images: readonly CompressedReportImage[],
@@ -30,7 +31,15 @@ export async function uploadReportImages(
     throw new Error("이미지 업로드를 준비하지 못했습니다.");
   }
 
-  const { uploads } = (await response.json()) as PrepareReportUploadsResponse;
+  const parsed = prepareReportUploadsResponseSchema.safeParse(
+    await response.json(),
+  );
+
+  if (!parsed.success) {
+    throw new Error("이미지 업로드 응답을 확인하지 못했습니다.");
+  }
+
+  const { uploads } = parsed.data;
 
   if (uploads.length !== images.length) {
     throw new Error("이미지 업로드를 준비하지 못했습니다.");

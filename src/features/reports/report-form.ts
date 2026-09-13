@@ -15,92 +15,199 @@ export interface ReportConfirmations {
   isRespectful: boolean;
 }
 
-export interface ReportFormState {
+export interface ReportDraft {
   categoryId: string;
-  clipUrls: string[];
-  confirmations: ReportConfirmations;
   content: string;
+  title: string;
+}
+
+export interface ReportClipField {
+  id: string;
+  value: string;
+}
+
+export interface ReportFormState {
+  clipFields: ReportClipField[];
+  confirmations: Record<UserReportType, ReportConfirmations>;
+  drafts: Record<UserReportType, ReportDraft>;
   files: File[];
   occurredDate: string;
   occurredTime: string;
   participants: ReportParticipantSearchResult[];
   reportType: UserReportType;
   tagIds: string[];
-  title: string;
+}
+
+export interface ReportFormErrors {
+  categoryId?: string;
+  clips?: Record<string, string>;
+  confirmations?: string;
+  content?: string;
+  images?: string;
+  occurredAt?: string;
+  title?: string;
+}
+
+const EMPTY_CONFIRMATIONS: ReportConfirmations = {
+  canUseAsRecord: false,
+  isNotDuplicate: false,
+  isRespectful: false,
+};
+
+function createEmptyDraft(): ReportDraft {
+  return { categoryId: "", content: "", title: "" };
 }
 
 export function createInitialReportForm(today: string): ReportFormState {
   return {
-    categoryId: "",
-    clipUrls: [""],
+    clipFields: [{ id: "clip-initial", value: "" }],
     confirmations: {
-      canUseAsRecord: false,
-      isNotDuplicate: false,
-      isRespectful: false,
+      bug: { ...EMPTY_CONFIRMATIONS },
+      idea: { ...EMPTY_CONFIRMATIONS },
+      timeline: { ...EMPTY_CONFIRMATIONS },
     },
-    content: "",
+    drafts: {
+      bug: createEmptyDraft(),
+      idea: createEmptyDraft(),
+      timeline: createEmptyDraft(),
+    },
     files: [],
     occurredDate: today,
     occurredTime: "12:00",
     participants: [],
     reportType: "timeline",
     tagIds: [],
-    title: "",
   };
 }
 
-export function validateReportForm(state: ReportFormState): string | null {
-  if (!state.categoryId) return "분류를 선택해주세요.";
-  if (!state.title.trim()) return "제목을 입력해주세요.";
-  if (state.title.trim().length > 100)
-    return "제목은 100자 이하로 입력해주세요.";
-  if (!state.content.trim()) return "내용을 입력해주세요.";
-  if (state.content.trim().length > 200)
-    return "내용은 200자 이하로 입력해주세요.";
-  if (!state.confirmations.isRespectful || !state.confirmations.canUseAsRecord)
-    return "필수 확인 항목에 동의해주세요.";
+export function getActiveReportDraft(state: ReportFormState): ReportDraft {
+  return state.drafts[state.reportType];
+}
+
+export function getReportFormErrors(state: ReportFormState): ReportFormErrors {
+  const errors: ReportFormErrors = {};
+  const draft = getActiveReportDraft(state);
+  const confirmations = state.confirmations[state.reportType];
+
+  if (!draft.categoryId) errors.categoryId = "분류를 선택해주세요.";
+  if (!draft.title.trim()) errors.title = "제목을 입력해주세요.";
+  else if (draft.title.length > 100)
+    errors.title = "제목은 100자 이하로 입력해주세요.";
+  if (!draft.content.trim()) errors.content = "내용을 입력해주세요.";
+  else if (draft.content.length > 200)
+    errors.content = "내용은 200자 이하로 입력해주세요.";
+  if (!confirmations.isRespectful || !confirmations.canUseAsRecord)
+    errors.confirmations = "필수 확인 항목에 모두 동의해주세요.";
 
   if (state.reportType === "timeline") {
     if (!state.occurredDate || !state.occurredTime)
-      return "발생 시간을 확인해주세요.";
-    if (!state.confirmations.isNotDuplicate)
-      return "필수 확인 항목에 동의해주세요.";
+      errors.occurredAt = "발생 시간을 확인해주세요.";
+    if (!confirmations.isNotDuplicate)
+      errors.confirmations = "필수 확인 항목에 모두 동의해주세요.";
 
-    const normalizedClips = normalizeClipUrls(state.clipUrls);
-    if (normalizedClips.error) return normalizedClips.error;
+    const clipErrors = getReportClipErrors(state.clipFields);
+    if (Object.keys(clipErrors).length > 0) errors.clips = clipErrors;
   }
 
   try {
     validateReportImageFiles(state.files);
   } catch (error) {
-    return error instanceof Error ? error.message : "이미지를 확인해주세요.";
+    errors.images =
+      error instanceof Error ? error.message : "이미지를 확인해주세요.";
   }
 
-  return null;
+  return errors;
+}
+
+export function validateReportForm(state: ReportFormState): string | null {
+  const errors = getReportFormErrors(state);
+  return (
+    errors.categoryId ??
+    errors.title ??
+    errors.content ??
+    errors.occurredAt ??
+    errors.confirmations ??
+    errors.images ??
+    Object.values(errors.clips ?? {})[0] ??
+    null
+  );
+}
+
+export function isReportFormReady(state: ReportFormState): boolean {
+  const draft = getActiveReportDraft(state);
+  const confirmations = state.confirmations[state.reportType];
+
+  return Boolean(
+    draft.categoryId &&
+      draft.title.trim() &&
+      draft.content.trim() &&
+      confirmations.isRespectful &&
+      confirmations.canUseAsRecord &&
+      (state.reportType !== "timeline" ||
+        (state.occurredDate &&
+          state.occurredTime &&
+          confirmations.isNotDuplicate)),
+  );
+}
+
+export function getReportClipErrors(
+  fields: readonly ReportClipField[],
+): Record<string, string> {
+  const errors: Record<string, string> = {};
+  const normalizedUrls = new Map<string, string[]>();
+
+  if (fields.length > MAX_REPORT_CLIP_COUNT) {
+    const lastField = fields.at(-1);
+    if (lastField)
+      errors[lastField.id] = "클립은 최대 5개까지 등록할 수 있습니다.";
+  }
+
+  for (const field of fields) {
+    const value = field.value.trim();
+    if (!value) continue;
+
+    const clip = parseChzzkClipUrl(value);
+    if (!clip) {
+      errors[field.id] = "CHZZK 공식 클립 주소를 입력해주세요.";
+      continue;
+    }
+
+    normalizedUrls.set(clip.url, [
+      ...(normalizedUrls.get(clip.url) ?? []),
+      field.id,
+    ]);
+  }
+
+  for (const fieldIds of normalizedUrls.values()) {
+    if (fieldIds.length < 2) continue;
+    for (const fieldId of fieldIds) {
+      errors[fieldId] = "같은 클립을 중복으로 등록할 수 없습니다.";
+    }
+  }
+
+  return errors;
 }
 
 export function buildReportRequest(
   state: ReportFormState,
   imageObjectKeys: string[],
 ): ReportRequest {
+  const draft = getActiveReportDraft(state);
   const shared = {
-    categoryId: state.categoryId,
-    content: state.content,
+    categoryId: draft.categoryId,
+    content: draft.content,
     imageObjectKeys,
-    title: state.title,
+    title: draft.title,
   };
 
   if (state.reportType === "bug" || state.reportType === "idea") {
     return validateReportRequest({ reportType: state.reportType, ...shared });
   }
 
-  const normalizedClips = normalizeClipUrls(state.clipUrls);
-  if (normalizedClips.error) throw new Error(normalizedClips.error);
-
   return validateReportRequest({
     reportType: "timeline",
     ...shared,
-    clipUrls: normalizedClips.urls,
+    clipUrls: normalizeClipUrls(state.clipFields),
     confirmations: {
       canUseAsRecord: true,
       isNotDuplicate: true,
@@ -127,25 +234,15 @@ export function buildCorrectionRequest(
   });
 }
 
-function normalizeClipUrls(
-  values: readonly string[],
-): { error: string | null; urls: string[] } {
-  const enteredValues = values.map((value) => value.trim()).filter(Boolean);
-  if (enteredValues.length > MAX_REPORT_CLIP_COUNT) {
-    return { error: "클립은 최대 5개까지 등록할 수 있습니다.", urls: [] };
-  }
+function normalizeClipUrls(fields: readonly ReportClipField[]): string[] {
+  const errors = getReportClipErrors(fields);
+  const firstError = Object.values(errors)[0];
+  if (firstError) throw new Error(firstError);
 
-  const clips = enteredValues.map(parseChzzkClipUrl);
-  if (clips.some((clip) => clip === null)) {
-    return { error: "CHZZK 공식 클립 주소를 입력해주세요.", urls: [] };
-  }
-
-  const urls = clips.flatMap((clip) => (clip ? [clip.url] : []));
-  if (new Set(urls).size !== urls.length) {
-    return { error: "같은 클립을 중복으로 등록할 수 없습니다.", urls: [] };
-  }
-
-  return { error: null, urls };
+  return fields.flatMap((field) => {
+    const clip = parseChzzkClipUrl(field.value.trim());
+    return clip ? [clip.url] : [];
+  });
 }
 
 export { MAX_REPORT_CLIP_COUNT, MAX_REPORT_IMAGE_COUNT };

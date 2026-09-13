@@ -36,6 +36,8 @@ const clipUrlSchema = z.string().transform((value, context) => {
   return clip.url;
 });
 
+const instantDateTimeSchema = z.string().datetime({ offset: true });
+
 const kstDateTimeSchema = z.string().trim().transform((value, context) => {
   const isoString = toKstIsoString(value);
 
@@ -152,6 +154,12 @@ export function validateReportRequest(value: unknown): ValidatedReportRequest {
 }
 
 function toKstIsoString(value: string): string | null {
+  const instantResult = instantDateTimeSchema.safeParse(value);
+
+  if (instantResult.success) {
+    return new Date(instantResult.data).toISOString();
+  }
+
   const match = /^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})(?::(\d{2}))?$/.exec(
     value,
   );

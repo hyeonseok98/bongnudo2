@@ -1,10 +1,11 @@
 import { Input as InputPrimitive } from "@base-ui/react/input";
-import type { InputHTMLAttributes } from "react";
+import type { InputHTMLAttributes, Ref } from "react";
 
 import { cn } from "@/utils/cn";
 
-interface InputProps extends InputHTMLAttributes<HTMLInputElement> {
+export interface InputProps extends InputHTMLAttributes<HTMLInputElement> {
   className?: string;
+  ref?: Ref<HTMLInputElement>;
 }
 
 function Input({ className, type, ...props }: InputProps) {

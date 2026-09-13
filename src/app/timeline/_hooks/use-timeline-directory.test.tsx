@@ -105,4 +105,29 @@ describe("useTimelineDirectory modal params", () => {
     expect(mediaParams.get("event")).toBe("other-event");
     expect(mediaParams.get("media")).toBe("media-id");
   });
+
+  it("날짜는 유지하고 검색 필터만 초기화한다", async () => {
+    const onUrlUpdate = vi.fn();
+    const { result } = renderHook(
+      () => useTimelineDirectory("2026-09-13"),
+      {
+        wrapper: withNuqsTestingAdapter({
+          hasMemory: true,
+          onUrlUpdate,
+          searchParams:
+            "?date=2026-09-12&category=daily&q=test&tag=city&sort=asc",
+        }),
+      },
+    );
+
+    act(() => result.current.clearFilters());
+    await waitFor(() => expect(onUrlUpdate).toHaveBeenCalledTimes(1));
+
+    const nextParams = onUrlUpdate.mock.calls[0][0].searchParams;
+    expect(nextParams.get("date")).toBe("2026-09-12");
+    expect(nextParams.has("category")).toBe(false);
+    expect(nextParams.has("q")).toBe(false);
+    expect(nextParams.has("tag")).toBe(false);
+    expect(nextParams.get("sort")).toBe("asc");
+  });
 });
