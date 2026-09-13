@@ -1,14 +1,17 @@
 "use client";
 
-import { CalendarDays, ChevronLeft, ChevronRight } from "lucide-react";
+import { ChevronLeft, ChevronRight } from "lucide-react";
 
 import type { TimelineDirectory } from "../_hooks/use-timeline-directory";
 import { Button } from "@/components/ui/button";
 import { Chip } from "@/components/ui/chip";
 import {
-  FilterSelect,
-  type FilterSelectOption,
-} from "@/components/filters/filter-select";
+  HierarchicalFilter,
+  type FilterTreeNode,
+  type HierarchicalFilterSelection,
+  type QuickFilterOption,
+} from "@/components/filters/hierarchical-filter";
+import { FilterBar } from "@/components/filters/filter-bar";
 import { SearchField } from "@/components/ui/search-field";
 import type {
   TimelineCategory,
@@ -18,20 +21,28 @@ import type {
 import { ParticipantFilter } from "./participant-filter";
 
 interface TimelineFiltersProps {
-  affiliationOptions: readonly FilterSelectOption[];
+  affiliationNodes: FilterTreeNode[];
+  affiliationQuickOptions: QuickFilterOption[];
   categories: TimelineCategory[];
   directory: TimelineDirectory;
-  jobOptions: readonly FilterSelectOption[];
+  getAffiliationResultCount: (
+    selection: HierarchicalFilterSelection,
+  ) => number;
+  getJobResultCount: (selection: HierarchicalFilterSelection) => number;
+  jobNodes: FilterTreeNode[];
   popularTags: TimelinePopularTag[];
   selectedParticipantLabel: string | null;
   today: string;
 }
 
 export function TimelineFilters({
-  affiliationOptions,
+  affiliationNodes,
+  affiliationQuickOptions,
   categories,
   directory,
-  jobOptions,
+  getAffiliationResultCount,
+  getJobResultCount,
+  jobNodes,
   popularTags,
   selectedParticipantLabel,
   today,
@@ -55,14 +66,10 @@ export function TimelineFilters({
         >
           <ChevronLeft aria-hidden="true" />
         </Button>
-        <label className="relative">
-          <CalendarDays
-            aria-hidden="true"
-            className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-tertiary"
-          />
+        <label>
           <input
             aria-label="타임라인 날짜"
-            className="h-10 cursor-pointer rounded-lg border border-default bg-background pr-3 pl-10 text-body-sm font-semibold text-primary focus:border-focus-ring focus:outline-none"
+            className="h-10 cursor-pointer rounded-lg border border-default bg-background px-3 text-body-sm font-semibold text-primary focus:border-focus-ring focus:outline-none"
             onChange={(event) => directory.changeDate(event.target.value)}
             type="date"
             value={directory.date}
@@ -105,25 +112,39 @@ export function TimelineFilters({
         ))}
       </div>
 
-      <div className="flex flex-wrap gap-2">
-        <FilterSelect
+      <FilterBar>
+        <HierarchicalFilter
+          applyLabel="적용"
+          getResultCount={getJobResultCount}
           label="직업"
-          onValueChange={directory.changeJob}
-          options={jobOptions}
-          value={directory.job}
+          nodes={jobNodes}
+          onApply={(selection) =>
+            directory.changeJob(selection.ids[0] ?? "")
+          }
+          panelSize="compact"
+          selectionMode="single"
+          value={{ ids: directory.job ? [directory.job] : [] }}
         />
-        <FilterSelect
+        <HierarchicalFilter
+          applyLabel="적용"
+          getResultCount={getAffiliationResultCount}
           label="소속"
-          onValueChange={directory.changeAffiliation}
-          options={affiliationOptions}
-          value={directory.affiliation}
+          nodes={affiliationNodes}
+          onApply={(selection) =>
+            directory.changeAffiliation(selection.ids[0] ?? "")
+          }
+          quickOptions={affiliationQuickOptions}
+          selectionMode="single"
+          value={{
+            ids: directory.affiliation ? [directory.affiliation] : [],
+          }}
         />
         <ParticipantFilter
           onValueChange={directory.changeParticipant}
           selectedLabel={selectedParticipantLabel}
           value={directory.participant}
         />
-      </div>
+      </FilterBar>
 
       {popularTags.length > 0 ? (
         <div className="flex flex-wrap items-center gap-2">

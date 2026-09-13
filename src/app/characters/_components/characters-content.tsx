@@ -5,7 +5,6 @@ import {
   type HierarchicalFilterSelection,
 } from "@/components/filters/hierarchical-filter";
 import { Select } from "@/components/ui/select";
-import { isCharacterSort } from "@/constants/character-list";
 
 import { useCharacterDirectory } from "../_hooks/use-character-directory";
 import { useCharacters } from "../_hooks/use-characters";
@@ -182,16 +181,13 @@ export function CharactersContent() {
             <span className="ml-1 text-body-sm text-secondary">정렬</span>
             <Select
               label="인물 정렬"
-              onChange={(event) => {
-                if (isCharacterSort(event.target.value)) {
-                  directory.changeSort(event.target.value);
-                }
-              }}
+              onValueChange={directory.changeSort}
+              options={[
+                { label: "가나다순 ↑", value: "asc" },
+                { label: "가나다순 ↓", value: "desc" },
+              ]}
               value={directory.sort}
-            >
-              <option value="asc">가나다순 ↑</option>
-              <option value="desc">가나다순 ↓</option>
-            </Select>
+            />
           </div>
         </div>
 

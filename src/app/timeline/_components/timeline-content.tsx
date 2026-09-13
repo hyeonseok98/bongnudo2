@@ -1,13 +1,14 @@
 "use client";
 
 import Link from "next/link";
+import { useRef } from "react";
 
 import {
   buildJobAffiliationFilterNodes,
   buildStreamerAffiliationFilterData,
+  filterCharacters,
 } from "@/app/characters/_utils/character-directory";
-import type { FilterSelectOption } from "@/components/filters/filter-select";
-import type { FilterTreeNode } from "@/components/filters/hierarchical-filter";
+import type { HierarchicalFilterSelection } from "@/components/filters/hierarchical-filter";
 import { Select } from "@/components/ui/select";
 import { buttonVariants } from "@/components/ui/button";
 import type { TimelineQueryFilters } from "@/features/timeline/timeline";
@@ -19,12 +20,14 @@ import { useTimeline } from "../_hooks/use-timeline";
 import { useTimelineDirectory } from "../_hooks/use-timeline-directory";
 import { TimelineFilters } from "./timeline-filters";
 import { TimelineList } from "./timeline-list";
+import { TimelineMediaDialog } from "./timeline-media-dialog";
 
 interface TimelineContentProps {
   today: string;
 }
 
 export function TimelineContent({ today }: TimelineContentProps) {
+  const didOpenMediaFromList = useRef(false);
   const directory = useTimelineDirectory(today);
   const debouncedQuery = useDebouncedValue(directory.query, 300);
   const queryFilters: TimelineQueryFilters = {
@@ -42,13 +45,10 @@ export function TimelineContent({ today }: TimelineContentProps) {
   const characters = charactersQuery.data?.characters ?? [];
   const streamerAffiliations =
     charactersQuery.data?.streamerAffiliations ?? [];
-  const jobOptions = toFilterOptions(
-    buildJobAffiliationFilterNodes(characters),
-    "직업 전체",
-  );
-  const affiliationOptions = toFilterOptions(
-    buildStreamerAffiliationFilterData(characters, streamerAffiliations).nodes,
-    "소속 전체",
+  const jobNodes = buildJobAffiliationFilterNodes(characters);
+  const affiliationFilterData = buildStreamerAffiliationFilterData(
+    characters,
+    streamerAffiliations,
   );
   const selectedParticipant = characters.find(
     (character) => character.id === directory.participant,
@@ -57,6 +57,52 @@ export function TimelineContent({ today }: TimelineContentProps) {
     ? (selectedParticipant.rpName ?? selectedParticipant.streamerName)
     : null;
   const timeline = timelineQuery.data;
+  const selectedEvent =
+    timeline?.events.find((event) => event.id === directory.eventId) ?? null;
+
+  function getJobResultCount(selection: HierarchicalFilterSelection) {
+    return filterCharacters(
+      characters,
+      {
+        jobSelection: selection,
+        query: "",
+        streamerAffiliationSelection: { ids: [] },
+      },
+      streamerAffiliations,
+    ).length;
+  }
+
+  function getAffiliationResultCount(selection: HierarchicalFilterSelection) {
+    return filterCharacters(
+      characters,
+      {
+        jobSelection: { ids: [] },
+        query: "",
+        streamerAffiliationSelection: selection,
+      },
+      streamerAffiliations,
+    ).length;
+  }
+
+  function handleMediaOpen(eventId: string, mediaId: string) {
+    didOpenMediaFromList.current = true;
+    directory.openMedia(eventId, mediaId);
+  }
+
+  function handleMediaClose() {
+    if (didOpenMediaFromList.current) {
+      didOpenMediaFromList.current = false;
+      window.history.back();
+      return;
+    }
+
+    directory.closeMedia();
+  }
+
+  function handleMediaTagChange(tagSlug: string) {
+    didOpenMediaFromList.current = false;
+    directory.applyTagFromMedia(tagSlug);
+  }
 
   return (
     <div className="space-y-6">
@@ -73,10 +119,13 @@ export function TimelineContent({ today }: TimelineContentProps) {
       </header>
 
       <TimelineFilters
-        affiliationOptions={affiliationOptions}
+        affiliationNodes={affiliationFilterData.nodes}
+        affiliationQuickOptions={affiliationFilterData.quickOptions}
         categories={timeline?.categories ?? []}
         directory={directory}
-        jobOptions={jobOptions}
+        getAffiliationResultCount={getAffiliationResultCount}
+        getJobResultCount={getJobResultCount}
+        jobNodes={jobNodes}
         popularTags={timeline?.popularTags ?? []}
         selectedParticipantLabel={selectedParticipantLabel}
         today={today}
@@ -99,19 +148,13 @@ export function TimelineContent({ today }: TimelineContentProps) {
             <span className="text-body-sm text-secondary">정렬</span>
             <Select
               label="타임라인 정렬"
-              onChange={(event) => {
-                if (
-                  event.target.value === "asc" ||
-                  event.target.value === "desc"
-                ) {
-                  directory.changeSort(event.target.value);
-                }
-              }}
+              onValueChange={directory.changeSort}
+              options={[
+                { label: "최신순", value: "desc" },
+                { label: "시간순", value: "asc" },
+              ]}
               value={directory.sort}
-            >
-              <option value="desc">최신순</option>
-              <option value="asc">시간순</option>
-            </Select>
+            />
           </div>
         </div>
 
@@ -125,6 +168,7 @@ export function TimelineContent({ today }: TimelineContentProps) {
           <>
             <TimelineList
               events={timeline.events}
+              onMediaOpen={handleMediaOpen}
               onTagChange={directory.changeTag}
             />
             {timeline.isTruncated ? (
@@ -141,6 +185,20 @@ export function TimelineContent({ today }: TimelineContentProps) {
           </TimelineStatus>
         )}
       </section>
+
+      <TimelineMediaDialog
+        event={selectedEvent}
+        eventId={directory.eventId}
+        events={timeline?.events ?? []}
+        isLoading={timelineQuery.isPending}
+        mediaFilter={directory.mediaType}
+        mediaId={directory.mediaId}
+        onClose={handleMediaClose}
+        onEventChange={directory.openMediaEvent}
+        onMediaChange={directory.changeMedia}
+        onMediaFilterChange={directory.changeMediaType}
+        onTagChange={handleMediaTagChange}
+      />
     </div>
   );
 }
@@ -160,20 +218,4 @@ function TimelineStatus({
       <p className={isError ? "text-status-danger" : undefined}>{children}</p>
     </div>
   );
-}
-
-function toFilterOptions(
-  nodes: FilterTreeNode[],
-  allLabel: string,
-): FilterSelectOption[] {
-  return [
-    { label: allLabel, value: "" },
-    ...nodes.flatMap((node) => [
-      { label: node.label, value: node.id },
-      ...(node.children ?? []).map((child) => ({
-        label: `${node.label} · ${child.label}`,
-        value: child.id,
-      })),
-    ]),
-  ];
 }

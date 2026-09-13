@@ -42,3 +42,11 @@ export function parseChzzkClipUrl(value: string): ChzzkClip | null {
     url: `https://${CHZZK_CLIP_HOSTNAME}/clips/${clipId}`,
   };
 }
+
+export function getChzzkClipEmbedUrl(value: string): string | null {
+  const clip = parseChzzkClipUrl(value);
+
+  return clip
+    ? `https://${CHZZK_CLIP_HOSTNAME}/embed/clip/${clip.clipId}`
+    : null;
+}

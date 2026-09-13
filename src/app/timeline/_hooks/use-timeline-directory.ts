@@ -3,7 +3,9 @@
 import { parseAsString, parseAsStringLiteral, useQueryStates } from "nuqs";
 
 import {
+  TIMELINE_MEDIA_FILTER_VALUES,
   TIMELINE_SORT_VALUES,
+  type TimelineMediaFilter,
   type TimelineQueryFilters,
   type TimelineSort,
 } from "@/features/timeline/timeline";
@@ -16,7 +18,12 @@ const timelineQueryParsers = {
   affiliation: parseAsString.withDefault(""),
   category: parseAsString.withDefault(""),
   date: parseAsString.withDefault(""),
+  event: parseAsString.withDefault(""),
   job: parseAsString.withDefault(""),
+  media: parseAsString.withDefault(""),
+  mediaType: parseAsStringLiteral(TIMELINE_MEDIA_FILTER_VALUES).withDefault(
+    "all",
+  ),
   participant: parseAsString.withDefault(""),
   q: parseAsString.withDefault(""),
   sort: parseAsStringLiteral(TIMELINE_SORT_VALUES).withDefault("desc"),
@@ -24,6 +31,10 @@ const timelineQueryParsers = {
 };
 
 export interface TimelineDirectory extends TimelineQueryFilters {
+  eventId: string;
+  mediaId: string;
+  mediaType: TimelineMediaFilter;
+  applyTagFromMedia: (tag: string) => void;
   changeAffiliation: (affiliation: string) => void;
   changeCategory: (category: string) => void;
   changeDate: (date: string) => void;
@@ -32,6 +43,11 @@ export interface TimelineDirectory extends TimelineQueryFilters {
   changeQuery: (query: string) => void;
   changeSort: (sort: TimelineSort) => void;
   changeTag: (tag: string) => void;
+  changeMedia: (mediaId: string) => void;
+  changeMediaType: (mediaType: TimelineMediaFilter) => void;
+  closeMedia: () => void;
+  openMedia: (eventId: string, mediaId: string) => void;
+  openMediaEvent: (eventId: string, mediaId: string) => void;
   moveDate: (amount: number) => void;
 }
 
@@ -47,11 +63,20 @@ export function useTimelineDirectory(initialDate: string): TimelineDirectory {
     affiliation: params.affiliation,
     category: params.category,
     date,
+    eventId: params.event,
     job: params.job,
+    mediaId: params.media,
+    mediaType: params.mediaType,
     participant: params.participant,
     query: params.q,
     sort: params.sort,
     tag: params.tag,
+    applyTagFromMedia: (value) => {
+      void setParams(
+        { event: null, media: null, tag: value || null },
+        { history: "replace" },
+      );
+    },
     changeAffiliation: (value) => setFilter("affiliation", value),
     changeCategory: (value) => setFilter("category", value),
     changeDate: (value) => {
@@ -67,6 +92,30 @@ export function useTimelineDirectory(initialDate: string): TimelineDirectory {
       );
     },
     changeTag: (value) => setFilter("tag", value),
+    changeMedia: (value) => {
+      void setParams({ media: value || null }, { history: "replace" });
+    },
+    changeMediaType: (value) => {
+      void setParams(
+        { mediaType: value === "all" ? null : value },
+        { history: "replace" },
+      );
+    },
+    closeMedia: () => {
+      void setParams({ event: null, media: null }, { history: "replace" });
+    },
     moveDate: (amount) => setFilter("date", shiftKstDate(date, amount)),
+    openMedia: (eventId, mediaId) => {
+      void setParams(
+        { event: eventId, media: mediaId },
+        { history: "push" },
+      );
+    },
+    openMediaEvent: (eventId, mediaId) => {
+      void setParams(
+        { event: eventId, media: mediaId },
+        { history: "replace" },
+      );
+    },
   };
 }

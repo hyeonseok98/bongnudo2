@@ -39,7 +39,7 @@ export function ParticipantFilter({
       <Popover.Trigger
         className={cn(
           "inline-flex h-11 min-w-40 cursor-pointer items-center gap-2 rounded-lg border border-default bg-background px-3 transition-[background-color,border-color] duration-default hover:bg-surface-muted focus-visible:border-focus-ring",
-          isOpen && "border-focus-ring",
+          isOpen && "border-brand",
         )}
       >
         <span className="text-caption font-medium text-tertiary">인물</span>

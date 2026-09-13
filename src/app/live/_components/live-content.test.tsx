@@ -1,4 +1,5 @@
-import { cleanup, fireEvent, render, screen } from "@testing-library/react";
+import { cleanup, render, screen } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 const mocks = vi.hoisted(() => ({
@@ -93,15 +94,17 @@ describe("LiveContent", () => {
     expect(screen.getByText("LIVE grid")).toBeTruthy();
   });
 
-  it("시청자 수 오름차순과 내림차순을 선택할 수 있음", () => {
+  it("시청자 수 오름차순과 내림차순을 선택할 수 있음", async () => {
+    const user = userEvent.setup();
+
     render(<LiveContent />);
+
+    await user.click(screen.getByRole("button", { name: "LIVE 정렬" }));
 
     expect(screen.getByRole("option", { name: "시청자순 ↓" })).toBeTruthy();
     expect(screen.getByRole("option", { name: "시청자순 ↑" })).toBeTruthy();
 
-    fireEvent.change(screen.getByRole("combobox", { name: "LIVE 정렬" }), {
-      target: { value: "viewers-asc" },
-    });
+    await user.click(screen.getByRole("option", { name: "시청자순 ↑" }));
 
     expect(mocks.useLiveDirectory().changeSort).toHaveBeenCalledWith(
       "viewers-asc",

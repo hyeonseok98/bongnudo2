@@ -39,6 +39,7 @@ export interface HierarchicalFilterSelection {
 }
 
 interface HierarchicalFilterProps {
+  applyLabel?: string;
   disabled?: boolean;
   getResultCount: (selection: HierarchicalFilterSelection) => number;
   label: string;
@@ -47,10 +48,12 @@ interface HierarchicalFilterProps {
   onApply: (selection: HierarchicalFilterSelection) => void;
   panelSize?: "compact" | "default";
   quickOptions?: QuickFilterOption[];
+  selectionMode?: "multiple" | "single";
   value: HierarchicalFilterSelection;
 }
 
 export function HierarchicalFilter({
+  applyLabel,
   disabled,
   getResultCount,
   label,
@@ -59,6 +62,7 @@ export function HierarchicalFilter({
   onApply,
   panelSize = "default",
   quickOptions = [],
+  selectionMode = "multiple",
   value,
 }: HierarchicalFilterProps) {
   const isMobile = useIsMobile();
@@ -87,9 +91,23 @@ export function HierarchicalFilter({
 
   function handleNodeToggle(nodeId: string) {
     setIsAllSelected(false);
-    setDraftSelection((currentSelection) =>
-      toggleHierarchicalFilterSelection(nodes, currentSelection, nodeId),
-    );
+    setDraftSelection((currentSelection) => {
+      if (selectionMode === "single") {
+        return {
+          ids:
+            currentSelection.ids.length === 1 &&
+            currentSelection.ids[0] === nodeId
+              ? []
+              : [nodeId],
+        };
+      }
+
+      return toggleHierarchicalFilterSelection(
+        nodes,
+        currentSelection,
+        nodeId,
+      );
+    });
   }
 
   function handleApply() {
@@ -122,6 +140,7 @@ export function HierarchicalFilter({
   const content = (
     <FilterContent
       allCount={getResultCount({ ids: [] })}
+      applyLabel={applyLabel}
       draftSelection={draftSelection}
       expandedNodeIds={expandedNodeIds}
       label={label}
@@ -244,6 +263,7 @@ function getTriggerClassName(isOpen: boolean) {
 
 interface FilterContentProps {
   allCount: number;
+  applyLabel?: string;
   draftSelection: HierarchicalFilterSelection;
   expandedNodeIds: Set<string>;
   label: string;
@@ -265,6 +285,7 @@ interface FilterContentProps {
 
 function FilterContent({
   allCount,
+  applyLabel,
   draftSelection,
   expandedNodeIds,
   label,
@@ -393,7 +414,7 @@ function FilterContent({
           취소
         </Button>
         <Button className="min-w-32" onClick={onApply}>
-          {resultCount}명 보기
+          {applyLabel ?? `${resultCount}명 보기`}
         </Button>
       </div>
     </div>

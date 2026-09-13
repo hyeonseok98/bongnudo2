@@ -1,6 +1,9 @@
 export const TIMELINE_SORT_VALUES = ["desc", "asc"] as const;
+export const TIMELINE_MEDIA_FILTER_VALUES = ["all", "image", "clip"] as const;
 
 export type TimelineSort = (typeof TIMELINE_SORT_VALUES)[number];
+export type TimelineMediaFilter =
+  (typeof TIMELINE_MEDIA_FILTER_VALUES)[number];
 
 export interface TimelineQueryFilters {
   affiliation: string;

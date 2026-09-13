@@ -11,7 +11,6 @@ import {
   type HierarchicalFilterSelection,
 } from "@/components/filters/hierarchical-filter";
 import { Select } from "@/components/ui/select";
-import { isLiveSort } from "@/features/live/live-stream";
 
 import { useCharacters } from "../../characters/_hooks/use-characters";
 import { useLiveBroadcasts } from "../_hooks/use-live-broadcasts";
@@ -164,18 +163,15 @@ export function LiveContent() {
             <span className="text-body-sm text-secondary">정렬</span>
             <Select
               label="LIVE 정렬"
-              onChange={(event) => {
-                if (isLiveSort(event.target.value)) {
-                  directory.changeSort(event.target.value);
-                }
-              }}
+              onValueChange={directory.changeSort}
+              options={[
+                { label: "시청자순 ↓", value: "viewers" },
+                { label: "시청자순 ↑", value: "viewers-asc" },
+                { label: "가나다순 ↑", value: "asc" },
+                { label: "가나다순 ↓", value: "desc" },
+              ]}
               value={directory.sort}
-            >
-              <option value="viewers">시청자순 ↓</option>
-              <option value="viewers-asc">시청자순 ↑</option>
-              <option value="asc">가나다순 ↑</option>
-              <option value="desc">가나다순 ↓</option>
-            </Select>
+            />
           </div>
         </div>
 

@@ -22,12 +22,14 @@ const VISIBLE_TAG_COUNT = 3;
 
 interface TimelineListProps {
   events: TimelineEvent[];
+  onMediaOpen: (eventId: string, mediaId: string) => void;
   onRequestCorrection?: (eventId: string) => void;
   onTagChange: (tagSlug: string) => void;
 }
 
 export function TimelineList({
   events,
+  onMediaOpen,
   onRequestCorrection,
   onTagChange,
 }: TimelineListProps) {
@@ -45,6 +47,7 @@ export function TimelineList({
           <TimelineRow
             event={event}
             key={event.id}
+            onMediaOpen={onMediaOpen}
             onRequestCorrection={onRequestCorrection}
             onTagChange={onTagChange}
           />
@@ -56,12 +59,14 @@ export function TimelineList({
 
 interface TimelineRowProps {
   event: TimelineEvent;
+  onMediaOpen: (eventId: string, mediaId: string) => void;
   onRequestCorrection?: (eventId: string) => void;
   onTagChange: (tagSlug: string) => void;
 }
 
 function TimelineRow({
   event,
+  onMediaOpen,
   onRequestCorrection,
   onTagChange,
 }: TimelineRowProps) {
@@ -88,9 +93,9 @@ function TimelineRow({
       </time>
 
       <div>
-        <CategoryBadge categorySlug={event.category.slug}>
+        <TimelineCategoryBadge categorySlug={event.category.slug}>
           {event.category.name}
-        </CategoryBadge>
+        </TimelineCategoryBadge>
       </div>
 
       <article
@@ -135,7 +140,13 @@ function TimelineRow({
           </div>
         </div>
 
-        {previewMedia ? <MediaPreview media={previewMedia} /> : null}
+        {previewMedia ? (
+          <MediaPreview
+            eventTitle={event.title}
+            media={previewMedia}
+            onOpen={() => onMediaOpen(event.id, previewMedia.id)}
+          />
+        ) : null}
 
         <div className="flex flex-wrap items-center gap-3 text-caption text-tertiary">
           <span className="inline-flex items-center gap-1" title="연결된 제보 수">
@@ -230,7 +241,7 @@ function TimelineRow({
   );
 }
 
-function CategoryBadge({
+export function TimelineCategoryBadge({
   categorySlug,
   children,
 }: {
@@ -259,10 +270,23 @@ function CategoryBadge({
   );
 }
 
-function MediaPreview({ media }: { media: TimelineMedia }) {
+function MediaPreview({
+  eventTitle,
+  media,
+  onOpen,
+}: {
+  eventTitle: string;
+  media: TimelineMedia;
+  onOpen: () => void;
+}) {
   if (media.mediaType === "image") {
     return (
-      <div className="relative aspect-video max-w-xl overflow-hidden rounded-lg border border-default bg-surface-muted">
+      <button
+        aria-label={eventTitle + " 미디어 상세 보기"}
+        className="relative block aspect-video w-full max-w-xl cursor-zoom-in overflow-hidden rounded-lg border border-default bg-surface-muted transition-[border-color,opacity] duration-default hover:border-brand hover:opacity-90 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus-ring motion-reduce:transition-none"
+        onClick={onOpen}
+        type="button"
+      >
         <Image
           fill
           alt="타임라인 첨부 이미지"
@@ -270,17 +294,22 @@ function MediaPreview({ media }: { media: TimelineMedia }) {
           sizes="(max-width: 768px) 100vw, 576px"
           src={media.imageUrl}
         />
-      </div>
+      </button>
     );
   }
 
   return (
-    <div className="flex aspect-video max-w-xl items-center justify-center rounded-lg border border-default bg-surface-inset text-secondary">
+    <button
+      aria-label={eventTitle + " CHZZK 클립 상세 보기"}
+      className="flex aspect-video w-full max-w-xl cursor-pointer items-center justify-center rounded-lg border border-default bg-surface-inset text-secondary transition-[border-color,background-color] duration-default hover:border-brand hover:bg-surface-muted focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus-ring motion-reduce:transition-none"
+      onClick={onOpen}
+      type="button"
+    >
       <span className="flex flex-col items-center gap-2 text-body-sm font-medium">
         <PlayCircle aria-hidden="true" className="size-8 text-brand-text" />
         CHZZK 클립
       </span>
-    </div>
+    </button>
   );
 }
 
