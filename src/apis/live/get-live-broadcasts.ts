@@ -13,7 +13,7 @@ const liveBroadcastSchema = z.object({
 
 const liveBroadcastResponseSchema = z.object({
   broadcasts: z.array(liveBroadcastSchema),
-  refreshedAt: z.string().datetime().nullable(),
+  refreshedAt: z.string().datetime({ offset: true }).nullable(),
 });
 
 export async function getLiveBroadcasts(): Promise<LiveBroadcastsResponse> {

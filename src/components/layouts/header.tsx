@@ -2,6 +2,7 @@
 
 import { Popover } from "@base-ui/react/popover";
 import { ChevronDown, LogOut, Menu, Moon, Sun } from "lucide-react";
+import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useTheme } from "next-themes";
@@ -110,15 +111,16 @@ export function Header({
       </button>
       <Link
         href="/"
-        className="ml-2 flex items-center gap-2 rounded-md text-primary"
+        className="ml-0 flex items-center gap-2 rounded-md text-primary"
       >
-        {/* <span
-          aria-hidden="true"
-          className="flex size-7 items-center justify-center rounded-md bg-brand text-caption font-bold text-brand-foreground"
-        >
-          봉
-        </span> */}
-        <span className="text-body-lg font-semibold">봉누도2</span>
+        <Image
+          alt="BONGNUROK"
+          className="h-8 w-auto"
+          height={32}
+          priority
+          src="/logo/bongnurok_logo.png"
+          width={128}
+        />
       </Link>
       <div
         className="header-account-menu ml-auto flex min-w-0 items-center gap-2"
