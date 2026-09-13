@@ -111,7 +111,7 @@ export function Header({
       </button>
       <Link
         href="/"
-        className="ml-0 flex items-center gap-2 rounded-md text-primary"
+        className="ml-1 flex items-center gap-2 rounded-md text-primary"
       >
         <Image
           alt="BONGNUROK"
