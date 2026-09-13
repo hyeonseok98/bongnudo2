@@ -116,10 +116,10 @@ export function Header({
         <Image
           alt="BONGNUROK"
           className="h-8 w-auto"
-          height={32}
+          height={250}
           priority
           src="/logo/bongnurok_logo.png"
-          width={128}
+          width={656}
         />
       </Link>
       <div
