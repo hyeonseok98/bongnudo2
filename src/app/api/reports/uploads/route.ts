@@ -1,7 +1,10 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 
-import { MAX_REPORT_IMAGE_BYTES } from "@/features/reports/report-image";
+import {
+  MAX_REPORT_IMAGE_BYTES,
+  REPORT_IMAGE_UPLOAD_ERROR_MESSAGE,
+} from "@/features/reports/report-image";
 import {
   MAX_REPORT_IMAGE_COUNT,
   ReportRequestError,
@@ -56,7 +59,7 @@ export async function POST(request: Request) {
 
     logUploadPreparationError(error);
     return NextResponse.json(
-      { error: "이미지 업로드를 준비하지 못했습니다." },
+      { error: REPORT_IMAGE_UPLOAD_ERROR_MESSAGE },
       { status: 500 },
     );
   }

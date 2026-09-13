@@ -117,7 +117,7 @@ function TimeOptionList({
             <button
               aria-selected={isSelected}
               className={cn(
-                "flex h-9 w-full cursor-pointer items-center justify-between rounded-md px-2 text-body-sm font-medium tabular-nums text-secondary outline-none hover:bg-surface-muted hover:text-primary focus-visible:outline-2 focus-visible:outline-focus-ring",
+                "relative grid h-9 w-full cursor-pointer place-items-center rounded-md px-2 text-center text-body-sm font-medium tabular-nums text-secondary outline-none hover:bg-surface-muted hover:text-primary focus-visible:outline-2 focus-visible:outline-focus-ring",
                 isSelected && "bg-surface-selected text-brand-text",
               )}
               key={option}
@@ -138,7 +138,12 @@ function TimeOptionList({
               type="button"
             >
               {padTimePart(option)}
-              {isSelected ? <Check aria-hidden="true" className="size-3.5" /> : null}
+              {isSelected ? (
+                <Check
+                  aria-hidden="true"
+                  className="absolute right-2 size-3.5"
+                />
+              ) : null}
             </button>
           );
         })}

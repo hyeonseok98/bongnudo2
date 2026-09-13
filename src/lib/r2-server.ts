@@ -129,15 +129,16 @@ function getR2Configuration(): R2Configuration {
     throw new Error("R2 환경변수가 설정되지 않음.");
   }
 
-  if (endpoint && !isValidHttpsUrl(endpoint)) {
-    throw new Error("R2 endpoint 설정이 올바르지 않음.");
-  }
+  const resolvedEndpoint =
+    endpoint && isValidHttpsUrl(endpoint)
+      ? endpoint
+      : `https://${accountId}.r2.cloudflarestorage.com`;
 
   return {
     bucketName,
     client: new S3Client({
       region: "auto",
-      endpoint: endpoint || `https://${accountId}.r2.cloudflarestorage.com`,
+      endpoint: resolvedEndpoint,
       credentials: { accessKeyId, secretAccessKey },
       requestChecksumCalculation: "WHEN_REQUIRED",
     }),
@@ -166,7 +167,14 @@ export function getReportUploadConfigurationDiagnostics(): ReportUploadConfigura
 
 function readEnvironmentVariable(name: string): string | undefined {
   const value = process.env[name]?.trim();
-  return value || undefined;
+
+  if (!value) return undefined;
+
+  const hasMatchingQuotes =
+    (value.startsWith('"') && value.endsWith('"')) ||
+    (value.startsWith("'") && value.endsWith("'"));
+
+  return hasMatchingQuotes ? value.slice(1, -1) || undefined : value;
 }
 
 function isValidHttpsUrl(value: string): boolean {

@@ -331,20 +331,34 @@ export function ReportDialog({ onClose, onSuccess, today }: ReportDialogProps) {
                   </div>
 
                   <FieldLabel error={fieldErrors.title} label="제목" required>
-                    <Input
-                      aria-invalid={Boolean(fieldErrors.title)}
-                      maxLength={100}
-                      onChange={(changeEvent) => {
-                        updateDraft({ title: changeEvent.target.value });
-                        setFieldErrors((current) => ({
-                          ...current,
-                          title: undefined,
-                        }));
-                      }}
-                      placeholder={getTitlePlaceholder(form.reportType)}
-                      required
-                      value={draft.title}
-                    />
+                    <div className="relative">
+                      <Input
+                        aria-invalid={Boolean(fieldErrors.title)}
+                        className="pr-10"
+                        maxLength={100}
+                        onChange={(changeEvent) => {
+                          updateDraft({ title: changeEvent.target.value });
+                          setFieldErrors((current) => ({
+                            ...current,
+                            title: undefined,
+                          }));
+                        }}
+                        placeholder={getTitlePlaceholder(form.reportType)}
+                        required
+                        value={draft.title}
+                      />
+                      <ClearInputButton
+                        label="제목 지우기"
+                        onClick={() => {
+                          updateDraft({ title: "" });
+                          setFieldErrors((current) => ({
+                            ...current,
+                            title: undefined,
+                          }));
+                        }}
+                        value={draft.title}
+                      />
+                    </div>
                     <CharacterCount current={draft.title.length} max={100} />
                   </FieldLabel>
 
@@ -500,9 +514,32 @@ function FieldLabel({
 
 function FieldError({ children }: { children: string }) {
   return (
-    <span className="font-normal text-status-danger" role="alert">
+    <span className="text-body-sm font-normal text-status-danger" role="alert">
       {children}
     </span>
+  );
+}
+
+function ClearInputButton({
+  label,
+  onClick,
+  value,
+}: {
+  label: string;
+  onClick: () => void;
+  value: string;
+}) {
+  if (!value) return null;
+
+  return (
+    <button
+      aria-label={label}
+      className="absolute top-1/2 right-2 grid size-7 -translate-y-1/2 cursor-pointer place-items-center rounded-md text-tertiary hover:bg-surface-muted hover:text-primary focus-visible:outline-2 focus-visible:outline-focus-ring"
+      onClick={onClick}
+      type="button"
+    >
+      <X aria-hidden="true" className="size-4" />
+    </button>
   );
 }
 
@@ -564,42 +601,6 @@ function ParticipantPicker({
       <legend className="text-caption font-semibold text-secondary">
         관련 인물 <span className="font-normal text-tertiary">(선택)</span>
       </legend>
-      {participants.length > 0 ? (
-        <ul aria-label="선택한 관련 인물" className="flex flex-wrap gap-1.5">
-          {participants.map((participant, index) => (
-            <li
-              className="inline-flex items-center gap-1.5 rounded-full bg-surface-muted py-0.5 pr-2 pl-0.5"
-              key={participant.seasonParticipantId}
-            >
-              <CharacterAvatar
-                className="size-7 rounded-full"
-                name={participant.rpName ?? participant.streamerName}
-                profileImageUrl={null}
-                sizes="28px"
-              />
-              <span className="text-caption text-primary">
-                {index === 0 ? <strong className="mr-1 text-brand-text">[대표]</strong> : null}
-                {participant.rpName ?? participant.streamerName}
-              </span>
-              <button
-                aria-label={`${participant.rpName ?? participant.streamerName} 선택 해제`}
-                className="cursor-pointer rounded-full text-tertiary hover:text-primary focus-visible:outline-2 focus-visible:outline-focus-ring"
-                onClick={() =>
-                  onChange(
-                    participants.filter(
-                      (item) =>
-                        item.seasonParticipantId !== participant.seasonParticipantId,
-                    ),
-                  )
-                }
-                type="button"
-              >
-                <X aria-hidden="true" className="size-3.5" />
-              </button>
-            </li>
-          ))}
-        </ul>
-      ) : null}
       <Popover.Root
         onOpenChange={setIsOpen}
         open={isOpen && Boolean(query.trim())}
@@ -614,7 +615,7 @@ function ParticipantPicker({
             render={
               <Input
                 aria-label="관련 인물 검색"
-                className="pl-9"
+                className="pr-10 pl-9"
                 onChange={(event) => {
                   const nextQuery = event.target.value;
                   setQuery(nextQuery);
@@ -626,6 +627,14 @@ function ParticipantPicker({
               />
             }
           />
+          <ClearInputButton
+            label="인물 검색어 지우기"
+            onClick={() => {
+              setQuery("");
+              setIsOpen(false);
+            }}
+            value={query}
+          />
         </div>
         <Popover.Portal>
           <Popover.Positioner
@@ -634,7 +643,10 @@ function ParticipantPicker({
             collisionPadding={16}
             sideOffset={6}
           >
-            <Popover.Popup className="max-h-56 min-w-[var(--anchor-width)] overflow-y-auto rounded-lg border border-default bg-surface-raised p-1 shadow-xl outline-none">
+            <Popover.Popup
+              className="max-h-56 min-w-[var(--anchor-width)] overflow-y-auto rounded-lg border border-default bg-surface-raised p-1 shadow-xl outline-none"
+              initialFocus={false}
+            >
               <Popover.Title className="sr-only">관련 인물 검색 결과</Popover.Title>
               {searchQuery.isPending ? (
                 <p className="p-3 text-caption text-secondary" role="status">
@@ -692,6 +704,44 @@ function ParticipantPicker({
           </Popover.Positioner>
         </Popover.Portal>
       </Popover.Root>
+      {participants.length > 0 ? (
+        <ul aria-label="선택한 관련 인물" className="flex flex-wrap gap-1.5">
+          {participants.map((participant, index) => (
+            <li
+              className="inline-flex items-center gap-1.5 rounded-full bg-surface-muted py-0.5 pr-2 pl-0.5"
+              key={participant.seasonParticipantId}
+            >
+              <CharacterAvatar
+                className="size-7 rounded-full"
+                name={participant.rpName ?? participant.streamerName}
+                profileImageUrl={null}
+                sizes="28px"
+              />
+              <span className="text-caption text-primary">
+                {index === 0 ? (
+                  <strong className="mr-1 text-brand-text">[대표]</strong>
+                ) : null}
+                {participant.rpName ?? participant.streamerName}
+              </span>
+              <button
+                aria-label={`${participant.rpName ?? participant.streamerName} 선택 해제`}
+                className="cursor-pointer rounded-full text-tertiary hover:text-primary focus-visible:outline-2 focus-visible:outline-focus-ring"
+                onClick={() =>
+                  onChange(
+                    participants.filter(
+                      (item) =>
+                        item.seasonParticipantId !== participant.seasonParticipantId,
+                    ),
+                  )
+                }
+                type="button"
+              >
+                <X aria-hidden="true" className="size-3.5" />
+              </button>
+            </li>
+          ))}
+        </ul>
+      ) : null}
       <p className="text-caption text-tertiary">
         가장 먼저 추가한 인물이 대표 인물로 설정됩니다.
       </p>
@@ -730,6 +780,30 @@ function TagInput({
       <legend className="text-caption font-semibold text-secondary">
         태그 <span className="font-normal text-tertiary">(선택)</span>
       </legend>
+      <div className="relative">
+        <Hash
+          aria-hidden="true"
+          className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-tertiary"
+        />
+        <Input
+          className="pr-10 pl-9"
+          disabled={tags.length >= MAX_REPORT_TAG_COUNT}
+          onChange={(event) => setValue(event.target.value)}
+          onKeyDown={(event) => {
+            if (event.key === "Enter") {
+              event.preventDefault();
+              commitTag();
+            }
+          }}
+          placeholder="태그를 입력하고 Enter를 눌러 추가해주세요."
+          value={value}
+        />
+        <ClearInputButton
+          label="태그 입력 지우기"
+          onClick={() => setValue("")}
+          value={value}
+        />
+      </div>
       {tags.length > 0 ? (
         <ul aria-label="선택한 태그" className="flex flex-wrap gap-1.5">
           {tags.map((tag) => (
@@ -741,7 +815,9 @@ function TagInput({
               <button
                 aria-label={`${tag} 태그 삭제`}
                 className="cursor-pointer rounded-full text-tertiary hover:text-primary"
-                onClick={() => onChange(tags.filter((candidate) => candidate !== tag))}
+                onClick={() =>
+                  onChange(tags.filter((candidate) => candidate !== tag))
+                }
                 type="button"
               >
                 <X aria-hidden="true" className="size-3" />
@@ -750,28 +826,6 @@ function TagInput({
           ))}
         </ul>
       ) : null}
-      <div className="relative">
-        <Hash
-          aria-hidden="true"
-          className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-tertiary"
-        />
-        <Input
-          className="pl-9"
-          disabled={tags.length >= MAX_REPORT_TAG_COUNT}
-          onChange={(event) => setValue(event.target.value)}
-          onKeyDown={(event) => {
-            if (event.key === "Enter") {
-              event.preventDefault();
-              commitTag();
-            }
-            if (event.key === "Backspace" && !value && tags.length > 0) {
-              onChange(tags.slice(0, -1));
-            }
-          }}
-          placeholder="태그를 입력하고 Enter를 눌러 추가해주세요."
-          value={value}
-        />
-      </div>
       <p className="text-caption text-tertiary">
         #은 자동으로 정리되며 최대 {MAX_REPORT_TAG_COUNT}개까지 추가할 수 있습니다.
       </p>
@@ -968,11 +1022,11 @@ function ClipFields({
       <div className="space-y-1.5">
         {values.map((field, index) => (
           <div key={field.id}>
-            <div className="flex gap-1.5">
+            <div className="relative">
               <Input
                 aria-invalid={Boolean(errors?.[field.id])}
                 aria-label={`클립 URL ${index + 1}`}
-                className="h-9"
+                className="h-9 pr-10"
                 onChange={(event) =>
                   onChange(
                     values.map((candidate) =>
@@ -986,20 +1040,17 @@ function ClipFields({
                 type="url"
                 value={field.value}
               />
-              {values.length > 1 ? (
-                <Button
-                  aria-label={`클립 URL ${index + 1} 삭제`}
-                  className="size-9"
-                  onClick={() =>
-                    onChange(removeReportClipField(values, field.id))
-                  }
-                  size="icon"
-                  type="button"
-                  variant="ghost"
-                >
-                  <X aria-hidden="true" />
-                </Button>
-              ) : null}
+              <ClearInputButton
+                label={`클립 URL ${index + 1} 지우기`}
+                onClick={() =>
+                  onChange(
+                    values.length > 1
+                      ? removeReportClipField(values, field.id)
+                      : [{ ...field, value: "" }],
+                  )
+                }
+                value={field.value}
+              />
             </div>
             {errors?.[field.id] ? <FieldError>{errors[field.id]}</FieldError> : null}
           </div>
@@ -1082,9 +1133,16 @@ function ConfirmationFields({
                   [confirmation.id]: !confirmations[confirmation.id],
                 })
               }
+              required
               type="checkbox"
             />
-            {confirmation.label}
+            <span>
+              {confirmation.label}
+              <span aria-hidden="true" className="ml-1 text-status-danger">
+                *
+              </span>
+              <span className="sr-only">필수</span>
+            </span>
           </label>
         ))}
       </div>

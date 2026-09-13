@@ -118,22 +118,86 @@ describe("ReportDialog", () => {
 
     await user.type(screen.getByLabelText("관련 인물 검색"), "강지");
     const participant = await screen.findByRole("button", { name: /도현정/ });
+    expect(document.activeElement).toBe(screen.getByLabelText("관련 인물 검색"));
     await user.click(participant);
 
     const selectedResult = await screen.findByRole("button", {
       name: /도현정.*추가됨/,
     });
     expect((selectedResult as HTMLButtonElement).disabled).toBe(true);
+    expect(
+      screen
+        .getByLabelText("관련 인물 검색")
+        .compareDocumentPosition(screen.getByRole("list", { name: "선택한 관련 인물" })) &
+        Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy();
   });
 
-  it("클립이 하나면 삭제 버튼을 숨기고 둘 이상이면 표시함", async () => {
+  it("제목, 인물 검색어, 태그 입력과 클립 URL을 한 번에 지움", async () => {
     const user = userEvent.setup();
     renderReportDialog();
 
-    expect(screen.queryByRole("button", { name: "클립 URL 1 삭제" })).toBeNull();
+    const titleInput = screen.getByPlaceholderText(/어떤 일이 있었나요/);
+    await user.type(titleInput, "제목");
+    await user.click(screen.getByRole("button", { name: "제목 지우기" }));
+    expect((titleInput as HTMLInputElement).value).toBe("");
+
+    const participantInput = screen.getByLabelText("관련 인물 검색");
+    await user.type(participantInput, "강지");
+    await user.click(screen.getByRole("button", { name: "인물 검색어 지우기" }));
+    expect((participantInput as HTMLInputElement).value).toBe("");
+
+    const tagInput = screen.getByPlaceholderText(/태그를 입력하고 Enter/);
+    await user.type(tagInput, "작성중");
+    await user.click(screen.getByRole("button", { name: "태그 입력 지우기" }));
+    expect((tagInput as HTMLInputElement).value).toBe("");
+
+    const clipInput = screen.getByLabelText("클립 URL 1");
+    await user.type(clipInput, "https://chzzk.naver.com/clips/abcdef");
+    await user.click(screen.getByRole("button", { name: "클립 URL 1 지우기" }));
+    expect((clipInput as HTMLInputElement).value).toBe("");
+  });
+
+  it("태그는 입력칸 아래에 표시되고 빈 입력에서 Backspace로 삭제되지 않음", async () => {
+    const user = userEvent.setup();
+    renderReportDialog();
+    const tagInput = screen.getByPlaceholderText(/태그를 입력하고 Enter/);
+
+    await user.type(tagInput, "봉누도2{Enter}");
+    const selectedTags = screen.getByRole("list", { name: "선택한 태그" });
+    expect(
+      tagInput.compareDocumentPosition(selectedTags) &
+        Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy();
+
+    await user.click(tagInput);
+    await user.keyboard("{Backspace}");
+    expect(screen.getByText("#봉누도2")).toBeTruthy();
+  });
+
+  it("여러 클립 중 지우기 버튼을 누르면 해당 입력 행을 제거함", async () => {
+    const user = userEvent.setup();
+    renderReportDialog();
+
     await user.click(screen.getByRole("button", { name: "클립 추가" }));
-    expect(screen.getByRole("button", { name: "클립 URL 1 삭제" })).toBeTruthy();
-    await user.click(screen.getByRole("button", { name: "클립 URL 2 삭제" }));
-    expect(screen.queryByRole("button", { name: "클립 URL 1 삭제" })).toBeNull();
+    await user.type(
+      screen.getByLabelText("클립 URL 2"),
+      "https://chzzk.naver.com/clips/abcdef",
+    );
+    await user.click(screen.getByRole("button", { name: "클립 URL 2 지우기" }));
+    expect(screen.queryByLabelText("클립 URL 2")).toBeNull();
+  });
+
+  it("개별 동의 항목을 필수 입력으로 제공함", () => {
+    renderReportDialog();
+
+    expect(
+      (screen.getByRole("checkbox", { name: /사실에 기반해/ }) as HTMLInputElement)
+        .required,
+    ).toBe(true);
+    expect(
+      (screen.getByRole("checkbox", { name: /기록으로 활용/ }) as HTMLInputElement)
+        .required,
+    ).toBe(true);
   });
 });

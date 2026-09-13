@@ -4,6 +4,8 @@ export const MAX_REPORT_IMAGE_BYTES = 10 * 1024 * 1024;
 export const MAX_REPORT_IMAGE_EDGE = 2560;
 export const REPORT_IMAGE_WEBP_QUALITY = 0.82;
 export const REPORT_IMAGE_MIME_TYPE = "image/webp";
+export const REPORT_IMAGE_UPLOAD_ERROR_MESSAGE =
+  "이미지 업로드에 실패했습니다. 관리자에게 문의해주세요.";
 
 const ALLOWED_REPORT_IMAGE_TYPES = new Set([
   "image/jpeg",
