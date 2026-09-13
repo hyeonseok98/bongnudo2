@@ -1,6 +1,5 @@
 "use client";
 
-import Link from "next/link";
 import { useRef } from "react";
 
 import {
@@ -10,7 +9,6 @@ import {
 } from "@/app/characters/_utils/character-directory";
 import type { HierarchicalFilterSelection } from "@/components/filters/hierarchical-filter";
 import { Select } from "@/components/ui/select";
-import { buttonVariants } from "@/components/ui/button";
 import type { TimelineQueryFilters } from "@/features/timeline/timeline";
 import { hasTimelineFilters } from "@/features/timeline/timeline-params";
 import { useDebouncedValue } from "@/hooks/use-debounced-value";
@@ -21,12 +19,17 @@ import { useTimelineDirectory } from "../_hooks/use-timeline-directory";
 import { TimelineFilters } from "./timeline-filters";
 import { TimelineList } from "./timeline-list";
 import { TimelineMediaDialog } from "./timeline-media-dialog";
+import { ReportEntryButton } from "./report-entry-button";
 
 interface TimelineContentProps {
+  isAuthenticated: boolean;
   today: string;
 }
 
-export function TimelineContent({ today }: TimelineContentProps) {
+export function TimelineContent({
+  isAuthenticated,
+  today,
+}: TimelineContentProps) {
   const didOpenMediaFromList = useRef(false);
   const directory = useTimelineDirectory(today);
   const debouncedQuery = useDebouncedValue(directory.query, 300);
@@ -113,9 +116,7 @@ export function TimelineContent({ today }: TimelineContentProps) {
             봉누도에서 벌어지는 모든 순간, 사람들이 만들어가는 이야기를 한눈에.
           </p>
         </div>
-        <Link className={buttonVariants()} href="/login?returnTo=%2Ftimeline">
-          제보하기
-        </Link>
+        <ReportEntryButton isAuthenticated={isAuthenticated} today={today} />
       </header>
 
       <TimelineFilters

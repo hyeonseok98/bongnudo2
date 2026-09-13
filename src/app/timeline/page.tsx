@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 
 import { getCurrentKstDate } from "@/features/timeline/timeline-params";
+import { getCurrentUser } from "@/features/auth/session";
 
 import { TimelineContent } from "./_components/timeline-content";
 
@@ -11,10 +12,15 @@ export const metadata: Metadata = {
   alternates: { canonical: "/timeline" },
 };
 
-export default function TimelinePage() {
+export default async function TimelinePage() {
+  const currentUser = await getCurrentUser();
+
   return (
     <main className="py-5 sm:py-6 lg:py-8">
-      <TimelineContent today={getCurrentKstDate()} />
+      <TimelineContent
+        isAuthenticated={currentUser !== null}
+        today={getCurrentKstDate()}
+      />
     </main>
   );
 }
