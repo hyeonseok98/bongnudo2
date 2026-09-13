@@ -165,7 +165,7 @@ function TimelineRow({
               variant="ghost"
               onClick={() => onRequestCorrection(event.id)}
             >
-              정정 요청
+              잘못된 정보 수정 요청
             </Button>
           ) : null}
         </div>

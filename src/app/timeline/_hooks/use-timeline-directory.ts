@@ -26,6 +26,8 @@ const timelineQueryParsers = {
   ),
   participant: parseAsString.withDefault(""),
   q: parseAsString.withDefault(""),
+  report: parseAsString.withDefault(""),
+  correction: parseAsString.withDefault(""),
   sort: parseAsStringLiteral(TIMELINE_SORT_VALUES).withDefault("desc"),
   tag: parseAsString.withDefault(""),
 };
@@ -34,6 +36,8 @@ export interface TimelineDirectory extends TimelineQueryFilters {
   eventId: string;
   mediaId: string;
   mediaType: TimelineMediaFilter;
+  reportIntent: "report" | "correction" | null;
+  correctionEventId: string;
   applyTagFromMedia: (tag: string) => void;
   changeAffiliation: (affiliation: string) => void;
   changeCategory: (category: string) => void;
@@ -46,8 +50,11 @@ export interface TimelineDirectory extends TimelineQueryFilters {
   changeMedia: (mediaId: string) => void;
   changeMediaType: (mediaType: TimelineMediaFilter) => void;
   closeMedia: () => void;
+  closeReportIntent: () => void;
   openMedia: (eventId: string, mediaId: string) => void;
   openMediaEvent: (eventId: string, mediaId: string) => void;
+  openReport: () => void;
+  openCorrection: (eventId: string) => void;
   moveDate: (amount: number) => void;
 }
 
@@ -67,6 +74,13 @@ export function useTimelineDirectory(initialDate: string): TimelineDirectory {
     job: params.job,
     mediaId: params.media,
     mediaType: params.mediaType,
+    reportIntent:
+      params.report === "open"
+        ? "report"
+        : params.correction
+          ? "correction"
+          : null,
+    correctionEventId: params.correction,
     participant: params.participant,
     query: params.q,
     sort: params.sort,
@@ -104,10 +118,21 @@ export function useTimelineDirectory(initialDate: string): TimelineDirectory {
     closeMedia: () => {
       void setParams({ event: null, media: null }, { history: "replace" });
     },
+    closeReportIntent: () => {
+      void setParams(
+        { correction: null, report: null },
+        { history: "replace" },
+      );
+    },
     moveDate: (amount) => setFilter("date", shiftKstDate(date, amount)),
     openMedia: (eventId, mediaId) => {
       void setParams(
-        { event: eventId, media: mediaId },
+        {
+          correction: null,
+          event: eventId,
+          media: mediaId,
+          report: null,
+        },
         { history: "push" },
       );
     },
@@ -115,6 +140,18 @@ export function useTimelineDirectory(initialDate: string): TimelineDirectory {
       void setParams(
         { event: eventId, media: mediaId },
         { history: "replace" },
+      );
+    },
+    openReport: () => {
+      void setParams(
+        { correction: null, event: null, media: null, report: "open" },
+        { history: "push" },
+      );
+    },
+    openCorrection: (eventId) => {
+      void setParams(
+        { correction: eventId, event: null, media: null, report: null },
+        { history: "push" },
       );
     },
   };

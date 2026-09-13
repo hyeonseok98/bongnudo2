@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef } from "react";
+import { useRef, useState } from "react";
 
 import {
   buildJobAffiliationFilterNodes,
@@ -9,6 +9,7 @@ import {
 } from "@/app/characters/_utils/character-directory";
 import type { HierarchicalFilterSelection } from "@/components/filters/hierarchical-filter";
 import { Select } from "@/components/ui/select";
+import { Button } from "@/components/ui/button";
 import type { TimelineQueryFilters } from "@/features/timeline/timeline";
 import { hasTimelineFilters } from "@/features/timeline/timeline-params";
 import { useDebouncedValue } from "@/hooks/use-debounced-value";
@@ -19,7 +20,9 @@ import { useTimelineDirectory } from "../_hooks/use-timeline-directory";
 import { TimelineFilters } from "./timeline-filters";
 import { TimelineList } from "./timeline-list";
 import { TimelineMediaDialog } from "./timeline-media-dialog";
-import { ReportEntryButton } from "./report-entry-button";
+import { CorrectionDialog } from "./correction-dialog";
+import { ReportDialog } from "./report-dialog";
+import { ReportLoginDialog } from "./report-login-dialog";
 
 interface TimelineContentProps {
   isAuthenticated: boolean;
@@ -31,6 +34,7 @@ export function TimelineContent({
   today,
 }: TimelineContentProps) {
   const didOpenMediaFromList = useRef(false);
+  const [feedback, setFeedback] = useState<string | null>(null);
   const directory = useTimelineDirectory(today);
   const debouncedQuery = useDebouncedValue(directory.query, 300);
   const queryFilters: TimelineQueryFilters = {
@@ -62,6 +66,10 @@ export function TimelineContent({
   const timeline = timelineQuery.data;
   const selectedEvent =
     timeline?.events.find((event) => event.id === directory.eventId) ?? null;
+  const correctionEvent =
+    timeline?.events.find(
+      (event) => event.id === directory.correctionEventId,
+    ) ?? null;
 
   function getJobResultCount(selection: HierarchicalFilterSelection) {
     return filterCharacters(
@@ -107,6 +115,10 @@ export function TimelineContent({
     directory.applyTagFromMedia(tagSlug);
   }
 
+  function handleReportSuccess(message: string): void {
+    setFeedback(message);
+  }
+
   return (
     <div className="space-y-6">
       <header className="flex flex-wrap items-start justify-between gap-4">
@@ -116,8 +128,25 @@ export function TimelineContent({
             봉누도에서 벌어지는 모든 순간, 사람들이 만들어가는 이야기를 한눈에.
           </p>
         </div>
-        <ReportEntryButton isAuthenticated={isAuthenticated} today={today} />
+        <Button onClick={directory.openReport}>제보하기</Button>
       </header>
+
+      {feedback ? (
+        <div
+          className="flex items-center justify-between gap-3 rounded-lg border border-brand/30 bg-surface-selected px-4 py-3 text-body-sm text-primary"
+          role="status"
+        >
+          <p>{feedback}</p>
+          <Button
+            aria-label="알림 닫기"
+            onClick={() => setFeedback(null)}
+            size="sm"
+            variant="ghost"
+          >
+            닫기
+          </Button>
+        </div>
+      ) : null}
 
       <TimelineFilters
         affiliationNodes={affiliationFilterData.nodes}
@@ -170,6 +199,7 @@ export function TimelineContent({
             <TimelineList
               events={timeline.events}
               onMediaOpen={handleMediaOpen}
+              onRequestCorrection={directory.openCorrection}
               onTagChange={directory.changeTag}
             />
             {timeline.isTruncated ? (
@@ -200,6 +230,29 @@ export function TimelineContent({
         onMediaFilterChange={directory.changeMediaType}
         onTagChange={handleMediaTagChange}
       />
+
+      {!isAuthenticated && directory.reportIntent ? (
+        <ReportLoginDialog
+          intent={directory.reportIntent}
+          onClose={directory.closeReportIntent}
+        />
+      ) : null}
+      {isAuthenticated && directory.reportIntent === "report" ? (
+        <ReportDialog
+          onClose={directory.closeReportIntent}
+          onSuccess={handleReportSuccess}
+          today={today}
+        />
+      ) : null}
+      {isAuthenticated &&
+      directory.reportIntent === "correction" &&
+      correctionEvent ? (
+        <CorrectionDialog
+          event={correctionEvent}
+          onClose={directory.closeReportIntent}
+          onSuccess={handleReportSuccess}
+        />
+      ) : null}
     </div>
   );
 }
