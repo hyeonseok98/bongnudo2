@@ -59,6 +59,10 @@ supabase/migrations/*
 !supabase/migrations/20260912071651_tighten_chzzk_oauth_table_privileges.sql
 !supabase/migrations/20260912111601_create_live_current_cache.sql
 !supabase/migrations/20260912125541_fix_replace_live_current_delete.sql
+!supabase/migrations/20260913065022_timeline_reporting_foundation.sql
+!supabase/migrations/20260913065302_index_timeline_reporting_foreign_keys.sql
+!supabase/migrations/20260913065911_tighten_timeline_reporting_privileges.sql
+!supabase/migrations/20260913070455_preserve_report_original_content.sql
 supabase/.temp/
 
 # test

@@ -489,6 +489,280 @@ export type Database = {
         }
         Relationships: []
       }
+      report_categories: {
+        Row: {
+          created_at: string
+          id: string
+          is_active: boolean
+          name: string
+          report_type: string
+          slug: string
+          sort_order: number
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          name: string
+          report_type: string
+          slug: string
+          sort_order: number
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          name?: string
+          report_type?: string
+          slug?: string
+          sort_order?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      report_media: {
+        Row: {
+          byte_size: number | null
+          clip_url: string | null
+          created_at: string
+          id: string
+          media_type: string
+          mime_type: string | null
+          object_key: string | null
+          report_id: string
+          sort_order: number
+        }
+        Insert: {
+          byte_size?: number | null
+          clip_url?: string | null
+          created_at?: string
+          id?: string
+          media_type: string
+          mime_type?: string | null
+          object_key?: string | null
+          report_id: string
+          sort_order: number
+        }
+        Update: {
+          byte_size?: number | null
+          clip_url?: string | null
+          created_at?: string
+          id?: string
+          media_type?: string
+          mime_type?: string | null
+          object_key?: string | null
+          report_id?: string
+          sort_order?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "report_media_report_id_fkey"
+            columns: ["report_id"]
+            isOneToOne: false
+            referencedRelation: "reports"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      report_participants: {
+        Row: {
+          created_at: string
+          is_primary: boolean
+          report_id: string
+          season_id: number
+          season_participant_id: string
+          sort_order: number
+        }
+        Insert: {
+          created_at?: string
+          is_primary?: boolean
+          report_id: string
+          season_id: number
+          season_participant_id: string
+          sort_order: number
+        }
+        Update: {
+          created_at?: string
+          is_primary?: boolean
+          report_id?: string
+          season_id?: number
+          season_participant_id?: string
+          sort_order?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "report_participants_participant_same_season_fkey"
+            columns: ["season_participant_id", "season_id"]
+            isOneToOne: false
+            referencedRelation: "season_participants"
+            referencedColumns: ["id", "season_id"]
+          },
+          {
+            foreignKeyName: "report_participants_report_same_season_fkey"
+            columns: ["report_id", "season_id"]
+            isOneToOne: false
+            referencedRelation: "reports"
+            referencedColumns: ["id", "season_id"]
+          },
+        ]
+      }
+      report_tags: {
+        Row: {
+          created_at: string
+          report_id: string
+          sort_order: number
+          tag_id: string
+        }
+        Insert: {
+          created_at?: string
+          report_id: string
+          sort_order: number
+          tag_id: string
+        }
+        Update: {
+          created_at?: string
+          report_id?: string
+          sort_order?: number
+          tag_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "report_tags_report_id_fkey"
+            columns: ["report_id"]
+            isOneToOne: false
+            referencedRelation: "reports"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "report_tags_tag_id_fkey"
+            columns: ["tag_id"]
+            isOneToOne: false
+            referencedRelation: "timeline_tags"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      report_user_restrictions: {
+        Row: {
+          can_submit: boolean
+          created_at: string
+          created_by_user_id: string
+          reason: string
+          suspended_until: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          can_submit?: boolean
+          created_at?: string
+          created_by_user_id: string
+          reason: string
+          suspended_until?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          can_submit?: boolean
+          created_at?: string
+          created_by_user_id?: string
+          reason?: string
+          suspended_until?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "report_user_restrictions_created_by_user_id_fkey"
+            columns: ["created_by_user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "report_user_restrictions_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: true
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      reports: {
+        Row: {
+          category_id: string | null
+          content: string
+          created_at: string
+          id: string
+          occurred_at: string | null
+          report_type: string
+          reporter_user_id: string
+          season_id: number | null
+          status: string
+          timeline_event_id: string | null
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          category_id?: string | null
+          content: string
+          created_at?: string
+          id?: string
+          occurred_at?: string | null
+          report_type: string
+          reporter_user_id: string
+          season_id?: number | null
+          status?: string
+          timeline_event_id?: string | null
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          category_id?: string | null
+          content?: string
+          created_at?: string
+          id?: string
+          occurred_at?: string | null
+          report_type?: string
+          reporter_user_id?: string
+          season_id?: number | null
+          status?: string
+          timeline_event_id?: string | null
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "reports_category_scope_fkey"
+            columns: ["category_id", "report_type"]
+            isOneToOne: false
+            referencedRelation: "report_categories"
+            referencedColumns: ["id", "report_type"]
+          },
+          {
+            foreignKeyName: "reports_reporter_user_id_fkey"
+            columns: ["reporter_user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "reports_season_id_fkey"
+            columns: ["season_id"]
+            isOneToOne: false
+            referencedRelation: "seasons"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "reports_timeline_event_same_season_fkey"
+            columns: ["timeline_event_id", "season_id"]
+            isOneToOne: false
+            referencedRelation: "timeline_events"
+            referencedColumns: ["id", "season_id"]
+          },
+        ]
+      }
       season_participants: {
         Row: {
           admission_recruitment_id: string | null
@@ -727,6 +1001,261 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      timeline_event_media: {
+        Row: {
+          byte_size: number | null
+          clip_url: string | null
+          created_at: string
+          id: string
+          media_type: string
+          mime_type: string | null
+          object_key: string | null
+          sort_order: number
+          timeline_event_id: string
+        }
+        Insert: {
+          byte_size?: number | null
+          clip_url?: string | null
+          created_at?: string
+          id?: string
+          media_type: string
+          mime_type?: string | null
+          object_key?: string | null
+          sort_order: number
+          timeline_event_id: string
+        }
+        Update: {
+          byte_size?: number | null
+          clip_url?: string | null
+          created_at?: string
+          id?: string
+          media_type?: string
+          mime_type?: string | null
+          object_key?: string | null
+          sort_order?: number
+          timeline_event_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "timeline_event_media_timeline_event_id_fkey"
+            columns: ["timeline_event_id"]
+            isOneToOne: false
+            referencedRelation: "timeline_events"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      timeline_event_participants: {
+        Row: {
+          created_at: string
+          is_primary: boolean
+          season_id: number
+          season_participant_id: string
+          sort_order: number
+          timeline_event_id: string
+        }
+        Insert: {
+          created_at?: string
+          is_primary?: boolean
+          season_id: number
+          season_participant_id: string
+          sort_order: number
+          timeline_event_id: string
+        }
+        Update: {
+          created_at?: string
+          is_primary?: boolean
+          season_id?: number
+          season_participant_id?: string
+          sort_order?: number
+          timeline_event_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "timeline_event_participants_event_same_season_fkey"
+            columns: ["timeline_event_id", "season_id"]
+            isOneToOne: false
+            referencedRelation: "timeline_events"
+            referencedColumns: ["id", "season_id"]
+          },
+          {
+            foreignKeyName: "timeline_event_participants_participant_same_season_fkey"
+            columns: ["season_participant_id", "season_id"]
+            isOneToOne: false
+            referencedRelation: "season_participants"
+            referencedColumns: ["id", "season_id"]
+          },
+        ]
+      }
+      timeline_event_revisions: {
+        Row: {
+          after_data: Json
+          before_data: Json
+          created_at: string
+          editor_user_id: string
+          id: string
+          reason: string | null
+          timeline_event_id: string
+        }
+        Insert: {
+          after_data: Json
+          before_data: Json
+          created_at?: string
+          editor_user_id: string
+          id?: string
+          reason?: string | null
+          timeline_event_id: string
+        }
+        Update: {
+          after_data?: Json
+          before_data?: Json
+          created_at?: string
+          editor_user_id?: string
+          id?: string
+          reason?: string | null
+          timeline_event_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "timeline_event_revisions_editor_user_id_fkey"
+            columns: ["editor_user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "timeline_event_revisions_timeline_event_id_fkey"
+            columns: ["timeline_event_id"]
+            isOneToOne: false
+            referencedRelation: "timeline_events"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      timeline_event_tags: {
+        Row: {
+          created_at: string
+          sort_order: number
+          tag_id: string
+          timeline_event_id: string
+        }
+        Insert: {
+          created_at?: string
+          sort_order: number
+          tag_id: string
+          timeline_event_id: string
+        }
+        Update: {
+          created_at?: string
+          sort_order?: number
+          tag_id?: string
+          timeline_event_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "timeline_event_tags_tag_id_fkey"
+            columns: ["tag_id"]
+            isOneToOne: false
+            referencedRelation: "timeline_tags"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "timeline_event_tags_timeline_event_id_fkey"
+            columns: ["timeline_event_id"]
+            isOneToOne: false
+            referencedRelation: "timeline_events"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      timeline_events: {
+        Row: {
+          category_id: string
+          content: string
+          created_at: string
+          id: string
+          merged_into_event_id: string | null
+          occurred_at: string
+          publication_status: string
+          season_id: number
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          category_id: string
+          content: string
+          created_at?: string
+          id?: string
+          merged_into_event_id?: string | null
+          occurred_at: string
+          publication_status?: string
+          season_id: number
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          category_id?: string
+          content?: string
+          created_at?: string
+          id?: string
+          merged_into_event_id?: string | null
+          occurred_at?: string
+          publication_status?: string
+          season_id?: number
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "timeline_events_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "report_categories"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "timeline_events_merged_into_same_season_fkey"
+            columns: ["merged_into_event_id", "season_id"]
+            isOneToOne: false
+            referencedRelation: "timeline_events"
+            referencedColumns: ["id", "season_id"]
+          },
+          {
+            foreignKeyName: "timeline_events_season_id_fkey"
+            columns: ["season_id"]
+            isOneToOne: false
+            referencedRelation: "seasons"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      timeline_tags: {
+        Row: {
+          created_at: string
+          id: string
+          is_active: boolean
+          name: string
+          slug: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          name: string
+          slug: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          name?: string
+          slug?: string
+          updated_at?: string
+        }
+        Relationships: []
       }
       user_sessions: {
         Row: {
