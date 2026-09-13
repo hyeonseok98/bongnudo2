@@ -17,6 +17,7 @@ import {
   type LucideIcon,
 } from "lucide-react";
 import Link from "next/link";
+import { notFound } from "next/navigation";
 import type { ReactNode } from "react";
 
 import { Badge } from "@/components/ui/badge";
@@ -32,8 +33,6 @@ import {
   type CharacterListItem,
   type CharacterRoleHistory,
 } from "@/features/characters/character";
-import { cn } from "@/utils/cn";
-
 import { useCharacters } from "../_hooks/use-characters";
 import {
   buildCharacterDirectoryItems,
@@ -73,9 +72,7 @@ export function CharacterDetail({ kind, identifier }: CharacterDetailProps) {
   }
 
   if (charactersQuery.isError) {
-    return (
-      <DetailMessage isError>인물 정보를 불러오지 못했습니다.</DetailMessage>
-    );
+    throw charactersQuery.error;
   }
 
   const characters = charactersQuery.data.characters;
@@ -85,14 +82,7 @@ export function CharacterDetail({ kind, identifier }: CharacterDetailProps) {
       : characters.find((item) => item.id === identifier && item.rpName);
 
   if (!character) {
-    return (
-      <DetailMessage>
-        요청한 인물을 찾을 수 없습니다.{" "}
-        <Link className="text-brand-text underline" href="/characters">
-          인물 도감으로 돌아가기
-        </Link>
-      </DetailMessage>
-    );
+    notFound();
   }
 
   const streamerCharacters = characters.filter(
@@ -668,21 +658,9 @@ function formatDate(date: string | null) {
   return date?.replaceAll("-", ".") ?? "";
 }
 
-function DetailMessage({
-  children,
-  isError = false,
-}: {
-  children: ReactNode;
-  isError?: boolean;
-}) {
+function DetailMessage({ children }: { children: ReactNode }) {
   return (
-    <div
-      className={cn(
-        "flex min-h-[50vh] items-center justify-center text-body-sm",
-        isError ? "text-destructive" : "text-secondary",
-      )}
-      role={isError ? "alert" : "status"}
-    >
+    <div className="flex min-h-[50vh] items-center justify-center text-body-sm text-secondary" role="status">
       <p>{children}</p>
     </div>
   );
