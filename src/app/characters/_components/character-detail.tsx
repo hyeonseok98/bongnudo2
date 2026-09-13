@@ -20,6 +20,7 @@ import Link from "next/link";
 import type { ReactNode } from "react";
 
 import { Badge } from "@/components/ui/badge";
+import { ThemeImage } from "@/components/ui/theme-image";
 import {
   RP_AFFILIATION_BADGE_FALLBACK,
   RP_AFFILIATION_BADGE_STYLES,
@@ -44,7 +45,6 @@ import {
 } from "../_utils/character-visual-assets";
 import { CharacterAvatar } from "./character-avatar";
 import { CharacterModeSwitch } from "./character-mode-switch";
-import { CharacterVisualImage } from "./character-visual-image";
 import styles from "./character-detail.module.css";
 
 interface CharacterDetailProps {
@@ -151,7 +151,7 @@ function DetailBackdrop({
       aria-hidden="true"
       className={`${styles.backdrop} pointer-events-none absolute top-0 left-1/2 h-48 -translate-x-1/2 overflow-hidden bg-surface-raised sm:h-56`}
     >
-      <CharacterVisualImage
+      <ThemeImage
         className="object-cover opacity-80 dark:opacity-85"
         darkSrc={assets.dark.heroSrc}
         lightSrc={assets.light.heroSrc}
@@ -333,7 +333,7 @@ function IdentityPanel({
 }) {
   return (
     <section className="relative isolate flex h-full min-h-0 flex-col overflow-hidden rounded-xl border border-default bg-surface-raised/90 p-5 shadow-sm sm:p-6">
-      <CharacterVisualImage
+      <ThemeImage
         className="z-base object-cover object-[70%_center] opacity-25 dark:opacity-[0.34]"
         darkSrc={assets.dark.cardBackgroundSrc}
         lightSrc={assets.light.cardBackgroundSrc}
@@ -393,7 +393,7 @@ function ProfileColumn({
   return (
     <div className="space-y-3">
       <section className="relative aspect-6/7 w-full overflow-hidden rounded-xl border border-default bg-surface-inset shadow-xl">
-        <CharacterVisualImage
+        <ThemeImage
           className="object-cover object-[70%_center] opacity-35 dark:opacity-50"
           darkSrc={assets.dark.cardBackgroundSrc}
           lightSrc={assets.light.cardBackgroundSrc}

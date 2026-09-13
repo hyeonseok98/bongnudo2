@@ -2,25 +2,27 @@
 
 import Image from "next/image";
 import { useTheme } from "next-themes";
-import { useState, useSyncExternalStore } from "react";
+import { useState, useSyncExternalStore, type ReactNode } from "react";
 
 import { cn } from "@/utils/cn";
 
-interface CharacterVisualImageProps {
+interface ThemeImageProps {
   className?: string;
   darkSrc: string;
+  fallback?: ReactNode;
   lightSrc: string;
   priority?: boolean;
   sizes: string;
 }
 
-export function CharacterVisualImage({
+export function ThemeImage({
   className,
   darkSrc,
+  fallback,
   lightSrc,
   priority,
   sizes,
-}: CharacterVisualImageProps) {
+}: ThemeImageProps) {
   const { resolvedTheme } = useTheme();
   const isHydrated = useSyncExternalStore(
     subscribeToHydration,
@@ -43,10 +45,11 @@ export function CharacterVisualImage({
       aria-hidden="true"
       className="pointer-events-none absolute inset-0 overflow-hidden"
     >
+      {hasImageFailed ? fallback : null}
       {!isImageLoaded && !hasImageFailed ? (
         <span
           className="absolute inset-0 overflow-hidden"
-          data-slot="character-visual-loading"
+          data-slot="theme-image-loading"
         >
           <span className="animate-profile-image-shimmer absolute inset-y-0 -left-1/2 w-1/2">
             <span className="absolute inset-0 -skew-x-12 bg-linear-to-r from-transparent via-brand/10 to-transparent dark:via-white/10" />
