@@ -15,6 +15,7 @@ export interface SidebarNavigationItem {
   label: string;
   href?: string;
   isExternal?: boolean;
+  isComingSoon?: boolean;
   icon: LucideIcon;
 }
 
@@ -42,8 +43,8 @@ export const SIDEBAR_NAV: SidebarNavigationGroup[] = [
   {
     label: "영상",
     items: [
-      { label: "다시보기", icon: CirclePlay },
-      { label: "클립", icon: Scissors },
+      { label: "다시보기", icon: CirclePlay, isComingSoon: true },
+      { label: "클립", icon: Scissors, isComingSoon: true },
     ],
   },
   {

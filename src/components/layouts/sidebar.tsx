@@ -125,12 +125,14 @@ function NavigationItem({
   const Icon = item.icon;
 
   const navigationItemClassName = cn(
-    "flex cursor-pointer items-center rounded-lg text-body-sm",
+    "flex items-center rounded-lg text-body-sm",
     "transition-[background-color,color] duration-default motion-reduce:transition-none",
     isOpen ? "h-10 w-full gap-3 px-3" : "mx-auto size-10 justify-center",
-    isActive
-      ? "bg-surface-selected text-primary"
-      : "text-secondary dark:text-[#AAAAAA] hover:bg-surface-muted hover:text-primary",
+    item.isComingSoon ? "cursor-default text-tertiary" : "cursor-pointer",
+    !item.isComingSoon &&
+      (isActive
+        ? "bg-surface-selected text-primary"
+        : "text-secondary dark:text-[#AAAAAA] hover:bg-surface-muted hover:text-primary"),
   );
 
   const navigationItemContent = (
@@ -150,6 +152,11 @@ function NavigationItem({
           {item.isExternal ? (
             <ExternalLink aria-hidden="true" className="size-3 shrink-0" />
           ) : null}
+          {item.isComingSoon && isOpen ? (
+            <span className="rounded bg-surface-muted px-1.5 py-0.5 text-caption font-semibold text-tertiary">
+              준비 중
+            </span>
+          ) : null}
         </span>
       </span>
     </>
@@ -157,7 +164,12 @@ function NavigationItem({
 
   if (!item.href) {
     return (
-      <div className={navigationItemClassName}>{navigationItemContent}</div>
+      <div
+        aria-disabled={item.isComingSoon || undefined}
+        className={navigationItemClassName}
+      >
+        {navigationItemContent}
+      </div>
     );
   }
 
