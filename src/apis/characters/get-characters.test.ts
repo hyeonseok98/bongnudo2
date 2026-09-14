@@ -12,7 +12,8 @@ describe("toCharacterListItem", () => {
 
     const character: CharacterListItem = toCharacterListItem({
       id: "participant",
-      rp_name: null,
+      rp_name: "RP 이름",
+      portrait_image_key: "streamers/스트리머/rp-profile/RP 이름_1.webp",
       streamer: {
         id: "streamer",
         slug: "streamer",
@@ -143,10 +144,13 @@ describe("toCharacterListItem", () => {
       ],
     });
 
-    expect(character.rpName).toBeNull();
+    expect(character.rpName).toBe("RP 이름");
     expect(character.chzzkChannelId).toBe("channel");
     expect(character.profileImageUrl).toBe(
       "https://assets.example.com/streamers/%EC%8A%A4%ED%8A%B8%EB%A6%AC%EB%A8%B8/profile/%ED%94%84%EB%A1%9C%ED%95%84%20%EC%9D%B4%EB%AF%B8%EC%A7%80.webp",
+    );
+    expect(character.rpProfileImageUrl).toBe(
+      "https://assets.example.com/streamers/%EC%8A%A4%ED%8A%B8%EB%A6%AC%EB%A8%B8/rp-profile/RP%20%EC%9D%B4%EB%A6%84_1.webp",
     );
     expect(character.channelUrl).toBe("https://chzzk.naver.com/channel");
     expect(

@@ -4,7 +4,7 @@ import { CharactersBanner } from "./_components/characters-banner";
 import { CharactersContent } from "./_components/characters-content";
 
 export const metadata: Metadata = {
-  title: "인물 도감 | 봉누도2",
+  title: "인물 도감 | 봉누록",
   description: "봉누도2에서 살아가는 인물들을 확인해보세요.",
   alternates: {
     canonical: "/characters",

@@ -49,7 +49,7 @@ export const SIDEBAR_NAV: SidebarNavigationGroup[] = [
     ],
   },
   {
-    label: "봉누도2",
+    label: "봉누도2 공식",
     items: [
       { label: "서버 가이드", icon: BookOpen },
       { label: "일정", icon: CalendarDays },

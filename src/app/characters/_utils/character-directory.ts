@@ -51,7 +51,8 @@ export function buildCharacterDirectoryItems(
               href: `/characters/rp/${character.id}`,
               primaryName: character.rpName,
               secondaryName: null,
-              profileImageUrl: null,
+              profileImageUrl:
+                character.rpProfileImageUrl ?? character.profileImageUrl,
               affiliations: character.affiliations,
               streamerAffiliations: [],
             },

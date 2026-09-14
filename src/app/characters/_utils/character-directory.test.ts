@@ -438,6 +438,7 @@ describe("character directory view model", () => {
       slug: "강지",
       streamerName: "강지",
       rpName: "도현정",
+      rpProfileImageUrl: "https://assets.example.com/rp-profile.webp",
       streamerAffiliations: [],
     });
     const duplicateStreamer = createCharacter({
@@ -464,6 +465,7 @@ describe("character directory view model", () => {
         id: "participant-rp",
         href: "/characters/rp/participant-rp",
         primaryName: "도현정",
+        profileImageUrl: "https://assets.example.com/rp-profile.webp",
       },
     ]);
   });
@@ -504,6 +506,7 @@ function createCharacter({
   affiliations = [],
   streamerName = slug,
   rpName = null,
+  rpProfileImageUrl = null,
   streamerAffiliations,
 }: {
   id: string;
@@ -511,6 +514,7 @@ function createCharacter({
   affiliations?: CharacterAffiliation[];
   streamerName?: string;
   rpName?: string | null;
+  rpProfileImageUrl?: string | null;
   streamerAffiliations: CharacterStreamerAffiliation[];
 }): CharacterListItem {
   return {
@@ -521,6 +525,7 @@ function createCharacter({
     streamerName,
     rpName,
     profileImageUrl: null,
+    rpProfileImageUrl,
     channelUrl: null,
     streamerAffiliations,
     affiliations,

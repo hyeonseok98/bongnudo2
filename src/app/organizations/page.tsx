@@ -5,7 +5,7 @@ import { DirectoryHero } from "@/components/layouts/directory-hero";
 import { OrganizationsContent } from "./_components/organizations-content";
 
 export const metadata: Metadata = {
-  title: "조직 도감 | 봉누도2",
+  title: "조직 도감 | 봉누록",
   description: "봉누도2의 다양한 조직을 확인해보세요.",
   alternates: {
     canonical: "/organizations",

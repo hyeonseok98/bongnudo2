@@ -265,7 +265,9 @@ function RpDetail({
           assets={assets}
           mode="rp"
           name={character.rpName ?? character.streamerName}
-          profileImageUrl={null}
+          profileImageUrl={
+            character.rpProfileImageUrl ?? character.profileImageUrl
+          }
           rpHref={rpHref}
           streamerHref={streamerHref}
         />
@@ -441,7 +443,7 @@ function RpCharactersPanel({ items }: { items: CharacterDirectoryItem[] }) {
                 <CharacterAvatar
                   className="aspect-square w-full rounded-md text-body-sm"
                   name={item.primaryName}
-                  profileImageUrl={null}
+                  profileImageUrl={item.profileImageUrl}
                   sizes="52px"
                 />
                 <div className="min-w-0">

@@ -2,10 +2,10 @@
 
 import { Popover } from "@base-ui/react/popover";
 import { ChevronDown, LogOut, Menu, Moon, Sun } from "lucide-react";
+import { useTheme } from "next-themes";
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useTheme } from "next-themes";
 import {
   type CSSProperties,
   type MouseEvent,
@@ -134,7 +134,11 @@ export function Header({
           title={isDarkMode ? "라이트 모드로 전환" : "다크 모드로 전환"}
           variant="ghost"
         >
-          {isDarkMode ? <Sun aria-hidden="true" /> : <Moon aria-hidden="true" />}
+          {isDarkMode ? (
+            <Sun aria-hidden="true" />
+          ) : (
+            <Moon aria-hidden="true" />
+          )}
         </Button>
         {logoutError ? (
           <span className="text-caption text-status-danger" role="status">
@@ -150,7 +154,10 @@ export function Header({
               <span className="max-w-24 truncate text-body-sm font-medium sm:max-w-40">
                 {currentUser.channelName}
               </span>
-              <ChevronDown aria-hidden="true" className="size-4 shrink-0 text-secondary" />
+              <ChevronDown
+                aria-hidden="true"
+                className="size-4 shrink-0 text-secondary"
+              />
             </Popover.Trigger>
             <Popover.Portal>
               <Popover.Positioner

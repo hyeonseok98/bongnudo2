@@ -3,7 +3,7 @@ import type { Metadata } from "next";
 import { OrganizationDetail } from "../_components/organization-detail";
 
 export const metadata: Metadata = {
-  title: "조직 상세 | 봉누도2",
+  title: "조직 상세 | 봉누록",
 };
 
 export default async function OrganizationDetailPage({

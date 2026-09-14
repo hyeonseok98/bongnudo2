@@ -50,6 +50,9 @@ AGENTS.md
 CLAUDE.md
 /output
 /tools
+!/tools/
+/tools/*
+!/tools/upload-rp-profile-images.mjs
 /data
 
 # server

@@ -8,6 +8,7 @@
     "start": "next start",
     "lint": "eslint",
     "sync:character-groups": "node tools/sync-character-groups.mjs",
+    "upload:rp-profiles": "node --env-file-if-exists=.env.local tools/upload-rp-profile-images.mjs",
     "import:bongnudo2": "node tools/import-bongnudo2-excel.mjs",
     "import:bongnudo2:validate": "node tools/validate-bongnudo2-excel.mjs",
     "typecheck": "tsc --noEmit",

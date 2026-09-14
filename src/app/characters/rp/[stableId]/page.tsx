@@ -3,7 +3,7 @@ import type { Metadata } from "next";
 import { CharacterDetail } from "../../_components/character-detail";
 
 export const metadata: Metadata = {
-  title: "RP 캐릭터 상세 | 봉누도2",
+  title: "RP 캐릭터 상세 | 봉누록",
 };
 
 export default async function RpDetailPage({

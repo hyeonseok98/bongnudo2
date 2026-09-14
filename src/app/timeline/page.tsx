@@ -1,13 +1,13 @@
 import type { Metadata } from "next";
 
-import { getCurrentKstDate } from "@/features/timeline/timeline-params";
-import { getLatestSeason2DayNumber } from "@/features/timeline/season2-operational-day";
 import { getCurrentUser } from "@/features/auth/session";
+import { getLatestSeason2DayNumber } from "@/features/timeline/season2-operational-day";
+import { getCurrentKstDate } from "@/features/timeline/timeline-params";
 
 import { TimelineContent } from "./_components/timeline-content";
 
 export const metadata: Metadata = {
-  title: "전체 타임라인 | 봉누도2",
+  title: "전체 타임라인 | 봉누록",
   description:
     "봉누도에서 벌어지는 모든 순간과 사람들이 만들어가는 이야기를 확인해보세요.",
   alternates: { canonical: "/timeline" },

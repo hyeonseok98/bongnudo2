@@ -10,7 +10,7 @@ import { HomeOrganizations } from "./_components/home-organizations";
 import { HomeTimelineNotices } from "./_components/home-timeline-notices";
 
 export const metadata: Metadata = {
-  title: "봉누도2",
+  title: "봉누록",
   description: "각자의 이야기로 완성되는 봉누도2를 만나보세요.",
   alternates: { canonical: "/" },
 };
