@@ -13,6 +13,7 @@ describe("toCharacterListItem", () => {
     const character: CharacterListItem = toCharacterListItem({
       id: "participant",
       rp_name: "RP 이름",
+      full_body_image_key: "streamers/스트리머/rp-profile/RP 이름_full_1.webp",
       portrait_image_key: "streamers/스트리머/rp-profile/RP 이름_1.webp",
       streamer: {
         id: "streamer",
@@ -151,6 +152,9 @@ describe("toCharacterListItem", () => {
     );
     expect(character.rpProfileImageUrl).toBe(
       "https://assets.example.com/streamers/%EC%8A%A4%ED%8A%B8%EB%A6%AC%EB%A8%B8/rp-profile/RP%20%EC%9D%B4%EB%A6%84_1.webp",
+    );
+    expect(character.rpFullBodyImageUrl).toBe(
+      "https://assets.example.com/streamers/%EC%8A%A4%ED%8A%B8%EB%A6%AC%EB%A8%B8/rp-profile/RP%20%EC%9D%B4%EB%A6%84_full_1.webp",
     );
     expect(character.channelUrl).toBe("https://chzzk.naver.com/channel");
     expect(

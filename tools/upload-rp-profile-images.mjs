@@ -7,10 +7,11 @@ import { createClient } from "@supabase/supabase-js";
 
 const RP_PROFILE_DIRECTORY = "public/rp-profile";
 const SEASON_SLUG = "bongnudo-2";
-const FILE_NAME_PATTERN = /^(?<streamerName>[^_]+)_(?<rpName>[^_]+)_(?<order>\d+)\.(?<extension>webp|png|jpe?g)$/i;
+const FILE_NAME_PATTERN = /^(?<rpName>[^_]+)_(?:(?<variant>full)_)?(?<order>\d+)\.(?<extension>webp|png|jpe?g)$/i;
+const LEGACY_FILE_NAME_PATTERN = /^(?<streamerName>[^_]+)_(?<rpName>[^_]+)_(?<order>\d+)\.(?<extension>webp|png|jpe?g)$/i;
 
 export function parseRpProfileFileName(fileName) {
-  const match = FILE_NAME_PATTERN.exec(fileName);
+  const match = FILE_NAME_PATTERN.exec(fileName) ?? LEGACY_FILE_NAME_PATTERN.exec(fileName);
 
   if (!match?.groups) {
     return null;
@@ -20,39 +21,42 @@ export function parseRpProfileFileName(fileName) {
     extension: match.groups.extension.toLowerCase() === "jpg"
       ? "jpeg"
       : match.groups.extension.toLowerCase(),
+    imageType: match.groups.variant === "full" ? "full" : "portrait",
     order: match.groups.order,
     rpName: match.groups.rpName,
-    streamerName: match.groups.streamerName,
   };
 }
 
 export function getRpProfileObjectKey({
   extension,
+  imageType,
   order,
   rpName,
   streamerName,
 }) {
-  return `streamers/${streamerName}/rp-profile/${rpName}_${order}.${extension}`;
+  const variantSuffix = imageType === "full" ? "_full" : "";
+
+  return `streamers/${streamerName}/rp-profile/${rpName}${variantSuffix}_${order}.${extension}`;
 }
 
 export async function getRpProfileUploadPlan({
   directoryEntries,
   participants,
 }) {
-  const participantsByName = new Map();
+  const participantsByRpName = new Map();
 
   for (const participant of participants) {
     if (!participant.rpName) {
       continue;
     }
 
-    const key = getParticipantNameKey(participant.streamerName, participant.rpName);
+    const key = participant.rpName;
 
-    if (participantsByName.has(key)) {
-      throw new Error(`중복된 RP 참가자 정보가 있음: ${participant.streamerName}_${participant.rpName}`);
+    if (participantsByRpName.has(key)) {
+      throw new Error(`중복된 RP 참가자 정보가 있음: ${participant.rpName}`);
     }
 
-    participantsByName.set(key, participant);
+    participantsByRpName.set(key, participant);
   }
 
   const invalidFiles = [];
@@ -60,6 +64,7 @@ export async function getRpProfileUploadPlan({
   const conflictingFiles = [];
   const uploads = [];
   const skipped = [];
+  const plannedImageFields = new Set();
 
   for (const entry of directoryEntries) {
     if (!entry.isFile() || entry.name.startsWith(".")) {
@@ -73,32 +78,47 @@ export async function getRpProfileUploadPlan({
       continue;
     }
 
-    const participant = participantsByName.get(
-      getParticipantNameKey(parsed.streamerName, parsed.rpName),
-    );
+    const participant = participantsByRpName.get(parsed.rpName);
 
     if (!participant) {
       unmatchedFiles.push(entry.name);
       continue;
     }
 
-    const objectKey = getRpProfileObjectKey(parsed);
+    const imageField = parsed.imageType === "full"
+      ? "fullBodyImageKey"
+      : "portraitImageKey";
+    const plannedImageField = `${participant.id}\u0000${imageField}`;
+    const objectKey = getRpProfileObjectKey({
+      ...parsed,
+      streamerName: participant.streamerName,
+    });
 
-    if (participant.portraitImageKey === objectKey) {
+    if (participant[imageField] === objectKey) {
       skipped.push({ fileName: entry.name, objectKey, participant });
       continue;
     }
 
-    if (participant.portraitImageKey) {
+    if (participant[imageField]) {
       conflictingFiles.push({
-        currentObjectKey: participant.portraitImageKey,
+        currentObjectKey: participant[imageField],
         fileName: entry.name,
         participant,
       });
       continue;
     }
 
-    uploads.push({ fileName: entry.name, objectKey, participant, parsed });
+    if (plannedImageFields.has(plannedImageField)) {
+      conflictingFiles.push({
+        currentObjectKey: null,
+        fileName: entry.name,
+        participant,
+      });
+      continue;
+    }
+
+    plannedImageFields.add(plannedImageField);
+    uploads.push({ fileName: entry.name, imageField, objectKey, participant, parsed });
   }
 
   return { conflictingFiles, invalidFiles, skipped, unmatchedFiles, uploads };
@@ -141,10 +161,7 @@ async function main() {
 
     const result = await supabase
       .from("season_participants")
-      .update({
-        portrait_image_key: upload.objectKey,
-        portrait_image_source_url: null,
-      })
+      .update(getParticipantImageUpdate(upload))
       .eq("id", upload.participant.id)
       .select("id")
       .single();
@@ -190,6 +207,7 @@ async function getSeasonParticipants(supabase) {
     .select(`
       id,
       rp_name,
+      full_body_image_key,
       portrait_image_key,
       seasons!season_participants_season_id_fkey!inner (slug),
       streamer:streamers!inner (name)
@@ -202,6 +220,7 @@ async function getSeasonParticipants(supabase) {
 
   return result.data.map((participant) => ({
     id: participant.id,
+    fullBodyImageKey: participant.full_body_image_key,
     portraitImageKey: participant.portrait_image_key,
     rpName: participant.rp_name,
     streamerName: participant.streamer.name,
@@ -236,8 +255,15 @@ function requireEnvironmentVariable(name) {
   return value;
 }
 
-function getParticipantNameKey(streamerName, rpName) {
-  return `${streamerName}\u0000${rpName}`;
+function getParticipantImageUpdate(upload) {
+  if (upload.imageField === "fullBodyImageKey") {
+    return { full_body_image_key: upload.objectKey };
+  }
+
+  return {
+    portrait_image_key: upload.objectKey,
+    portrait_image_source_url: null,
+  };
 }
 
 function getContentType(extension) {
@@ -271,7 +297,7 @@ function printPlan(plan) {
   }
 
   for (const fileName of plan.invalidFiles) {
-    console.error(`잘못된 파일명: ${fileName} (스트리머명_RP명_순번.webp 형식 필요)`);
+    console.error(`잘못된 파일명: ${fileName} (RP명_순번.webp 또는 RP명_full_순번.webp 형식 필요)`);
   }
 
   for (const fileName of plan.unmatchedFiles) {
@@ -279,7 +305,11 @@ function printPlan(plan) {
   }
 
   for (const conflict of plan.conflictingFiles) {
-    console.error(`기존 RP 사진 키가 있어 중단함: ${conflict.fileName} (${conflict.currentObjectKey})`);
+    console.error(
+      conflict.currentObjectKey
+        ? `기존 RP 사진 키가 있어 중단함: ${conflict.fileName} (${conflict.currentObjectKey})`
+        : `같은 RP 이미지 종류가 중복되어 중단함: ${conflict.fileName}`,
+    );
   }
 }
 

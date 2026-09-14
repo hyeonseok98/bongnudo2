@@ -23,6 +23,7 @@ function createCharactersQuery() {
     .select(`
       id,
       rp_name,
+      full_body_image_key,
       portrait_image_key,
       seasons!season_participants_season_id_fkey!inner (),
       streamer:streamers!inner (
@@ -115,6 +116,7 @@ export function toCharacterListItem(
     streamerName: participant.streamer.name,
     rpName: participant.rp_name,
     profileImageUrl: getR2PublicUrl(participant.streamer.profile_image_key),
+    rpFullBodyImageUrl: getR2PublicUrl(participant.full_body_image_key),
     rpProfileImageUrl: getR2PublicUrl(participant.portrait_image_key),
     channelUrl: participant.streamer.chzzk_channel_id
       ? `https://chzzk.naver.com/${participant.streamer.chzzk_channel_id}`

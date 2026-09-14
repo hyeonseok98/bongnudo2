@@ -71,6 +71,7 @@ supabase/migrations/*
 !supabase/migrations/20260913080541_create_timeline_page_query.sql
 !supabase/migrations/20260913115621_activate_bongnudo_2_season.sql
 !supabase/migrations/20260914005623_polish_timeline_product.sql
+!supabase/migrations/20260914150747_add_season_participant_full_body_image_key.sql
 supabase/.temp/
 
 # test

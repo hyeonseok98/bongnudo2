@@ -63,6 +63,7 @@ export interface CharacterListItem {
   rpName: string | null;
   profileImageUrl: string | null;
   rpProfileImageUrl?: string | null;
+  rpFullBodyImageUrl?: string | null;
   channelUrl: string | null;
   streamerAffiliations: CharacterStreamerAffiliation[];
   affiliations: CharacterAffiliation[];

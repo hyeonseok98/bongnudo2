@@ -768,6 +768,7 @@ export type Database = {
           admission_recruitment_id: string | null
           bio: string | null
           created_at: string
+          full_body_image_key: string | null
           id: string
           portrait_image_key: string | null
           portrait_image_source_url: string | null
@@ -779,6 +780,7 @@ export type Database = {
           admission_recruitment_id?: string | null
           bio?: string | null
           created_at?: string
+          full_body_image_key?: string | null
           id?: string
           portrait_image_key?: string | null
           portrait_image_source_url?: string | null
@@ -790,6 +792,7 @@ export type Database = {
           admission_recruitment_id?: string | null
           bio?: string | null
           created_at?: string
+          full_body_image_key?: string | null
           id?: string
           portrait_image_key?: string | null
           portrait_image_source_url?: string | null
