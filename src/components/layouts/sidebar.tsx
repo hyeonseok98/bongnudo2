@@ -1,5 +1,6 @@
 "use client";
 
+import { ExternalLink } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 
@@ -144,7 +145,12 @@ function NavigationItem({
             : "max-w-0 -translate-x-1 opacity-0",
         )}
       >
-        {item.label}
+        <span className="inline-flex items-center gap-1">
+          {item.label}
+          {item.isExternal ? (
+            <ExternalLink aria-hidden="true" className="size-3 shrink-0" />
+          ) : null}
+        </span>
       </span>
     </>
   );
@@ -155,7 +161,17 @@ function NavigationItem({
     );
   }
 
-  const navigationItemLink = (
+  const navigationItemLink = item.isExternal ? (
+    <a
+      aria-label={`${item.label} (새 창에서 열림)`}
+      className={navigationItemClassName}
+      href={item.href}
+      rel="noopener noreferrer"
+      target="_blank"
+    >
+      {navigationItemContent}
+    </a>
+  ) : (
     <Link
       href={item.href}
       onClick={onNavigate}

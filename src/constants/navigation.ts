@@ -1,12 +1,10 @@
 import {
-  Bell,
   BookOpen,
   Building2,
-  CalendarDays,
   CirclePlay,
   Clock,
+  Heart,
   House,
-  Map,
   Radio,
   Scissors,
   Users,
@@ -15,7 +13,8 @@ import {
 
 export interface SidebarNavigationItem {
   label: string;
-  href?: `/${string}`;
+  href?: string;
+  isExternal?: boolean;
   icon: LucideIcon;
 }
 
@@ -38,7 +37,6 @@ export const SIDEBAR_NAV: SidebarNavigationGroup[] = [
     items: [
       { label: "인물 도감", href: "/characters", icon: Users },
       { label: "조직 도감", href: "/organizations", icon: Building2 },
-      { label: "지도", icon: Map },
     ],
   },
   {
@@ -51,9 +49,18 @@ export const SIDEBAR_NAV: SidebarNavigationGroup[] = [
   {
     label: "봉누도2 공식",
     items: [
-      { label: "서버 가이드", icon: BookOpen },
-      { label: "일정", icon: CalendarDays },
-      { label: "공지사항", icon: Bell },
+      {
+        label: "공식 위키",
+        href: "https://bongnudo.super.site/",
+        icon: BookOpen,
+        isExternal: true,
+      },
+      {
+        label: "봉누도2 따라가기",
+        href: "https://bnd2-fanwiki.app/",
+        icon: Heart,
+        isExternal: true,
+      },
     ],
   },
 ];
