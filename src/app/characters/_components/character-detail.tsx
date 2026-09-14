@@ -265,9 +265,7 @@ function RpDetail({
           assets={assets}
           mode="rp"
           name={character.rpName ?? character.streamerName}
-          profileImageUrl={
-            character.rpProfileImageUrl ?? character.profileImageUrl
-          }
+          profileImageUrl={character.rpProfileImageUrl ?? null}
           rpHref={rpHref}
           streamerHref={streamerHref}
         />

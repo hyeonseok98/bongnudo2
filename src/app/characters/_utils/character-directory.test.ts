@@ -469,6 +469,18 @@ describe("character directory view model", () => {
       },
     ]);
   });
+
+  it("RP 프로필 이미지가 없으면 스트리머 프로필 이미지로 대체하지 않음", () => {
+    const character = createCharacter({
+      rpName: "도현정",
+      rpProfileImageUrl: null,
+      profileImageUrl: "https://assets.example.com/streamer-profile.webp",
+    });
+
+    expect(buildCharacterDirectoryItems([character], "rp")).toMatchObject([
+      { profileImageUrl: null },
+    ]);
+  });
 });
 
 function createStreamerAffiliation(
