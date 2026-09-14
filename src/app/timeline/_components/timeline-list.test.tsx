@@ -13,6 +13,7 @@ describe("TimelineListSkeleton", () => {
       name: "타임라인을 불러오는 중",
     });
     expect(status.children[1]?.children).toHaveLength(4);
+    expect(status.className).toContain("overflow-clip");
     expect(status.className).not.toContain("overflow-y-auto");
   });
 });

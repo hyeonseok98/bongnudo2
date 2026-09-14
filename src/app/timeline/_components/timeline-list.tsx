@@ -31,7 +31,7 @@ export function TimelineList({
   onTagChange,
 }: TimelineListProps) {
   return (
-    <div className="overflow-x-clip rounded-xl border border-default bg-surface-raised">
+    <div className="overflow-clip rounded-xl border border-default bg-surface-raised">
       <div
         className={cn(
           "hidden gap-4 border-b border-default bg-surface-muted px-4 py-3 text-center text-body-sm font-semibold text-secondary xl:grid",
@@ -64,7 +64,7 @@ export function TimelineListSkeleton({ count = 4 }: { count?: number }) {
   return (
     <div
       aria-label="타임라인을 불러오는 중"
-      className="overflow-x-clip rounded-xl border border-default bg-surface-raised"
+      className="overflow-clip rounded-xl border border-default bg-surface-raised"
       role="status"
     >
       <div

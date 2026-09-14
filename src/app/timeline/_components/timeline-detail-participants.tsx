@@ -6,7 +6,7 @@ import { useState } from "react";
 import { CharacterAvatar } from "@/app/characters/_components/character-avatar";
 import type { TimelineParticipant } from "@/features/timeline/timeline";
 
-const COLLAPSED_PARTICIPANT_COUNT = 4;
+const COLLAPSED_PARTICIPANT_COUNT = 3;
 
 export function TimelineDetailParticipants({
   participants,
@@ -36,33 +36,45 @@ export function TimelineDetailParticipants({
         className={
           isExpanded
             ? "flex flex-wrap items-center gap-2"
-            : "flex min-w-0 flex-nowrap items-center gap-2 overflow-hidden"
+            : "grid min-w-0 grid-cols-[minmax(0,1fr)_auto] items-center gap-2"
         }
       >
-        {visibleParticipants.map((participant) => {
-          const rpName = participant.rpName?.trim();
-          if (!rpName) return null;
+        <div
+          className={
+            isExpanded
+              ? "contents"
+              : "flex min-w-0 items-center gap-2 overflow-hidden"
+          }
+        >
+          {visibleParticipants.map((participant) => {
+            const rpName = participant.rpName?.trim();
+            if (!rpName) return null;
 
-          return (
-            <span
-              className="inline-flex shrink-0 items-center gap-2 rounded-full border border-default bg-surface-muted py-0.5 pr-3 pl-1"
-              key={participant.seasonParticipantId}
-            >
-              <CharacterAvatar
-                className="size-7 rounded-full"
-                name={rpName}
-                profileImageUrl={participant.profileImageUrl}
-                sizes="28px"
-              />
-              <span className="max-w-32 truncate text-caption font-medium text-primary">
-                {participant.isPrimary ? (
-                  <strong className="mr-1 text-brand-text">[대표]</strong>
-                ) : null}
-                {rpName}
+            return (
+              <span
+                className={
+                  isExpanded
+                    ? "inline-flex shrink-0 items-center gap-2 rounded-full border border-default bg-surface-muted py-0.5 pr-3 pl-1"
+                    : "inline-flex min-w-0 max-w-40 flex-1 basis-0 items-center gap-2 rounded-full border border-default bg-surface-muted py-0.5 pr-3 pl-1"
+                }
+                key={participant.seasonParticipantId}
+              >
+                <CharacterAvatar
+                  className="size-7 shrink-0 rounded-full"
+                  name={rpName}
+                  profileImageUrl={participant.profileImageUrl}
+                  sizes="28px"
+                />
+                <span className="min-w-0 truncate text-caption font-medium text-primary">
+                  {participant.isPrimary ? (
+                    <strong className="mr-1 text-brand-text">[대표]</strong>
+                  ) : null}
+                  {rpName}
+                </span>
               </span>
-            </span>
-          );
-        })}
+            );
+          })}
+        </div>
         {hiddenCount > 0 ? (
           <button
             aria-expanded={false}

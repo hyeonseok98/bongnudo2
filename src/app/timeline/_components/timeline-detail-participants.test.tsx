@@ -21,7 +21,7 @@ describe("TimelineDetailParticipants", () => {
     expect(screen.getByText("[대표]").parentElement?.textContent).toContain("인물 6");
     expect(screen.queryByText("인물 5")).toBeNull();
 
-    await user.click(screen.getByRole("button", { name: /\+3/ }));
+    await user.click(screen.getByRole("button", { name: /\+4/ }));
     expect(screen.getByText("인물 5")).toBeTruthy();
 
     await user.click(screen.getByRole("button", { name: "접기" }));
