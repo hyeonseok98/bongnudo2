@@ -7,6 +7,7 @@ import { getCurrentUser } from "@/features/auth/session";
 import { QueryProvider } from "@/providers/query-provider";
 import { SidebarProvider } from "@/providers/sidebar-provider";
 import { ThemeProvider } from "@/providers/theme-provider";
+import { GoogleAnalytics } from "@next/third-parties/google";
 import { Analytics } from "@vercel/analytics/next";
 import type { Metadata } from "next";
 import localFont from "next/font/local";
@@ -25,7 +26,7 @@ const pretendard = localFont({
 export const metadata: Metadata = {
   title: "봉누록 | 봉누도2의 모든 기록",
   icons: {
-    icon: "/logos/bongnurok_favicon_small.png",
+    icon: "/logos/bongnurok_logo_small.png",
   },
   description:
     "봉누도2의 인물과 조직, 사건 타임라인, 실시간 현황, 다시보기와 클립을 한곳에서 확인할 수 있는 봉누도2 정보 사이트입니다.",
@@ -69,6 +70,8 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
         </ThemeProvider>
 
         <Analytics />
+
+        <GoogleAnalytics gaId={process.env.NEXT_PUBLIC_GA_ID!} />
       </body>
     </html>
   );
