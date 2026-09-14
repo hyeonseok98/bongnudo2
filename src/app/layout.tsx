@@ -1,3 +1,4 @@
+import { Footer } from "@/components/layouts/footer";
 import { Header } from "@/components/layouts/header";
 import { MainContainer } from "@/components/layouts/main-container";
 import { Sidebar } from "@/components/layouts/sidebar";
@@ -59,7 +60,10 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
                   <div className="@container flex min-h-0 min-w-0 flex-1 flex-col overflow-y-auto bg-background">
                     <NuqsAdapter>
                       <QueryProvider>
-                        <MainContainer>{children}</MainContainer>
+                        <MainContainer className="flex min-h-full flex-col">
+                          <div className="flex-1">{children}</div>
+                          <Footer />
+                        </MainContainer>
                       </QueryProvider>
                     </NuqsAdapter>
                   </div>

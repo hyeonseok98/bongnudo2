@@ -1,6 +1,19 @@
+"use client";
+
 import Link from "next/link";
+import { usePathname } from "next/navigation";
+
+function isCharacterDetailPath(pathname: string) {
+  return /^\/characters\/(?:streamer|rp)\/[^/]+$/.test(pathname);
+}
 
 export function Footer() {
+  const pathname = usePathname();
+
+  if (isCharacterDetailPath(pathname)) {
+    return null;
+  }
+
   return (
     <footer className="flex flex-col gap-1 border-t border-default py-6 text-caption text-tertiary sm:flex-row sm:items-center sm:justify-between">
       <div>

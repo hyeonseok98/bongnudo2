@@ -1,9 +1,6 @@
 import { render } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 
-vi.mock("@/components/layouts/footer", () => ({
-  Footer: () => <footer data-home-section="footer" />,
-}));
 vi.mock("@/features/timeline/timeline-params", () => ({
   getCurrentKstDate: () => "2026-09-13",
 }));
@@ -40,7 +37,6 @@ describe("HomePage", () => {
       "live",
       "characters",
       "organizations",
-      "footer",
     ]);
     expect(container.textContent).not.toContain("다시보기");
     expect(container.textContent).not.toContain("클립");

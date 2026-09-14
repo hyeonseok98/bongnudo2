@@ -1,7 +1,5 @@
 import type { Metadata } from "next";
 
-import { Footer } from "@/components/layouts/footer";
-
 import { HomeCharacters } from "./_components/home-characters";
 import { HomeHero } from "./_components/home-hero";
 import { HomeLive } from "./_components/home-live";
@@ -23,7 +21,6 @@ export default function HomePage() {
         <HomeLive />
         <HomeCharacters />
         <HomeOrganizations />
-        <Footer />
       </div>
     </main>
   );
