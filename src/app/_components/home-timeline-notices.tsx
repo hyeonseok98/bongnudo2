@@ -19,11 +19,14 @@ export function HomeTimelineNotices({ today }: { today: string }) {
     affiliation: "",
     category: "",
     date: today,
+    day: 0,
     job: "",
     participant: "",
     query: "",
+    scope: "page",
     sort: "desc",
     tag: "",
+    viewMode: "date",
   };
   const timelineQuery = useTimeline(filters);
   const events =
