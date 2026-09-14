@@ -80,6 +80,34 @@ afterEach(() => {
 });
 
 describe("ReportDialog", () => {
+  it("선택한 이미지를 확대하고 이동해도 작성 내용을 유지함", async () => {
+    const user = userEvent.setup();
+    renderReportDialog();
+    const titleInput = screen.getByPlaceholderText(/어떤 일이 있었나요/);
+    await user.type(titleInput, "작성 중인 제목");
+    const fileInput = document.querySelector<HTMLInputElement>('input[type="file"]');
+    expect(fileInput).not.toBeNull();
+    await user.upload(fileInput!, [
+      new File(["first"], "first.png", { type: "image/png" }),
+      new File(["second"], "second.png", { type: "image/png" }),
+      new File(["third"], "third.png", { type: "image/png" }),
+    ]);
+
+    await user.click(
+      screen.getByRole("button", { name: "첨부 이미지 1 크게 보기" }),
+    );
+    expect(screen.getByText("1 / 3")).toBeTruthy();
+    await user.click(screen.getByRole("button", { name: "다음 이미지" }));
+    expect(screen.getByText("2 / 3")).toBeTruthy();
+    await user.click(
+      screen.getByRole("button", { name: "이미지 미리보기 닫기" }),
+    );
+    expect((titleInput as HTMLInputElement).value).toBe("작성 중인 제목");
+
+    await user.click(screen.getByRole("button", { name: "첨부 이미지 1 삭제" }));
+    expect(screen.queryByText("업로드 이미지 미리보기")).toBeNull();
+  });
+
   it("유형을 전환해도 입력한 클립을 유지함", async () => {
     const user = userEvent.setup();
     renderReportDialog();

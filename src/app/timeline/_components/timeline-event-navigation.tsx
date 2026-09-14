@@ -1,12 +1,13 @@
 "use client";
 
 import Image from "next/image";
-import { ChevronLeft, ChevronRight, PlayCircle } from "lucide-react";
+import { ChevronLeft, ChevronRight } from "lucide-react";
 
 import { orderTimelineMedia } from "@/features/timeline/timeline-media";
 import type { TimelineEvent } from "@/features/timeline/timeline";
 
 import { formatTimelineDateTime } from "./timeline-date-time";
+import { TimelineClipThumbnail } from "./timeline-clip-thumbnail";
 
 interface TimelineEventNavigationButtonProps {
   direction: "previous" | "next";
@@ -45,9 +46,10 @@ export function TimelineEventNavigationButton({
               src={previewMedia.imageUrl}
             />
           ) : previewMedia?.mediaType === "chzzk_clip" ? (
-            <span className="grid size-full place-items-center bg-black/70 text-white">
-              <PlayCircle aria-hidden="true" className="size-5" />
-            </span>
+            <TimelineClipThumbnail
+              alt=""
+              thumbnailUrl={previewMedia.thumbnailUrl}
+            />
           ) : (
             <Image
               alt=""

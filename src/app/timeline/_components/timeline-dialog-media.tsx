@@ -8,6 +8,8 @@ import { getChzzkClipEmbedUrl } from "@/features/reports/chzzk-clip";
 import type { TimelineMedia } from "@/features/timeline/timeline";
 import { cn } from "@/utils/cn";
 
+import { TimelineClipThumbnail } from "./timeline-clip-thumbnail";
+
 export function TimelineMediaViewer({
   eventTitle,
   media,
@@ -46,7 +48,7 @@ export function TimelineMediaViewer({
 
 export function TimelineEmptyMediaViewer({ title }: { title: string }) {
   return (
-    <div className="grid size-full place-items-center bg-[radial-gradient(circle_at_center,var(--surface-muted),transparent_65%)] px-6 text-center">
+    <div className="grid size-full place-items-center bg-surface-inset px-6 text-center dark:bg-[radial-gradient(circle_at_center,var(--surface-muted),transparent_65%)]">
       <div className="space-y-4">
         <Image
           alt="봉누록"
@@ -55,7 +57,9 @@ export function TimelineEmptyMediaViewer({ title }: { title: string }) {
           src="/logo/bongnurok_logo.png"
           width={224}
         />
-        <p className="text-body-sm font-medium text-white/70">{title}</p>
+        <p className="text-body-sm font-medium text-secondary dark:text-white/70">
+          {title}
+        </p>
       </div>
     </div>
   );
@@ -159,9 +163,10 @@ export function TimelineMediaThumbnailStrip({
               src={item.imageUrl}
             />
           ) : (
-            <span className="grid size-full place-items-center text-white">
-              <PlayCircle aria-hidden="true" className="size-6" />
-            </span>
+            <TimelineClipThumbnail
+              alt={`${eventTitle} ${index + 1}번째 치지직 클립 썸네일`}
+              thumbnailUrl={item.thumbnailUrl}
+            />
           )}
         </button>
       ))}

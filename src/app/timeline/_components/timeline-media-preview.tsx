@@ -1,10 +1,11 @@
 "use client";
 
-import { PlayCircle } from "lucide-react";
 import Image from "next/image";
 
 import type { TimelineMedia } from "@/features/timeline/timeline";
 import { orderTimelineMedia } from "@/features/timeline/timeline-media";
+
+import { TimelineClipThumbnail } from "./timeline-clip-thumbnail";
 
 interface TimelineMediaPreviewProps {
   eventTitle: string;
@@ -39,15 +40,10 @@ export function TimelineMediaPreview({
           src={preview.imageUrl}
         />
       ) : (
-        <span className="grid size-full place-items-center bg-black/70 text-white">
-          <span className="flex flex-col items-center gap-1 text-caption font-semibold">
-            <PlayCircle
-              aria-hidden="true"
-              className="size-7 text-brand-text"
-            />
-            치지직 클립
-          </span>
-        </span>
+        <TimelineClipThumbnail
+          alt={`${eventTitle} 치지직 클립 썸네일`}
+          thumbnailUrl={preview.thumbnailUrl}
+        />
       )}
       {media.length > 1 ? (
         <span className="absolute right-2 bottom-2 rounded-md bg-black/75 px-2 py-1 text-caption font-semibold text-white">

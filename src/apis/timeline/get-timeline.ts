@@ -28,6 +28,7 @@ const timelinePageSchema: z.ZodType<TimelinePageData> = z.object({
             clipUrl: z.url(),
             id: z.string().uuid(),
             mediaType: z.literal("chzzk_clip"),
+            thumbnailUrl: z.url().nullable(),
           }),
         ]),
       ),

@@ -5,7 +5,6 @@ import { Dialog as DialogPrimitive } from "@base-ui/react/dialog";
 import { Popover } from "@base-ui/react/popover";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
-  FileImage,
   Hash,
   Link as LinkIcon,
   LoaderCircle,
@@ -13,11 +12,9 @@ import {
   Plus,
   Search,
   Send,
-  UploadCloud,
   X,
 } from "lucide-react";
-import Image from "next/image";
-import { useEffect, useId, useRef, useState } from "react";
+import { useRef, useState } from "react";
 
 import { uploadReportImages } from "@/apis/reports/report-uploads";
 import { CharacterAvatar } from "@/app/characters/_components/character-avatar";
@@ -37,7 +34,6 @@ import {
   getReportFormErrors,
   isReportFormReady,
   MAX_REPORT_CLIP_COUNT,
-  MAX_REPORT_IMAGE_COUNT,
   MAX_REPORT_TAG_COUNT,
   removeReportClipField,
   type ReportClipField,
@@ -45,10 +41,7 @@ import {
   type ReportFormErrors,
   type ReportFormState,
 } from "@/features/reports/report-form";
-import {
-  compressReportImages,
-  validateReportImageFiles,
-} from "@/features/reports/report-image";
+import { compressReportImages } from "@/features/reports/report-image";
 import type { ReportOptions, UserReportType } from "@/features/reports/report-options";
 import type { ReportParticipantSearchResult } from "@/features/reports/search-report-participants";
 import { useDebouncedValue } from "@/hooks/use-debounced-value";
@@ -56,6 +49,8 @@ import { reportMutations } from "@/queries/report-mutations";
 import { reportQueries } from "@/queries/report-queries";
 import { timelineQueries } from "@/queries/timeline-queries";
 import { cn } from "@/utils/cn";
+
+import { ReportImageUpload } from "./report-image-upload";
 
 interface ReportDialogProps {
   onClose: () => void;
@@ -260,7 +255,7 @@ export function ReportDialog({ onClose, onSuccess, today }: ReportDialogProps) {
                 )}
               >
                 <div className="min-w-0 space-y-1.5">
-                  <fieldset className="space-y-2">
+                  <fieldset className="space-y-2 border-b border-default pb-3">
                     <legend className="text-caption font-semibold text-secondary">
                       제보 유형
                     </legend>
@@ -407,7 +402,7 @@ export function ReportDialog({ onClose, onSuccess, today }: ReportDialogProps) {
                 </div>
 
                 <aside className="grid min-w-0 grid-rows-[auto_minmax(0,1fr)_auto] gap-3 rounded-lg bg-surface-inset p-4">
-                  <ImageUploader
+                  <ReportImageUpload
                     error={fieldErrors.images}
                     files={form.files}
                     onChange={(files) => {
@@ -860,10 +855,13 @@ function TagInput({
         />
       </div>
       {tags.length > 0 ? (
-        <ul aria-label="선택한 태그" className="flex flex-wrap gap-1.5">
+        <ul
+          aria-label="선택한 태그"
+          className="scrollbar-hidden flex max-w-full flex-nowrap gap-1.5 overflow-x-auto pb-1"
+        >
           {tags.map((tag) => (
             <li
-              className="inline-flex items-center gap-1 rounded-full bg-surface-muted px-2.5 py-1 text-caption text-primary"
+              className="inline-flex shrink-0 items-center gap-1 rounded-full bg-surface-muted px-2.5 py-1 text-caption text-primary"
               key={tag.toLocaleLowerCase("ko-KR")}
             >
               #{tag}
@@ -885,172 +883,6 @@ function TagInput({
         #은 자동으로 정리되며 최대 {MAX_REPORT_TAG_COUNT}개까지 추가할 수 있습니다.
       </p>
     </fieldset>
-  );
-}
-
-function ImageUploader({
-  error,
-  files,
-  onChange,
-  onError,
-}: {
-  error?: string;
-  files: File[];
-  onChange: (files: File[]) => void;
-  onError: (message: string | undefined) => void;
-}) {
-  const inputId = useId();
-
-  function addFiles(nextFiles: FileList | File[]): void {
-    const uniqueFiles = [...files, ...Array.from(nextFiles)].filter(
-      (file, index, all) =>
-        all.findIndex(
-          (candidate) =>
-            candidate.name === file.name &&
-            candidate.size === file.size &&
-            candidate.lastModified === file.lastModified,
-        ) === index,
-    );
-    try {
-      validateReportImageFiles(uniqueFiles);
-      onChange(uniqueFiles);
-      onError(undefined);
-    } catch (nextError) {
-      onError(
-        nextError instanceof Error
-          ? nextError.message
-          : "이미지를 확인해주세요.",
-      );
-    }
-  }
-
-  return (
-    <fieldset className="space-y-2">
-      <legend className="text-body-sm font-semibold text-primary">
-        <span className="inline-flex items-center gap-2">
-          <FileImage aria-hidden="true" className="size-4 text-brand-text" />
-          이미지 첨부
-          <span className="font-normal text-tertiary">
-            {files.length}/{MAX_REPORT_IMAGE_COUNT}
-          </span>
-        </span>
-      </legend>
-      <label
-        className="grid min-h-20 cursor-pointer place-items-center rounded-lg border border-dashed border-control bg-background p-3 text-center hover:border-brand focus-within:outline-2 focus-within:outline-offset-2 focus-within:outline-focus-ring"
-        htmlFor={inputId}
-        onDragOver={(event) => event.preventDefault()}
-        onDrop={(event) => {
-          event.preventDefault();
-          addFiles(event.dataTransfer.files);
-        }}
-      >
-        <span className="flex items-center justify-center gap-3 text-left">
-          <UploadCloud
-            aria-hidden="true"
-            className="size-6 shrink-0 text-brand-text"
-          />
-          <span>
-            <strong className="block text-body-sm text-primary">
-              이미지를 드래그하거나 클릭해 선택하세요.
-            </strong>
-            <span className="mt-1 block text-caption text-tertiary">
-              JPG, PNG, WEBP · 파일당 10MB 이하
-            </span>
-          </span>
-        </span>
-      </label>
-      <input
-        accept="image/jpeg,image/png,image/webp"
-        className="sr-only"
-        id={inputId}
-        multiple
-        onChange={(event) => {
-          if (event.target.files) addFiles(event.target.files);
-          event.target.value = "";
-        }}
-        type="file"
-      />
-      {error ? <FieldError>{error}</FieldError> : null}
-      <ImagePreviews
-        files={files}
-        onRemove={(index) =>
-          onChange(files.filter((_, fileIndex) => fileIndex !== index))
-        }
-      />
-    </fieldset>
-  );
-}
-
-function ImagePreviews({
-  files,
-  onRemove,
-}: {
-  files: File[];
-  onRemove: (index: number) => void;
-}) {
-  return (
-    <ul className="grid grid-cols-3 gap-2">
-      {files.map((file, index) => (
-        <ImagePreview
-          file={file}
-          index={index}
-          key={`${file.name}-${file.size}-${file.lastModified}`}
-          onRemove={onRemove}
-        />
-      ))}
-    </ul>
-  );
-}
-
-function ImagePreview({
-  file,
-  index,
-  onRemove,
-}: {
-  file: File;
-  index: number;
-  onRemove: (index: number) => void;
-}) {
-  const [url, setUrl] = useState<string | null>(null);
-
-  useEffect(() => {
-    const reader = new FileReader();
-
-    function handleLoad(): void {
-      if (typeof reader.result === "string") {
-        setUrl(reader.result);
-      }
-    }
-
-    reader.addEventListener("load", handleLoad);
-    reader.readAsDataURL(file);
-
-    return () => {
-      reader.removeEventListener("load", handleLoad);
-      reader.abort();
-    };
-  }, [file]);
-
-  return (
-    <li className="group relative h-14 overflow-hidden rounded-lg border border-default">
-      {url ? (
-        <Image
-          fill
-          alt={`첨부 이미지 ${index + 1} 미리보기`}
-          className="object-cover"
-          sizes="120px"
-          src={url}
-        />
-      ) : null}
-      <button
-        aria-label={`첨부 이미지 ${index + 1} 삭제`}
-        className="absolute top-1 right-1 grid size-7 cursor-pointer place-items-center rounded-full bg-black/70 text-white focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white"
-        onClick={() => onRemove(index)}
-        type="button"
-      >
-        <X aria-hidden="true" className="size-4" />
-      </button>
-    </li>
   );
 }
 

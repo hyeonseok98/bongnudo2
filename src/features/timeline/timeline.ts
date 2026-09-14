@@ -58,6 +58,7 @@ interface TimelineClipMedia {
   clipUrl: string;
   id: string;
   mediaType: "chzzk_clip";
+  thumbnailUrl: string | null;
 }
 
 export type TimelineMedia = TimelineImageMedia | TimelineClipMedia;

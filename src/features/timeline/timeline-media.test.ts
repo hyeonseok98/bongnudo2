@@ -41,5 +41,6 @@ function createClip(id: string): TimelineMedia {
     clipUrl: `https://chzzk.naver.com/clips/${id}clip00`,
     id,
     mediaType: "chzzk_clip",
+    thumbnailUrl: null,
   };
 }
