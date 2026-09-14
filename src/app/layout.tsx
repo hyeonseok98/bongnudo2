@@ -23,6 +23,9 @@ const pretendard = localFont({
 
 export const metadata: Metadata = {
   title: "봉누록 | 봉누도2의 모든 기록",
+  icons: {
+    icon: "/logos/bongnurok_logo_small.png",
+  },
   description:
     "봉누도2의 인물과 조직, 사건 타임라인, 실시간 현황, 다시보기와 클립을 한곳에서 확인할 수 있는 봉누도2 정보 사이트입니다.",
 };
