@@ -3,12 +3,13 @@
 import { ChevronDown } from "lucide-react";
 import { useLayoutEffect, useRef, useState } from "react";
 
-import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import type { TimelineEvent } from "@/features/timeline/timeline";
 import { getInitialTimelineMediaId } from "@/features/timeline/timeline-media";
 import { cn } from "@/utils/cn";
 
+import { TimelineCategoryBadge } from "./timeline-category-badge";
+import { formatTimelineTime } from "./timeline-date-time";
 import { TimelineMediaPreview } from "./timeline-media-preview";
 import { TimelineParticipantStack } from "./timeline-participant-stack";
 import { TimelineRowActions } from "./timeline-row-actions";
@@ -170,7 +171,7 @@ function TimelineRow({
         className="text-body-sm font-semibold text-primary xl:text-center"
         dateTime={event.occurredAt}
       >
-        {formatKstTime(event.occurredAt)}
+        {formatTimelineTime(event.occurredAt)}
       </time>
       <div className="xl:text-center">
         <TimelineCategoryBadge categorySlug={event.category.slug}>
@@ -269,43 +270,4 @@ function TimelineRow({
       />
     </li>
   );
-}
-
-export function TimelineCategoryBadge({
-  categorySlug,
-  children,
-}: {
-  categorySlug: string;
-  children: string;
-}) {
-  const categoryClassNames: Record<string, string> = {
-    "incident-accident": "text-status-danger",
-    daily: "text-status-info",
-    humor: "text-status-warning",
-    "romance-relationship": "text-job-ems",
-    promotion: "text-brand-text",
-    "organization-news": "text-job-police",
-    article: "text-status-info",
-    crime: "text-status-danger",
-    "notice-guide": "text-job-city-hall",
-    other: "text-secondary",
-  };
-
-  return (
-    <Badge
-      className={categoryClassNames[categorySlug] ?? "text-secondary"}
-      variant="outline"
-    >
-      {children}
-    </Badge>
-  );
-}
-
-function formatKstTime(occurredAt: string): string {
-  return new Intl.DateTimeFormat("ko-KR", {
-    hour: "2-digit",
-    hour12: false,
-    minute: "2-digit",
-    timeZone: "Asia/Seoul",
-  }).format(new Date(occurredAt));
 }

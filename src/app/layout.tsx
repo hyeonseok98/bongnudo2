@@ -7,6 +7,7 @@ import { getCurrentUser } from "@/features/auth/session";
 import { QueryProvider } from "@/providers/query-provider";
 import { SidebarProvider } from "@/providers/sidebar-provider";
 import { ThemeProvider } from "@/providers/theme-provider";
+import { Analytics } from "@vercel/analytics/next";
 import type { Metadata } from "next";
 import localFont from "next/font/local";
 import { cookies } from "next/headers";
@@ -24,7 +25,7 @@ const pretendard = localFont({
 export const metadata: Metadata = {
   title: "봉누록 | 봉누도2의 모든 기록",
   icons: {
-    icon: "/logos/bongnurok_logo_small.png",
+    icon: "/logos/bongnurok_favicon_small.png",
   },
   description:
     "봉누도2의 인물과 조직, 사건 타임라인, 실시간 현황, 다시보기와 클립을 한곳에서 확인할 수 있는 봉누도2 정보 사이트입니다.",
@@ -35,14 +36,13 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
     cookies(),
     getCurrentUser(),
   ]);
+
   const initialIsOpen = cookieStore.get(SIDEBAR_COOKIE_NAME)?.value !== "false";
 
   return (
     <html
       lang="ko"
-      className={
-        pretendard.className + " " + pretendard.variable + " h-full antialiased"
-      }
+      className={`${pretendard.className} ${pretendard.variable} h-full antialiased`}
       suppressHydrationWarning
     >
       <body className="min-h-dvh">
@@ -51,8 +51,10 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
             <SidebarProvider initialIsOpen={initialIsOpen}>
               <div className="flex h-dvh flex-col overflow-hidden bg-background">
                 <Header currentUser={currentUser} />
+
                 <div className="flex min-h-0 flex-1">
                   <Sidebar />
+
                   <div className="@container flex min-h-0 min-w-0 flex-1 flex-col overflow-y-auto bg-background">
                     <NuqsAdapter>
                       <QueryProvider>
@@ -65,6 +67,8 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
             </SidebarProvider>
           </TooltipProvider>
         </ThemeProvider>
+
+        <Analytics />
       </body>
     </html>
   );

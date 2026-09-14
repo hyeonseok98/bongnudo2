@@ -35,7 +35,11 @@ export interface TimelineDateRange {
 }
 
 export function getCurrentKstDate(now = new Date()): string {
-  return new Date(now.getTime() + KST_OFFSET_MILLISECONDS)
+  return getKstDateFromInstant(now);
+}
+
+export function getKstDateFromInstant(instant: Date | string): string {
+  return new Date(new Date(instant).getTime() + KST_OFFSET_MILLISECONDS)
     .toISOString()
     .slice(0, 10);
 }

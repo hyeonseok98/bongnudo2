@@ -1,7 +1,6 @@
 import type { Metadata } from "next";
 
 import { Footer } from "@/components/layouts/footer";
-import { getCurrentKstDate } from "@/features/timeline/timeline-params";
 
 import { HomeCharacters } from "./_components/home-characters";
 import { HomeHero } from "./_components/home-hero";
@@ -20,7 +19,7 @@ export default function HomePage() {
     <main>
       <HomeHero />
       <div className="space-y-10 py-8 sm:space-y-12 sm:py-10 lg:py-12">
-        <HomeTimelineNotices today={getCurrentKstDate()} />
+        <HomeTimelineNotices />
         <HomeLive />
         <HomeCharacters />
         <HomeOrganizations />

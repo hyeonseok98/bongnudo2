@@ -76,6 +76,17 @@ export interface TimelineEvent {
   title: string;
 }
 
+export interface TimelineSummaryEvent {
+  category: TimelineCategory;
+  id: string;
+  occurredAt: string;
+  title: string;
+}
+
+export interface LatestTimelineData {
+  events: TimelineSummaryEvent[];
+}
+
 export interface TimelinePageData {
   categories: TimelineCategory[];
   events: TimelineEvent[];

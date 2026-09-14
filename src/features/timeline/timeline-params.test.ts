@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 import {
   createTimelineSearchParams,
   getCurrentKstDate,
+  getKstDateFromInstant,
   getKstDateRange,
   parseTimelineSearchParams,
   shiftKstDate,
@@ -10,6 +11,12 @@ import {
 } from "./timeline-params";
 
 describe("timeline params", () => {
+  it("instant를 KST 날짜로 변환함", () => {
+    expect(getKstDateFromInstant("2026-09-13T16:03:00.000Z")).toBe(
+      "2026-09-14",
+    );
+  });
+
   it("KST 하루를 정확한 UTC 반개방 구간으로 변환한다", () => {
     expect(getKstDateRange("2026-09-13")).toEqual({
       start: "2026-09-12T15:00:00.000Z",

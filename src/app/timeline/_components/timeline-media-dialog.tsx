@@ -25,7 +25,7 @@ import {
 } from "./timeline-dialog-media";
 import { TimelineEventDetails } from "./timeline-event-details";
 import { TimelineEventNavigationButton } from "./timeline-event-navigation";
-import { TimelineCategoryBadge } from "./timeline-list";
+import { TimelineCategoryBadge } from "./timeline-category-badge";
 
 interface TimelineMediaDialogProps {
   event: TimelineEvent | null;
