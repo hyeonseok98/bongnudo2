@@ -1,6 +1,11 @@
 "use client";
 
-import { parseAsString, parseAsStringLiteral, useQueryStates } from "nuqs";
+import {
+  parseAsInteger,
+  parseAsString,
+  parseAsStringLiteral,
+  useQueryStates,
+} from "nuqs";
 
 import {
   TIMELINE_MEDIA_FILTER_VALUES,
@@ -8,6 +13,8 @@ import {
   type TimelineMediaFilter,
   type TimelineQueryFilters,
   type TimelineSort,
+  TIMELINE_VIEW_MODE_VALUES,
+  type TimelineViewMode,
 } from "@/features/timeline/timeline";
 import {
   isKstDate,
@@ -18,22 +25,23 @@ const timelineQueryParsers = {
   affiliation: parseAsString.withDefault(""),
   category: parseAsString.withDefault(""),
   date: parseAsString.withDefault(""),
+  day: parseAsInteger.withDefault(1),
   event: parseAsString.withDefault(""),
   job: parseAsString.withDefault(""),
   media: parseAsString.withDefault(""),
-  mediaType: parseAsStringLiteral(TIMELINE_MEDIA_FILTER_VALUES).withDefault(
-    "all",
-  ),
+  mediaType: parseAsStringLiteral(TIMELINE_MEDIA_FILTER_VALUES).withDefault("media"),
   participant: parseAsString.withDefault(""),
   q: parseAsString.withDefault(""),
   report: parseAsString.withDefault(""),
   correction: parseAsString.withDefault(""),
   sort: parseAsStringLiteral(TIMELINE_SORT_VALUES).withDefault("desc"),
   tag: parseAsString.withDefault(""),
+  view: parseAsStringLiteral(TIMELINE_VIEW_MODE_VALUES).withDefault("date"),
 };
 
 export interface TimelineDirectory extends TimelineQueryFilters {
   eventId: string;
+  changeDay: (day: number) => void;
   mediaId: string;
   mediaType: TimelineMediaFilter;
   reportIntent: "report" | "correction" | null;
@@ -47,6 +55,7 @@ export interface TimelineDirectory extends TimelineQueryFilters {
   changeQuery: (query: string) => void;
   changeSort: (sort: TimelineSort) => void;
   changeTag: (tag: string) => void;
+  changeViewMode: (mode: TimelineViewMode) => void;
   changeMedia: (mediaId: string) => void;
   changeMediaType: (mediaType: TimelineMediaFilter) => void;
   clearFilters: () => void;
@@ -57,9 +66,13 @@ export interface TimelineDirectory extends TimelineQueryFilters {
   openReport: () => void;
   openCorrection: (eventId: string) => void;
   moveDate: (amount: number) => void;
+  moveDay: (amount: number) => void;
 }
 
-export function useTimelineDirectory(initialDate: string): TimelineDirectory {
+export function useTimelineDirectory(
+  initialDate: string,
+  initialDay: number,
+): TimelineDirectory {
   const [params, setParams] = useQueryStates(timelineQueryParsers);
   const date = isKstDate(params.date) ? params.date : initialDate;
 
@@ -71,6 +84,7 @@ export function useTimelineDirectory(initialDate: string): TimelineDirectory {
     affiliation: params.affiliation,
     category: params.category,
     date,
+    day: params.day > 0 ? params.day : initialDay,
     eventId: params.event,
     job: params.job,
     mediaId: params.media,
@@ -84,8 +98,10 @@ export function useTimelineDirectory(initialDate: string): TimelineDirectory {
     correctionEventId: params.correction,
     participant: params.participant,
     query: params.q,
+    scope: "page",
     sort: params.sort,
     tag: params.tag,
+    viewMode: params.view,
     applyTagFromMedia: (value) => {
       void setParams(
         { event: null, media: null, tag: value || null },
@@ -96,6 +112,11 @@ export function useTimelineDirectory(initialDate: string): TimelineDirectory {
     changeCategory: (value) => setFilter("category", value),
     changeDate: (value) => {
       if (isKstDate(value)) setFilter("date", value);
+    },
+    changeDay: (value) => {
+      if (Number.isInteger(value) && value > 0) {
+        void setParams({ day: value }, { history: "replace" });
+      }
     },
     changeJob: (value) => setFilter("job", value),
     changeParticipant: (value) => setFilter("participant", value),
@@ -112,7 +133,15 @@ export function useTimelineDirectory(initialDate: string): TimelineDirectory {
     },
     changeMediaType: (value) => {
       void setParams(
-        { mediaType: value === "all" ? null : value },
+        { mediaType: value === "media" ? null : value },
+        { history: "replace" },
+      );
+    },
+    changeViewMode: (value) => {
+      void setParams(
+        value === "date"
+          ? { day: null, view: null }
+          : { day: initialDay, view: "day" },
         { history: "replace" },
       );
     },
@@ -139,6 +168,10 @@ export function useTimelineDirectory(initialDate: string): TimelineDirectory {
       );
     },
     moveDate: (amount) => setFilter("date", shiftKstDate(date, amount)),
+    moveDay: (amount) => {
+      const nextDay = Math.max(1, params.day + amount);
+      void setParams({ day: nextDay }, { history: "replace" });
+    },
     openMedia: (eventId, mediaId) => {
       void setParams(
         {

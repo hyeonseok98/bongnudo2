@@ -23,6 +23,7 @@ import { Button } from "@/components/ui/button";
 import { DatePicker } from "@/components/ui/date-picker";
 import { Input } from "@/components/ui/input";
 import { Select } from "@/components/ui/select";
+import { Skeleton } from "@/components/ui/skeleton";
 import { Textarea } from "@/components/ui/textarea";
 import { TimePicker } from "@/components/ui/time-picker";
 import {
@@ -30,6 +31,7 @@ import {
   buildReportRequest,
   createInitialReportForm,
   getActiveReportDraft,
+  getCompletedReportClipCount,
   getReportFormErrors,
   isReportFormReady,
   MAX_REPORT_CLIP_COUNT,
@@ -365,7 +367,7 @@ export function ReportDialog({ onClose, onSuccess, today }: ReportDialogProps) {
                   <FieldLabel error={fieldErrors.content} label="내용" required>
                     <Textarea
                       aria-invalid={Boolean(fieldErrors.content)}
-                      maxLength={200}
+                      maxLength={400}
                       onChange={(changeEvent) => {
                         updateDraft({ content: changeEvent.target.value });
                         setFieldErrors((current) => ({
@@ -378,13 +380,20 @@ export function ReportDialog({ onClose, onSuccess, today }: ReportDialogProps) {
                       className="h-24 min-h-24"
                       value={draft.content}
                     />
-                    <CharacterCount current={draft.content.length} max={200} />
+                    <CharacterCount current={draft.content.length} max={400} />
                   </FieldLabel>
 
                   {form.reportType === "timeline" ? (
                     <>
                       <ParticipantPicker
-                        onChange={(participants) => updateForm({ participants })}
+                        error={fieldErrors.participants}
+                        onChange={(participants) => {
+                          updateForm({ participants });
+                          setFieldErrors((current) => ({
+                            ...current,
+                            participants: undefined,
+                          }));
+                        }}
                         participants={form.participants}
                       />
                       <TagInput
@@ -581,9 +590,11 @@ function CategorySelect({
 }
 
 function ParticipantPicker({
+  error,
   onChange,
   participants,
 }: {
+  error?: string;
   onChange: (participants: ReportParticipantSearchResult[]) => void;
   participants: ReportParticipantSearchResult[];
 }) {
@@ -599,7 +610,7 @@ function ParticipantPicker({
   return (
     <fieldset className="space-y-2">
       <legend className="text-caption font-semibold text-secondary">
-        관련 인물 <span className="font-normal text-tertiary">(선택)</span>
+        관련 인물 <span className="ml-1 text-status-danger">*</span>
       </legend>
       <Popover.Root
         onOpenChange={setIsOpen}
@@ -649,9 +660,17 @@ function ParticipantPicker({
             >
               <Popover.Title className="sr-only">관련 인물 검색 결과</Popover.Title>
               {searchQuery.isPending ? (
-                <p className="p-3 text-caption text-secondary" role="status">
-                  인물을 검색하고 있습니다.
-                </p>
+                <div aria-label="인물을 검색하는 중" className="space-y-2 p-2" role="status">
+                  {Array.from({ length: 3 }, (_, index) => (
+                    <div className="flex items-center gap-3 p-1" key={index}>
+                      <Skeleton className="size-8 shrink-0 rounded-full" />
+                      <div className="flex-1 space-y-1.5">
+                        <Skeleton className="h-4 w-24" />
+                        <Skeleton className="h-3 w-36" />
+                      </div>
+                    </div>
+                  ))}
+                </div>
               ) : searchQuery.isError ? (
                 <p className="p-3 text-caption text-status-danger" role="alert">
                   인물 검색 결과를 불러오지 못했습니다. 잠시 후 다시 시도해주세요.
@@ -675,8 +694,8 @@ function ParticipantPicker({
                     >
                       <CharacterAvatar
                         className="size-8 rounded-full"
-                        name={participant.rpName ?? participant.streamerName}
-                        profileImageUrl={null}
+                        name={participant.rpName ?? "RP명 없음"}
+                        profileImageUrl={participant.profileImageUrl}
                         sizes="32px"
                       />
                       <span className="min-w-0 flex-1">
@@ -713,18 +732,18 @@ function ParticipantPicker({
             >
               <CharacterAvatar
                 className="size-7 rounded-full"
-                name={participant.rpName ?? participant.streamerName}
-                profileImageUrl={null}
+                name={participant.rpName ?? "RP명 없음"}
+                profileImageUrl={participant.profileImageUrl}
                 sizes="28px"
               />
               <span className="text-caption text-primary">
                 {index === 0 ? (
                   <strong className="mr-1 text-brand-text">[대표]</strong>
                 ) : null}
-                {participant.rpName ?? participant.streamerName}
+                {participant.rpName ?? "RP명 없음"}
               </span>
               <button
-                aria-label={`${participant.rpName ?? participant.streamerName} 선택 해제`}
+                aria-label={`${participant.rpName ?? "RP명 없음"} 선택 해제`}
                 className="cursor-pointer rounded-full text-tertiary hover:text-primary focus-visible:outline-2 focus-visible:outline-focus-ring"
                 onClick={() =>
                   onChange(
@@ -742,6 +761,7 @@ function ParticipantPicker({
           ))}
         </ul>
       ) : null}
+      {error ? <FieldError>{error}</FieldError> : null}
       <p className="text-caption text-tertiary">
         가장 먼저 추가한 인물이 대표 인물로 설정됩니다.
       </p>
@@ -755,9 +775,7 @@ function getParticipantDescription(
   const affiliation = [participant.organizationName, participant.role]
     .filter(Boolean)
     .join(" · ");
-  return affiliation
-    ? `${affiliation} · 스트리머: ${participant.streamerName}`
-    : `스트리머: ${participant.streamerName}`;
+  return affiliation || "소속 정보 없음";
 }
 
 function TagInput({
@@ -1015,7 +1033,7 @@ function ClipFields({
           <LinkIcon aria-hidden="true" className="size-4 text-brand-text" />
           치지직 클립 <span className="font-normal text-tertiary">(선택)</span>
           <span className="font-normal text-tertiary">
-            {values.length} / {MAX_REPORT_CLIP_COUNT}
+            {getCompletedReportClipCount(values)}/{MAX_REPORT_CLIP_COUNT}
           </span>
         </span>
       </legend>

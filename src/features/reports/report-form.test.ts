@@ -5,6 +5,7 @@ import {
   buildCorrectionRequest,
   buildReportRequest,
   createInitialReportForm,
+  getCompletedReportClipCount,
   getReportClipErrors,
   isReportFormReady,
   normalizeReportTag,
@@ -14,6 +15,7 @@ import {
 
 const CATEGORY_ID = "9b544faa-9a71-4568-b04f-394dbaa738b0";
 const EVENT_ID = "338e3f7f-455e-41cb-a857-d69e54ff8a67";
+const PARTICIPANT_ID = "00000000-0000-4000-8000-000000000002";
 
 function createValidForm() {
   const initial = createInitialReportForm("2026-09-13");
@@ -34,6 +36,16 @@ function createValidForm() {
         title: "제보 제목",
       },
     },
+    participants: [
+      {
+        organizationName: "EMS",
+        profileImageUrl: null,
+        role: "원장",
+        rpName: "도현정",
+        seasonParticipantId: PARTICIPANT_ID,
+        streamerName: "강지",
+      },
+    ],
   };
 }
 
@@ -43,7 +55,7 @@ describe("report form", () => {
     expect(request.reportType).toBe("timeline");
     expect(request).toMatchObject({
       occurredAt: "2026-09-13T03:00:00.000Z",
-      participantIds: [],
+      participantIds: [PARTICIPANT_ID],
       tags: [],
     });
   });
@@ -91,6 +103,15 @@ describe("report form", () => {
         ],
       }),
     ).toBe("같은 클립을 중복으로 등록할 수 없습니다.");
+  });
+
+  it("빈 클립 입력 행은 등록 개수에 포함하지 않음", () => {
+    expect(getCompletedReportClipCount([{ id: "empty", value: "" }])).toBe(0);
+    expect(
+      getCompletedReportClipCount([
+        { id: "clip", value: " https://chzzk.naver.com/clips/abcdef " },
+      ]),
+    ).toBe(1);
   });
 
   it("클립 오류를 각 입력 필드에 연결함", () => {

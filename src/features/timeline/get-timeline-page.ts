@@ -6,7 +6,8 @@ import { getR2PublicUrl } from "@/lib/r2";
 import { getSupabaseAdminClient } from "@/lib/supabase/server";
 
 import type { TimelinePageData, TimelineQueryFilters } from "./timeline";
-import { getKstDateRange } from "./timeline-params";
+import { orderTimelineMedia } from "./timeline-media";
+import { getTimelineDateRange } from "./timeline-params";
 
 const categorySchema = z.object({
   name: z.string(),
@@ -47,6 +48,7 @@ const timelinePageSchema = z.object({
     z.object({
       category: categorySchema,
       content: z.string(),
+      createdAt: z.string().datetime({ offset: true }),
       id: z.string().uuid(),
       media: z.array(mediaSchema),
       occurredAt: z.string().datetime({ offset: true }),
@@ -66,7 +68,7 @@ const timelinePageSchema = z.object({
 export async function getTimelinePage(
   filters: TimelineQueryFilters,
 ): Promise<TimelinePageData> {
-  const { start, end } = getKstDateRange(filters.date);
+  const { start, end } = getTimelineDateRange(filters);
   const result = await getSupabaseAdminClient().rpc("get_timeline_page", {
     p_filters: {
       affiliation: filters.affiliation || null,
@@ -92,6 +94,10 @@ export async function getTimelinePage(
 
   return {
     ...page,
+    categories: page.categories.filter(
+      (category) =>
+        category.slug !== "job-economy" && category.slug !== "notice-guide",
+    ),
     events: page.events.map((event) => ({
       ...event,
       participants: event.participants.map(
@@ -100,7 +106,7 @@ export async function getTimelinePage(
           profileImageUrl: getR2PublicUrl(profileImageKey),
         }),
       ),
-      media: event.media.map((media) => {
+      media: orderTimelineMedia(event.media.map((media) => {
         if (media.mediaType === "chzzk_clip") {
           return {
             id: media.id,
@@ -116,7 +122,7 @@ export async function getTimelinePage(
         }
 
         return { id: media.id, mediaType: media.mediaType, imageUrl };
-      }),
+      })),
     })),
   };
 }

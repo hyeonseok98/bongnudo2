@@ -15,6 +15,7 @@ const timelinePageSchema: z.ZodType<TimelinePageData> = z.object({
     z.object({
       category: categorySchema,
       content: z.string(),
+      createdAt: z.string().datetime({ offset: true }),
       id: z.string().uuid(),
       media: z.array(
         z.discriminatedUnion("mediaType", [

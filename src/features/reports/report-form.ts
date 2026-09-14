@@ -45,6 +45,7 @@ export interface ReportFormErrors {
   content?: string;
   images?: string;
   occurredAt?: string;
+  participants?: string;
   title?: string;
 }
 
@@ -93,8 +94,8 @@ export function getReportFormErrors(state: ReportFormState): ReportFormErrors {
   else if (draft.title.length > 100)
     errors.title = "제목은 100자 이하로 입력해주세요.";
   if (!draft.content.trim()) errors.content = "내용을 입력해주세요.";
-  else if (draft.content.length > 200)
-    errors.content = "내용은 200자 이하로 입력해주세요.";
+  else if (draft.content.length > 400)
+    errors.content = "내용은 400자 이하로 입력해주세요.";
   if (!confirmations.isRespectful || !confirmations.canUseAsRecord)
     errors.confirmations = "필수 확인 항목에 모두 동의해주세요.";
 
@@ -103,6 +104,8 @@ export function getReportFormErrors(state: ReportFormState): ReportFormErrors {
       errors.occurredAt = "발생 시간을 확인해주세요.";
     const clipErrors = getReportClipErrors(state.clipFields);
     if (Object.keys(clipErrors).length > 0) errors.clips = clipErrors;
+    if (state.participants.length === 0)
+      errors.participants = "관련 인물을 한 명 이상 선택해주세요.";
   }
 
   try {
@@ -122,6 +125,7 @@ export function validateReportForm(state: ReportFormState): string | null {
     errors.title ??
     errors.content ??
     errors.occurredAt ??
+    errors.participants ??
     errors.confirmations ??
     errors.images ??
     Object.values(errors.clips ?? {})[0] ??
@@ -140,7 +144,9 @@ export function isReportFormReady(state: ReportFormState): boolean {
       confirmations.isRespectful &&
       confirmations.canUseAsRecord &&
       (state.reportType !== "timeline" ||
-        (state.occurredDate && state.occurredTime)),
+        (state.occurredDate &&
+          state.occurredTime &&
+          state.participants.length > 0)),
   );
 }
 
@@ -241,6 +247,12 @@ export function removeReportClipField(
 ): ReportClipField[] {
   if (fields.length <= 1) return [...fields];
   return fields.filter((field) => field.id !== fieldId);
+}
+
+export function getCompletedReportClipCount(
+  fields: readonly ReportClipField[],
+): number {
+  return fields.filter((field) => field.value.trim().length > 0).length;
 }
 
 export function buildCorrectionRequest(

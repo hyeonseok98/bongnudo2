@@ -28,6 +28,18 @@ describe("report image validation", () => {
     ).toThrow("이미지는 파일당 10MB 이하로 등록해주세요.");
   });
 
+  it("이미지 5개까지 허용하고 6개부터 거부함", () => {
+    const images = Array.from({ length: 5 }, () => ({
+      type: "image/png",
+      size: 100,
+    }));
+
+    expect(() => validateReportImageFiles(images)).not.toThrow();
+    expect(() =>
+      validateReportImageFiles([...images, { type: "image/png", size: 100 }]),
+    ).toThrow("이미지는 최대 5장까지 등록할 수 있습니다.");
+  });
+
   it("긴 변만 2560px로 줄이고 작은 이미지는 확대하지 않음", () => {
     expect(getReportImageDimensions(4000, 2000)).toEqual({
       width: 2560,

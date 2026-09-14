@@ -12,6 +12,11 @@ import { Select } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
 import type { TimelineQueryFilters } from "@/features/timeline/timeline";
 import {
+  getInitialTimelineMediaId,
+  getTimelineEventNeighbors,
+  matchesEventMediaFilter,
+} from "@/features/timeline/timeline-media";
+import {
   hasTimelineFilters,
   TIMELINE_SORT_OPTIONS,
 } from "@/features/timeline/timeline-params";
@@ -22,7 +27,7 @@ import { useCharacters } from "../../characters/_hooks/use-characters";
 import { useTimeline } from "../_hooks/use-timeline";
 import { useTimelineDirectory } from "../_hooks/use-timeline-directory";
 import { TimelineFilters } from "./timeline-filters";
-import { TimelineList } from "./timeline-list";
+import { TimelineList, TimelineListSkeleton } from "./timeline-list";
 import { TimelineMediaDialog } from "./timeline-media-dialog";
 import { CorrectionDialog } from "./correction-dialog";
 import { ReportDialog } from "./report-dialog";
@@ -30,28 +35,37 @@ import { ReportLoginDialog } from "./report-login-dialog";
 
 interface TimelineContentProps {
   isAuthenticated: boolean;
+  initialDay: number;
   today: string;
 }
 
 export function TimelineContent({
   isAuthenticated,
+  initialDay,
   today,
 }: TimelineContentProps) {
   const didOpenMediaFromList = useRef(false);
   const [feedback, setFeedback] = useState<string | null>(null);
-  const directory = useTimelineDirectory(today);
+  const directory = useTimelineDirectory(today, initialDay);
   const debouncedQuery = useDebouncedValue(directory.query, 300);
   const queryFilters: TimelineQueryFilters = {
     affiliation: directory.affiliation,
     category: directory.category,
     date: directory.date,
+    day: directory.day,
     job: directory.job,
     participant: directory.participant,
     query: debouncedQuery,
+    scope: "page",
     sort: directory.sort,
     tag: directory.tag,
+    viewMode: directory.viewMode,
   };
   const timelineQuery = useTimeline(queryFilters);
+  const navigationQuery = useTimeline(
+    { ...queryFilters, scope: "season" },
+    Boolean(directory.eventId),
+  );
   const charactersQuery = useCharacters();
   const characters = charactersQuery.data?.characters ?? [];
   const streamerAffiliations =
@@ -65,11 +79,12 @@ export function TimelineContent({
     (character) => character.id === directory.participant,
   );
   const selectedParticipantLabel = selectedParticipant
-    ? (selectedParticipant.rpName ?? selectedParticipant.streamerName)
+    ? (selectedParticipant.rpName ?? "RP명 없음")
     : null;
   const timeline = timelineQuery.data;
+  const detailEvents = navigationQuery.data?.events ?? timeline?.events ?? [];
   const selectedEvent =
-    timeline?.events.find((event) => event.id === directory.eventId) ?? null;
+    detailEvents.find((event) => event.id === directory.eventId) ?? null;
   const correctionEvent =
     timeline?.events.find(
       (event) => event.id === directory.correctionEventId,
@@ -119,6 +134,34 @@ export function TimelineContent({
     directory.applyTagFromMedia(tagSlug);
   }
 
+  function handleMediaFilterChange(
+    mediaFilter: Parameters<typeof directory.changeMediaType>[0],
+  ): void {
+    directory.changeMediaType(mediaFilter);
+    if (!selectedEvent) return;
+
+    if (matchesEventMediaFilter(selectedEvent, mediaFilter)) {
+      directory.changeMedia(
+        getInitialTimelineMediaId(selectedEvent, mediaFilter) ?? "",
+      );
+      return;
+    }
+
+    const neighbors = getTimelineEventNeighbors(
+      detailEvents,
+      selectedEvent.id,
+      mediaFilter,
+    );
+    const nextEvent = neighbors.next ?? neighbors.previous;
+
+    if (nextEvent) {
+      directory.openMediaEvent(
+        nextEvent.id,
+        getInitialTimelineMediaId(nextEvent, mediaFilter) ?? "",
+      );
+    }
+  }
+
   function handleReportSuccess(message: string): void {
     setFeedback(message);
   }
@@ -137,7 +180,7 @@ export function TimelineContent({
 
       {feedback ? (
         <div
-          className="flex items-center justify-between gap-3 rounded-lg border border-brand/30 bg-surface-selected px-4 py-3 text-body-sm text-primary"
+          className="flex items-center justify-between gap-3 rounded-lg bg-brand/15 px-3 py-2 text-body-sm text-primary"
           role="status"
         >
           <p>{feedback}</p>
@@ -171,7 +214,9 @@ export function TimelineContent({
             className="text-body-sm text-secondary"
             id="timeline-results-heading"
           >
-            {directory.date} 타임라인
+            {directory.viewMode === "date"
+              ? `${directory.date} 타임라인`
+              : `${directory.day}일차 타임라인`}
             {timeline ? (
               <strong className="ml-1 font-semibold text-brand-text">
                 {timeline.totalCount}건
@@ -195,13 +240,13 @@ export function TimelineContent({
           <TimelineStatus isError>
             타임라인을 불러오지 못했습니다.
           </TimelineStatus>
-        ) : !timeline ? (
-          <TimelineStatus>타임라인을 불러오는 중입니다.</TimelineStatus>
+        ) : !timeline || timelineQuery.isFetching ? (
+          <TimelineListSkeleton />
         ) : timeline.events.length > 0 ? (
           <>
             <TimelineList
               events={timeline.events}
-              onMediaOpen={handleMediaOpen}
+              onEventOpen={handleMediaOpen}
               onRequestCorrection={directory.openCorrection}
               onTagChange={directory.changeTag}
             />
@@ -237,14 +282,14 @@ export function TimelineContent({
       <TimelineMediaDialog
         event={selectedEvent}
         eventId={directory.eventId}
-        events={timeline?.events ?? []}
-        isLoading={timelineQuery.isPending}
+        events={detailEvents}
+        isLoading={navigationQuery.isPending && !selectedEvent}
         mediaFilter={directory.mediaType}
         mediaId={directory.mediaId}
         onClose={handleMediaClose}
         onEventChange={directory.openMediaEvent}
         onMediaChange={directory.changeMedia}
-        onMediaFilterChange={directory.changeMediaType}
+        onMediaFilterChange={handleMediaFilterChange}
         onTagChange={handleMediaTagChange}
       />
 

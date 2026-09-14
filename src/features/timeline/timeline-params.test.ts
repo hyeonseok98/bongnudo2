@@ -43,6 +43,8 @@ describe("timeline params", () => {
       affiliation: "group-a",
       tag: "news",
       sort: "asc",
+      scope: "page",
+      viewMode: "date",
     });
     expect(createTimelineSearchParams(filters).get("sort")).toBe("asc");
   });
@@ -58,8 +60,8 @@ describe("timeline params", () => {
 
   it("정렬 값을 최근순 방향이 드러나는 라벨과 연결한다", () => {
     expect(TIMELINE_SORT_OPTIONS).toEqual([
-      { label: "최신순 ↓", value: "desc" },
-      { label: "최신순 ↑", value: "asc" },
+      { label: "최신순", value: "desc" },
+      { label: "오래된순", value: "asc" },
     ]);
   });
 });

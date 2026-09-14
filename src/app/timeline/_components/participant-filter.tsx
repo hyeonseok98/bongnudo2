@@ -2,10 +2,12 @@
 
 import { Popover } from "@base-ui/react/popover";
 import { useQuery } from "@tanstack/react-query";
-import { Check, ChevronDown, UserRound, X } from "lucide-react";
+import { Check, ChevronDown } from "lucide-react";
 import { useState } from "react";
 
+import { CharacterAvatar } from "@/app/characters/_components/character-avatar";
 import { SearchField } from "@/components/ui/search-field";
+import { Skeleton } from "@/components/ui/skeleton";
 import { useDebouncedValue } from "@/hooks/use-debounced-value";
 import { reportQueries } from "@/queries/report-queries";
 import { cn } from "@/utils/cn";
@@ -70,25 +72,22 @@ export function ParticipantFilter({
             </div>
 
             <div className="max-h-72 overflow-y-auto p-2">
-              {value ? (
-                <button
-                  className="flex w-full cursor-pointer items-center gap-3 rounded-lg px-3 py-2 text-left text-body-sm text-secondary hover:bg-surface-muted hover:text-primary"
-                  onClick={() => handleSelect("")}
-                  type="button"
-                >
-                  <X aria-hidden="true" className="size-4" />
-                  선택 해제
-                </button>
-              ) : null}
-
               {!debouncedQuery ? (
                 <p className="px-3 py-8 text-center text-body-sm text-secondary">
                   찾을 인물의 이름을 입력해주세요.
                 </p>
               ) : participantsQuery.isPending ? (
-                <p className="px-3 py-8 text-center text-body-sm text-secondary" role="status">
-                  인물을 검색하는 중입니다.
-                </p>
+                <div aria-label="인물을 검색하는 중" className="space-y-2 p-1" role="status">
+                  {Array.from({ length: 3 }, (_, index) => (
+                    <div className="flex items-center gap-3 px-2 py-1" key={index}>
+                      <Skeleton className="size-8 shrink-0 rounded-full" />
+                      <div className="flex-1 space-y-1.5">
+                        <Skeleton className="h-4 w-24" />
+                        <Skeleton className="h-3 w-36" />
+                      </div>
+                    </div>
+                  ))}
+                </div>
               ) : participantsQuery.isError ? (
                 <p className="px-3 py-8 text-center text-body-sm text-status-danger" role="alert">
                   인물 검색에 실패했습니다.
@@ -109,22 +108,20 @@ export function ParticipantFilter({
                       onClick={() => handleSelect(participant.seasonParticipantId)}
                       type="button"
                     >
-                      <span className="grid size-8 shrink-0 place-items-center rounded-full bg-surface-muted text-tertiary">
-                        <UserRound aria-hidden="true" className="size-4" />
-                      </span>
+                      <CharacterAvatar
+                        className="size-8 shrink-0 rounded-full"
+                        name={participant.rpName ?? "RP명 없음"}
+                        profileImageUrl={participant.profileImageUrl}
+                        sizes="32px"
+                      />
                       <span className="min-w-0 flex-1">
                         <span className="block truncate text-body-sm font-semibold text-primary">
-                          {participant.rpName ?? participant.streamerName}
+                          {participant.rpName ?? "RP명 없음"}
                         </span>
                         <span className="block truncate text-caption text-secondary">
-                          {participant.rpName
-                            ? [
-                                participant.organizationName,
-                                `스트리머: ${participant.streamerName}`,
-                              ]
-                                .filter(Boolean)
-                                .join(" · ")
-                            : (participant.organizationName ?? "소속 없음")}
+                          {[participant.organizationName, participant.role]
+                            .filter(Boolean)
+                            .join(" · ") || "소속 정보 없음"}
                         </span>
                       </span>
                       {isSelected ? (

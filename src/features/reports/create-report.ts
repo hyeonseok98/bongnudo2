@@ -222,7 +222,7 @@ async function assertValidParticipants(
   seasonId: number,
 ): Promise<void> {
   if (participantIds.length === 0) {
-    return;
+    throw new ReportRequestError("관련 인물을 한 명 이상 선택해주세요.");
   }
 
   const supabase = getSupabaseAdminClient();

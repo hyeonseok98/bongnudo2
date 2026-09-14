@@ -8,7 +8,7 @@ describe("useTimelineDirectory modal params", () => {
   it("기존 필터를 유지하며 모달 파라미터를 열고 닫는다", async () => {
     const onUrlUpdate = vi.fn();
     const { result } = renderHook(
-      () => useTimelineDirectory("2026-09-13"),
+      () => useTimelineDirectory("2026-09-13", 1),
       {
         wrapper: withNuqsTestingAdapter({
           hasMemory: true,
@@ -40,7 +40,7 @@ describe("useTimelineDirectory modal params", () => {
 
   it("새로고침된 URL에서 선택 이벤트·미디어·유형을 복원한다", () => {
     const { result } = renderHook(
-      () => useTimelineDirectory("2026-09-13"),
+      () => useTimelineDirectory("2026-09-13", 1),
       {
         wrapper: withNuqsTestingAdapter({
           searchParams: "?event=event-id&media=media-id&mediaType=clip",
@@ -56,7 +56,7 @@ describe("useTimelineDirectory modal params", () => {
   it("필터를 유지하며 제보 의도를 열고 닫는다", async () => {
     const onUrlUpdate = vi.fn();
     const { result } = renderHook(
-      () => useTimelineDirectory("2026-09-13"),
+      () => useTimelineDirectory("2026-09-13", 1),
       {
         wrapper: withNuqsTestingAdapter({
           hasMemory: true,
@@ -84,7 +84,7 @@ describe("useTimelineDirectory modal params", () => {
   it("수정 요청 의도를 URL에서 복원하고 미디어와 동시에 열지 않는다", async () => {
     const onUrlUpdate = vi.fn();
     const { result } = renderHook(
-      () => useTimelineDirectory("2026-09-13"),
+      () => useTimelineDirectory("2026-09-13", 1),
       {
         wrapper: withNuqsTestingAdapter({
           hasMemory: true,
@@ -109,7 +109,7 @@ describe("useTimelineDirectory modal params", () => {
   it("날짜는 유지하고 검색 필터만 초기화한다", async () => {
     const onUrlUpdate = vi.fn();
     const { result } = renderHook(
-      () => useTimelineDirectory("2026-09-13"),
+      () => useTimelineDirectory("2026-09-13", 1),
       {
         wrapper: withNuqsTestingAdapter({
           hasMemory: true,

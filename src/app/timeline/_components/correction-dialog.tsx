@@ -85,14 +85,14 @@ export function CorrectionDialog({
             <label className="grid gap-1.5 text-caption font-semibold text-secondary">
               수정이 필요한 내용
               <Textarea
-                maxLength={200}
+                maxLength={400}
                 onChange={(changeEvent) => setContent(changeEvent.target.value)}
                 placeholder="잘못된 내용과 올바른 정보를 함께 작성해주세요."
                 required
                 value={content}
               />
               <span className="text-right font-normal text-tertiary">
-                {content.length}/200
+                {content.length}/400
               </span>
             </label>
             {error ? (

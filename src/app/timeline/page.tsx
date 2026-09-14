@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 
 import { getCurrentKstDate } from "@/features/timeline/timeline-params";
+import { getLatestSeason2DayNumber } from "@/features/timeline/season2-operational-day";
 import { getCurrentUser } from "@/features/auth/session";
 
 import { TimelineContent } from "./_components/timeline-content";
@@ -19,6 +20,7 @@ export default async function TimelinePage() {
     <main className="py-5 sm:py-6 lg:py-8">
       <TimelineContent
         isAuthenticated={currentUser !== null}
+        initialDay={getLatestSeason2DayNumber()}
         today={getCurrentKstDate()}
       />
     </main>

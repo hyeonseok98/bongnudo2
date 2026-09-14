@@ -1,19 +1,29 @@
 export const TIMELINE_SORT_VALUES = ["desc", "asc"] as const;
-export const TIMELINE_MEDIA_FILTER_VALUES = ["all", "image", "clip"] as const;
+export const TIMELINE_MEDIA_FILTER_VALUES = [
+  "all",
+  "clip",
+  "image",
+  "media",
+] as const;
+export const TIMELINE_VIEW_MODE_VALUES = ["date", "day"] as const;
 
 export type TimelineSort = (typeof TIMELINE_SORT_VALUES)[number];
 export type TimelineMediaFilter =
   (typeof TIMELINE_MEDIA_FILTER_VALUES)[number];
+export type TimelineViewMode = (typeof TIMELINE_VIEW_MODE_VALUES)[number];
 
 export interface TimelineQueryFilters {
   affiliation: string;
   category: string;
   date: string;
+  day: number;
   job: string;
   participant: string;
   query: string;
+  scope: "page" | "season";
   sort: TimelineSort;
   tag: string;
+  viewMode: TimelineViewMode;
 }
 
 export interface TimelineCategory {
@@ -55,6 +65,7 @@ export type TimelineMedia = TimelineImageMedia | TimelineClipMedia;
 export interface TimelineEvent {
   category: TimelineCategory;
   content: string;
+  createdAt: string;
   id: string;
   media: TimelineMedia[];
   occurredAt: string;

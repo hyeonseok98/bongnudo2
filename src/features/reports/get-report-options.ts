@@ -22,7 +22,9 @@ export async function getReportOptions(): Promise<ReportOptions> {
 
   return {
     categories: categoriesResult.data.flatMap((category) =>
-      !isUserReportType(category.report_type)
+      !isUserReportType(category.report_type) ||
+      (category.report_type === "timeline" &&
+        ["job-economy", "notice-guide"].includes(category.slug))
         ? []
         : [
             {

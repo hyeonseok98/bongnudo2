@@ -28,6 +28,7 @@ vi.mock("@/queries/report-queries", () => ({
       queryFn: async () => [
         {
           organizationName: "EMS",
+          profileImageUrl: null,
           role: "원장",
           rpName: "도현정",
           seasonParticipantId: "00000000-0000-4000-8000-000000000002",
@@ -108,7 +109,7 @@ describe("ReportDialog", () => {
     const contentInput = screen.getByPlaceholderText(/등장 인물/);
 
     expect((titleInput as HTMLInputElement).maxLength).toBe(100);
-    expect((contentInput as HTMLTextAreaElement).maxLength).toBe(200);
+    expect((contentInput as HTMLTextAreaElement).maxLength).toBe(400);
     expect((contentInput as HTMLTextAreaElement).className).toContain("resize-none");
   });
 

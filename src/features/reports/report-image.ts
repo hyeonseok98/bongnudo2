@@ -30,7 +30,9 @@ export function validateReportImageFiles(
   files: readonly ReportImageFileMetadata[],
 ): void {
   if (files.length > MAX_REPORT_IMAGE_COUNT) {
-    throw new Error("이미지는 최대 3장까지 등록할 수 있습니다.");
+    throw new Error(
+      `이미지는 최대 ${MAX_REPORT_IMAGE_COUNT}장까지 등록할 수 있습니다.`,
+    );
   }
 
   for (const file of files) {

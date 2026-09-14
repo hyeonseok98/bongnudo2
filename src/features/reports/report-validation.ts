@@ -2,7 +2,7 @@ import { z } from "zod";
 
 import { parseChzzkClipUrl } from "./chzzk-clip";
 
-export const MAX_REPORT_IMAGE_COUNT = 3;
+export const MAX_REPORT_IMAGE_COUNT = 5;
 export const MAX_REPORT_CLIP_COUNT = 5;
 export const MAX_REPORT_TAG_COUNT = 10;
 
@@ -16,11 +16,11 @@ const contentSchema = z
   .string()
   .trim()
   .min(1, "내용을 입력해주세요.")
-  .max(200, "내용은 200자 이하로 입력해주세요.");
+  .max(400, "내용은 400자 이하로 입력해주세요.");
 
 const imageObjectKeysSchema = z
   .array(z.string().trim().min(1).max(500))
-  .max(MAX_REPORT_IMAGE_COUNT, "이미지는 최대 3장까지 등록할 수 있습니다.")
+  .max(MAX_REPORT_IMAGE_COUNT, "이미지는 최대 5장까지 등록할 수 있습니다.")
   .refine(hasUniqueValues, "같은 이미지를 중복으로 등록할 수 없습니다.");
 
 const clipUrlSchema = z.string().transform((value, context) => {
@@ -76,7 +76,9 @@ const timelineReportSchema = z
     reportType: z.literal("timeline"),
     ...sharedCategoryFields,
     occurredAt: kstDateTimeSchema,
-    participantIds: z.array(z.uuid()).default([]),
+    participantIds: z
+      .array(z.uuid())
+      .min(1, "관련 인물을 한 명 이상 선택해주세요."),
     tags: z
       .array(tagSchema)
       .max(MAX_REPORT_TAG_COUNT, "태그는 최대 10개까지 등록할 수 있습니다.")
