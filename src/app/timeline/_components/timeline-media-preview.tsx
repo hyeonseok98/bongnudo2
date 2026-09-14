@@ -23,7 +23,7 @@ export function TimelineMediaPreview({
   return (
     <button
       aria-label={`${eventTitle} 상세 보기`}
-      className="relative hidden aspect-video w-40 shrink-0 cursor-pointer overflow-hidden rounded-lg border border-default bg-surface-inset hover:border-brand focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus-ring lg:block xl:w-44"
+      className="relative hidden aspect-video w-32 shrink-0 cursor-pointer overflow-hidden rounded-lg border border-default bg-surface-inset hover:border-brand focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus-ring md:block xl:w-36"
       onClick={(clickEvent) => {
         clickEvent.stopPropagation();
         onOpen(preview.id);
@@ -35,7 +35,7 @@ export function TimelineMediaPreview({
           fill
           alt="타임라인 첨부 이미지"
           className="object-cover"
-          sizes="176px"
+          sizes="144px"
           src={preview.imageUrl}
         />
       ) : (

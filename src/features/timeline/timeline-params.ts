@@ -5,10 +5,7 @@ import {
   TIMELINE_VIEW_MODE_VALUES,
   type TimelineQueryFilters,
 } from "./timeline";
-import {
-  getSeason2OperationalRange,
-  SEASON2_START_DATE,
-} from "./season2-operational-day";
+import { getSeason2OperationalRange } from "./season2-operational-day";
 
 const KST_OFFSET_MILLISECONDS = 9 * 60 * 60 * 1000;
 const DATE_PATTERN = /^(\d{4})-(\d{2})-(\d{2})$/;
@@ -22,7 +19,7 @@ const timelineSearchParamsSchema = z.object({
   affiliation: z.string().trim().max(100).catch(""),
   category: z.string().trim().max(100).catch(""),
   date: z.string().refine(isKstDate).catch(""),
-  day: z.coerce.number().int().positive().max(1_000).catch(1),
+  day: z.coerce.number().int().nonnegative().max(1_000).catch(0),
   job: z.string().trim().max(100).catch(""),
   participant: z.string().uuid().or(z.literal("")).catch(""),
   q: z.string().trim().max(100).catch(""),
@@ -81,8 +78,11 @@ export function getTimelineDateRange(
   filters: Pick<TimelineQueryFilters, "date" | "day" | "scope" | "viewMode">,
 ): TimelineDateRange {
   if (filters.scope === "season") {
+    const dayZero = getSeason2OperationalRange(0);
+    if (!dayZero) throw new Error("0일차 범위를 계산하지 못함.");
+
     return {
-      start: new Date(SEASON2_START_DATE).toISOString(),
+      start: dayZero.start,
       end: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
     };
   }
@@ -113,7 +113,7 @@ export function parseTimelineSearchParams(
     affiliation: searchParams.get("affiliation") ?? "",
     category: searchParams.get("category") ?? "",
     date: searchParams.get("date") ?? "",
-    day: searchParams.get("day") ?? "1",
+    day: searchParams.get("day") ?? "0",
     job: searchParams.get("job") ?? "",
     participant: searchParams.get("participant") ?? "",
     q: searchParams.get("q") ?? "",

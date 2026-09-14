@@ -64,4 +64,14 @@ describe("timeline params", () => {
       { label: "오래된순", value: "asc" },
     ]);
   });
+
+  it("0일차를 URL에서 파싱하고 직렬화한다", () => {
+    const filters = parseTimelineSearchParams(
+      new URLSearchParams("view=day&day=0"),
+      "2026-09-14",
+    );
+
+    expect(filters).toMatchObject({ day: 0, viewMode: "day" });
+    expect(createTimelineSearchParams(filters).get("day")).toBe("0");
+  });
 });

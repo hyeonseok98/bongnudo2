@@ -11,11 +11,8 @@ import type { HierarchicalFilterSelection } from "@/components/filters/hierarchi
 import { Select } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
 import type { TimelineQueryFilters } from "@/features/timeline/timeline";
-import {
-  getInitialTimelineMediaId,
-  getTimelineEventNeighbors,
-  matchesEventMediaFilter,
-} from "@/features/timeline/timeline-media";
+import { resolveTimelineEvent } from "@/features/timeline/timeline-event-navigation";
+import { getInitialTimelineMediaId } from "@/features/timeline/timeline-media";
 import {
   hasTimelineFilters,
   TIMELINE_SORT_OPTIONS,
@@ -82,9 +79,13 @@ export function TimelineContent({
     ? (selectedParticipant.rpName ?? "RP명 없음")
     : null;
   const timeline = timelineQuery.data;
-  const detailEvents = navigationQuery.data?.events ?? timeline?.events ?? [];
-  const selectedEvent =
-    detailEvents.find((event) => event.id === directory.eventId) ?? null;
+  const pageEvents = timeline?.events ?? [];
+  const navigationEvents = navigationQuery.data?.events ?? [];
+  const selectedEvent = resolveTimelineEvent(
+    pageEvents,
+    navigationEvents,
+    directory.eventId,
+  );
   const correctionEvent =
     timeline?.events.find(
       (event) => event.id === directory.correctionEventId,
@@ -139,27 +140,9 @@ export function TimelineContent({
   ): void {
     directory.changeMediaType(mediaFilter);
     if (!selectedEvent) return;
-
-    if (matchesEventMediaFilter(selectedEvent, mediaFilter)) {
-      directory.changeMedia(
-        getInitialTimelineMediaId(selectedEvent, mediaFilter) ?? "",
-      );
-      return;
-    }
-
-    const neighbors = getTimelineEventNeighbors(
-      detailEvents,
-      selectedEvent.id,
-      mediaFilter,
+    directory.changeMedia(
+      getInitialTimelineMediaId(selectedEvent, mediaFilter) ?? "",
     );
-    const nextEvent = neighbors.next ?? neighbors.previous;
-
-    if (nextEvent) {
-      directory.openMediaEvent(
-        nextEvent.id,
-        getInitialTimelineMediaId(nextEvent, mediaFilter) ?? "",
-      );
-    }
   }
 
   function handleReportSuccess(message: string): void {
@@ -282,7 +265,7 @@ export function TimelineContent({
       <TimelineMediaDialog
         event={selectedEvent}
         eventId={directory.eventId}
-        events={detailEvents}
+        events={navigationEvents}
         isLoading={navigationQuery.isPending && !selectedEvent}
         mediaFilter={directory.mediaType}
         mediaId={directory.mediaId}

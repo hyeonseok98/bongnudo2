@@ -5,6 +5,26 @@ import { describe, expect, it, vi } from "vitest";
 import { useTimelineDirectory } from "./use-timeline-directory";
 
 describe("useTimelineDirectory modal params", () => {
+  it("일차별 직접 진입은 최신 일차를 사용하고 URL의 0일차는 유지한다", () => {
+    const directView = renderHook(
+      () => useTimelineDirectory("2026-09-19", 5),
+      {
+        wrapper: withNuqsTestingAdapter({ searchParams: "?view=day" }),
+      },
+    );
+    const dayZeroView = renderHook(
+      () => useTimelineDirectory("2026-09-19", 5),
+      {
+        wrapper: withNuqsTestingAdapter({
+          searchParams: "?view=day&day=0",
+        }),
+      },
+    );
+
+    expect(directView.result.current.day).toBe(5);
+    expect(dayZeroView.result.current.day).toBe(0);
+  });
+
   it("기존 필터를 유지하며 모달 파라미터를 열고 닫는다", async () => {
     const onUrlUpdate = vi.fn();
     const { result } = renderHook(

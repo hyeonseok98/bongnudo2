@@ -1,5 +1,6 @@
 const KST_OFFSET_MILLISECONDS = 9 * 60 * 60 * 1000;
 const DAY_MILLISECONDS = 24 * 60 * 60 * 1000;
+const DAY_ZERO_START_DATE = "1970-01-01T00:00:00.000Z";
 
 export const SEASON2_START_DATE = "2026-09-14T18:00:00+09:00";
 export const SEASON2_CLOSED_DATES: readonly string[] = [];
@@ -16,7 +17,17 @@ export interface Season2OperationalDay {
 export function getSeason2OperationalRange(
   day: number,
 ): Season2OperationalDay | null {
-  if (!Number.isInteger(day) || day < 1) return null;
+  if (!Number.isInteger(day) || day < 0) return null;
+
+  if (day === 0) {
+    return {
+      day,
+      end: new Date(SEASON2_START_DATE).toISOString(),
+      label: "0일차",
+      start: DAY_ZERO_START_DATE,
+      startDate: getKstDateFromInstant(DAY_ZERO_START_DATE),
+    };
+  }
 
   let currentDate = getKstDateFromInstant(SEASON2_START_DATE);
   let currentDay = 0;
@@ -40,10 +51,14 @@ export function getSeason2OperationalRange(
 export function getSeason2DayNumber(
   instant: Date | string,
 ): number | null {
+  if (new Date(instant).getTime() < new Date(SEASON2_START_DATE).getTime()) {
+    return 0;
+  }
+
   const operationalDate = getOperationalDate(instant);
   const seasonStartDate = getKstDateFromInstant(SEASON2_START_DATE);
 
-  if (operationalDate < seasonStartDate || isSeason2ClosedDate(operationalDate)) {
+  if (isSeason2ClosedDate(operationalDate)) {
     return null;
   }
 
@@ -66,19 +81,19 @@ export function getLatestSeason2DayNumber(
 
   while (timestamp >= startTimestamp) {
     const day = getSeason2DayNumber(new Date(timestamp));
-    if (day) return day;
+    if (day !== null) return day;
     timestamp -= DAY_MILLISECONDS;
   }
 
-  return 1;
+  return 0;
 }
 
 export function getSeason2OperationalDays(
   instant: Date | string = new Date(),
 ): Season2OperationalDay[] {
   const lastDay = getLatestSeason2DayNumber(instant);
-  return Array.from({ length: lastDay }, (_, index) =>
-    getSeason2OperationalRange(index + 1),
+  return Array.from({ length: lastDay + 1 }, (_, day) =>
+    getSeason2OperationalRange(day),
   ).filter((day): day is Season2OperationalDay => day !== null);
 }
 

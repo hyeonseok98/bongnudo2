@@ -15,7 +15,7 @@ import { TimelineRowActions } from "./timeline-row-actions";
 
 const VISIBLE_TAG_COUNT = 3;
 const TIMELINE_GRID =
-  "md:grid-cols-[4.5rem_7rem_minmax(0,1fr)_12rem_11rem_2.5rem]";
+  "xl:grid-cols-[4.5rem_7rem_minmax(0,1fr)_12rem_11rem_2.5rem]";
 
 interface TimelineListProps {
   events: TimelineEvent[];
@@ -34,7 +34,7 @@ export function TimelineList({
     <div className="overflow-hidden rounded-xl border border-default bg-surface-raised">
       <div
         className={cn(
-          "hidden gap-4 border-b border-default bg-surface-muted px-4 py-3 text-body-sm font-semibold text-secondary md:grid",
+          "hidden gap-4 border-b border-default bg-surface-muted px-4 py-3 text-center text-body-sm font-semibold text-secondary xl:grid",
           TIMELINE_GRID,
         )}
       >
@@ -69,7 +69,7 @@ export function TimelineListSkeleton({ count = 5 }: { count?: number }) {
     >
       <div
         className={cn(
-          "hidden gap-4 border-b border-default bg-surface-muted px-4 py-3 md:grid",
+          "hidden gap-4 border-b border-default bg-surface-muted px-4 py-3 xl:grid",
           TIMELINE_GRID,
         )}
       >
@@ -80,7 +80,10 @@ export function TimelineListSkeleton({ count = 5 }: { count?: number }) {
       <div className="divide-y divide-border-default">
         {Array.from({ length: count }, (_, index) => (
           <div
-            className={cn("grid min-h-32 gap-4 px-4 py-4", TIMELINE_GRID)}
+            className={cn(
+              "grid min-h-32 gap-4 px-4 py-4 xl:items-center",
+              TIMELINE_GRID,
+            )}
             key={index}
           >
             <Skeleton className="h-5 w-12" />
@@ -150,7 +153,7 @@ function TimelineRow({
     <li
       aria-label={`${event.title} 상세 보기`}
       className={cn(
-        "grid min-h-32 cursor-pointer gap-4 px-4 py-4 transition-colors duration-default hover:bg-surface-muted focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-focus-ring md:items-start",
+        "grid min-h-32 cursor-pointer gap-4 px-4 py-4 transition-colors duration-default hover:bg-surface-muted focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-focus-ring xl:items-center",
         TIMELINE_GRID,
       )}
       onClick={openEvent}
@@ -164,12 +167,12 @@ function TimelineRow({
       tabIndex={0}
     >
       <time
-        className="text-body-sm font-semibold text-primary"
+        className="text-body-sm font-semibold text-primary xl:text-center"
         dateTime={event.occurredAt}
       >
         {formatKstTime(event.occurredAt)}
       </time>
-      <div>
+      <div className="xl:text-center">
         <TimelineCategoryBadge categorySlug={event.category.slug}>
           {event.category.name}
         </TimelineCategoryBadge>
@@ -227,16 +230,18 @@ function TimelineRow({
           </div>
         </div>
       </article>
-      <TimelineParticipantStack participants={event.participants} />
+      <div className="min-w-0 xl:flex xl:justify-center">
+        <TimelineParticipantStack participants={event.participants} />
+      </div>
       <div
-        className="space-y-2"
+        className="space-y-2 xl:text-center"
         onClick={(clickEvent) => clickEvent.stopPropagation()}
       >
         <span className="text-caption font-semibold text-tertiary md:sr-only">
           태그
         </span>
         {visibleTags.length > 0 ? (
-          <div className="flex flex-wrap gap-1.5">
+          <div className="flex flex-wrap gap-1.5 xl:justify-center">
             {visibleTags.map((tag) => (
               <button
                 className="cursor-pointer rounded-md bg-surface-muted px-2 py-1 text-caption font-medium text-secondary hover:bg-surface-selected hover:text-primary"

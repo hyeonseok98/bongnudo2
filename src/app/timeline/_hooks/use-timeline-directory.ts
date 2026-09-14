@@ -25,7 +25,7 @@ const timelineQueryParsers = {
   affiliation: parseAsString.withDefault(""),
   category: parseAsString.withDefault(""),
   date: parseAsString.withDefault(""),
-  day: parseAsInteger.withDefault(1),
+  day: parseAsInteger.withDefault(-1),
   event: parseAsString.withDefault(""),
   job: parseAsString.withDefault(""),
   media: parseAsString.withDefault(""),
@@ -84,7 +84,7 @@ export function useTimelineDirectory(
     affiliation: params.affiliation,
     category: params.category,
     date,
-    day: params.day > 0 ? params.day : initialDay,
+    day: params.day >= 0 ? params.day : initialDay,
     eventId: params.event,
     job: params.job,
     mediaId: params.media,
@@ -114,7 +114,7 @@ export function useTimelineDirectory(
       if (isKstDate(value)) setFilter("date", value);
     },
     changeDay: (value) => {
-      if (Number.isInteger(value) && value > 0) {
+      if (Number.isInteger(value) && value >= 0) {
         void setParams({ day: value }, { history: "replace" });
       }
     },
@@ -169,7 +169,8 @@ export function useTimelineDirectory(
     },
     moveDate: (amount) => setFilter("date", shiftKstDate(date, amount)),
     moveDay: (amount) => {
-      const nextDay = Math.max(1, params.day + amount);
+      const currentDay = params.day >= 0 ? params.day : initialDay;
+      const nextDay = Math.max(0, currentDay + amount);
       void setParams({ day: nextDay }, { history: "replace" });
     },
     openMedia: (eventId, mediaId) => {

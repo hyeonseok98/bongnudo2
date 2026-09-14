@@ -244,7 +244,7 @@ export function ReportDialog({ onClose, onSuccess, today }: ReportDialogProps) {
                 aria-label="제보 모달 닫기"
                 disabled={isPending}
                 onClick={requestClose}
-                size="icon-sm"
+                size="icon"
                 variant="ghost"
               >
                 <X aria-hidden="true" />
@@ -377,7 +377,7 @@ export function ReportDialog({ onClose, onSuccess, today }: ReportDialogProps) {
                       }}
                       placeholder={getContentPlaceholder(form.reportType)}
                       required
-                      className="h-24 min-h-24"
+                      className="h-24 min-h-24 resize-none"
                       value={draft.content}
                     />
                     <CharacterCount current={draft.content.length} max={400} />
@@ -435,9 +435,9 @@ export function ReportDialog({ onClose, onSuccess, today }: ReportDialogProps) {
                     ) : null}
                   </div>
                   {form.reportType === "timeline" ? (
-                    <div className="rounded-lg bg-surface-muted p-3 text-body-sm leading-relaxed text-secondary break-keep">
-                      <p>타임라인 제보는 등록 즉시 공개됩니다.</p>
-                      <p>중복 제보와 개인정보·민감정보 포함 여부를 한 번 더 확인해주세요.</p>
+                    <div className="rounded-lg bg-brand/10 p-3 text-caption leading-relaxed text-secondary break-keep">
+                      <p>등록한 제보는 타임라인에 바로 반영됩니다.</p>
+                      <p>중복 제보 여부와 봉누도2 운영정책에 맞는지 한 번 더 확인해주세요.</p>
                     </div>
                   ) : null}
                 </aside>
@@ -613,7 +613,13 @@ function ParticipantPicker({
         관련 인물 <span className="ml-1 text-status-danger">*</span>
       </legend>
       <Popover.Root
-        onOpenChange={setIsOpen}
+        onOpenChange={(nextIsOpen, eventDetails) => {
+          if (!nextIsOpen && eventDetails.reason === "trigger-press") {
+            eventDetails.cancel();
+            return;
+          }
+          setIsOpen(nextIsOpen);
+        }}
         open={isOpen && Boolean(query.trim())}
       >
         <div className="relative">
@@ -689,7 +695,11 @@ function ParticipantPicker({
                       )}
                       disabled={isSelected}
                       key={participant.seasonParticipantId}
-                      onClick={() => onChange([...participants, participant])}
+                      onClick={() => {
+                        onChange([...participants, participant]);
+                        setQuery("");
+                        setIsOpen(false);
+                      }}
                       type="button"
                     >
                       <CharacterAvatar

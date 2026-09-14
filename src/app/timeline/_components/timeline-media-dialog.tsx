@@ -6,9 +6,10 @@ import { useEffect, useState } from "react";
 
 import { Button } from "@/components/ui/button";
 import { Chip } from "@/components/ui/chip";
+import { getTimelineEventNeighbors } from "@/features/timeline/timeline-event-navigation";
 import {
   getInitialTimelineMediaId,
-  getTimelineEventNeighbors,
+  matchesTimelineMediaFilter,
   orderTimelineMedia,
 } from "@/features/timeline/timeline-media";
 import type { TimelineEvent, TimelineMediaFilter } from "@/features/timeline/timeline";
@@ -54,7 +55,11 @@ export function TimelineMediaDialog({
   onTagChange,
 }: TimelineMediaDialogProps) {
   const [isDetailsExpanded, setIsDetailsExpanded] = useState(true);
-  const orderedMedia = event ? orderTimelineMedia(event.media) : [];
+  const orderedMedia = event
+    ? orderTimelineMedia(event.media).filter((media) =>
+        matchesTimelineMediaFilter(media, mediaFilter),
+      )
+    : [];
   const mediaIndex = event
     ? Math.max(
         orderedMedia.findIndex((media) => media.id === mediaId),
@@ -70,7 +75,7 @@ export function TimelineMediaDialog({
       ? (orderedMedia[mediaIndex + 1] ?? null)
       : null;
   const eventNeighbors = event
-    ? getTimelineEventNeighbors(events, event.id, mediaFilter)
+    ? getTimelineEventNeighbors(events, event, mediaFilter)
     : { next: null, previous: null };
 
   function handleEventChange(nextEvent: TimelineEvent) {

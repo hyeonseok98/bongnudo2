@@ -53,6 +53,7 @@ export function TimelineFilters({
   const operationalDays = getSeason2OperationalDays(
     `${today}T23:59:59+09:00`,
   );
+  const lastOperationalDay = operationalDays.at(-1)?.day ?? 0;
   const selectedFilters = [
     directory.job
       ? { id: "job", label: findNodeLabel(jobNodes, directory.job) ?? directory.job }
@@ -97,8 +98,8 @@ export function TimelineFilters({
         value={directory.query}
       />
 
-      <div className="flex flex-wrap items-center gap-3">
-        <span className="text-body-sm font-medium text-secondary">보기 기준</span>
+      <div className="flex flex-wrap items-center gap-2">
+        <span className="text-body-sm font-medium text-secondary">기준</span>
         <div className="inline-flex rounded-lg border border-default bg-background p-1">
           {([
             { label: "날짜별", value: "date" },
@@ -115,11 +116,9 @@ export function TimelineFilters({
             </button>
           ))}
         </div>
-      </div>
-
-      <div className="flex flex-wrap items-center gap-2">
         <Button
           aria-label={directory.viewMode === "date" ? "이전 날짜" : "이전 일차"}
+          disabled={directory.viewMode === "day" && directory.day <= 0}
           size="icon"
           variant="outline"
           onClick={() =>
@@ -155,7 +154,7 @@ export function TimelineFilters({
           disabled={
             directory.viewMode === "date"
               ? directory.date >= today
-              : directory.day >= operationalDays.length
+              : directory.day >= lastOperationalDay
           }
           size="icon"
           variant="outline"

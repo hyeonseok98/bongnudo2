@@ -113,7 +113,7 @@ describe("ReportDialog", () => {
     expect((contentInput as HTMLTextAreaElement).className).toContain("resize-none");
   });
 
-  it("이미 추가한 인물을 검색 결과에 추가됨 상태로 유지함", async () => {
+  it("인물 추가 후 검색 결과를 닫고 다시 검색하면 추가됨 상태로 표시함", async () => {
     const user = userEvent.setup();
     renderReportDialog();
 
@@ -121,6 +121,12 @@ describe("ReportDialog", () => {
     const participant = await screen.findByRole("button", { name: /도현정/ });
     expect(document.activeElement).toBe(screen.getByLabelText("관련 인물 검색"));
     await user.click(participant);
+
+    expect(screen.queryByRole("button", { name: /도현정.*추가됨/ })).toBeNull();
+    const participantInput = screen.getByLabelText("관련 인물 검색");
+    expect((participantInput as HTMLInputElement).value).toBe("");
+
+    await user.type(participantInput, "강지");
 
     const selectedResult = await screen.findByRole("button", {
       name: /도현정.*추가됨/,
@@ -132,6 +138,14 @@ describe("ReportDialog", () => {
         .compareDocumentPosition(screen.getByRole("list", { name: "선택한 관련 인물" })) &
         Node.DOCUMENT_POSITION_FOLLOWING,
     ).toBeTruthy();
+  });
+
+  it("타임라인 발생 시간 기본값을 18시로 제공함", () => {
+    renderReportDialog();
+
+    expect(
+      screen.getByRole("button", { name: "발생 시간" }).textContent,
+    ).toContain("18:00");
   });
 
   it("제목, 인물 검색어, 태그 입력과 클립 URL을 한 번에 지움", async () => {

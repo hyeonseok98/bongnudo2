@@ -54,7 +54,7 @@ describe("report form", () => {
     const request = buildReportRequest(createValidForm(), []);
     expect(request.reportType).toBe("timeline");
     expect(request).toMatchObject({
-      occurredAt: "2026-09-13T03:00:00.000Z",
+      occurredAt: "2026-09-13T09:00:00.000Z",
       participantIds: [PARTICIPANT_ID],
       tags: [],
     });

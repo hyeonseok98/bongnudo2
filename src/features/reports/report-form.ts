@@ -73,7 +73,7 @@ export function createInitialReportForm(today: string): ReportFormState {
     },
     files: [],
     occurredDate: today,
-    occurredTime: "12:00",
+    occurredTime: "18:00",
     participants: [],
     reportType: "timeline",
     tags: [],
