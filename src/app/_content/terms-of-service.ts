@@ -1,4 +1,4 @@
-export const termsOfService = String.raw\`
+export const termsOfService = String.raw`
 # 봉누록 이용약관
 
 본 이용약관은 2026년 9월 14일부터 시행합니다.
@@ -320,4 +320,4 @@ export const termsOfService = String.raw\`
 * 시행일: 2026년 9월 14일
 
 
-\`;
+`;

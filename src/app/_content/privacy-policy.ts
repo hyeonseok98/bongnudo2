@@ -1,4 +1,4 @@
-export const privacyPolicy = String.raw\`
+export const privacyPolicy = String.raw`
 # 개인정보 처리방침
 
 봉누록(이하 “서비스”)은 이용자의 개인정보를 중요하게 생각하며 「개인정보 보호법」 등 관계 법령을 준수합니다.
@@ -447,4 +447,4 @@ Supabase, Cloudflare R2 등 외부 클라우드 서비스에 저장된 정보는
 * 최초 시행일: 2026년 9월 14일
 
 
-\`;
+`;
