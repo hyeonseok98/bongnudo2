@@ -34,6 +34,14 @@ vi.mock("@/queries/report-queries", () => ({
           seasonParticipantId: "00000000-0000-4000-8000-000000000002",
           streamerName: "강지",
         },
+        {
+          organizationName: null,
+          profileImageUrl: null,
+          role: null,
+          rpName: null,
+          seasonParticipantId: "00000000-0000-4000-8000-000000000003",
+          streamerName: "이름없는스트리머",
+        },
       ],
       queryKey: ["reports", "participants", "search", query],
     }),
@@ -140,6 +148,26 @@ describe("ReportDialog", () => {
     ).toBeTruthy();
   });
 
+  it("RP명이 없는 인물은 검색 결과에 표시하지 않음", async () => {
+    const user = userEvent.setup();
+    renderReportDialog();
+
+    await user.type(screen.getByLabelText("관련 인물 검색"), "강지");
+    await screen.findByRole("button", { name: /도현정/ });
+
+    expect(screen.queryByText("RP명 없음")).toBeNull();
+    expect(screen.queryByText("이름없는스트리머")).toBeNull();
+  });
+
+  it("인물 검색어의 debounce와 요청 중에 검색 상태를 표시함", async () => {
+    const user = userEvent.setup();
+    renderReportDialog();
+
+    await user.type(screen.getByLabelText("관련 인물 검색"), "강");
+
+    expect(screen.getByText("인물을 검색하는 중입니다.")).toBeTruthy();
+  });
+
   it("타임라인 발생 시간 기본값을 18시로 제공함", () => {
     renderReportDialog();
 
@@ -190,7 +218,7 @@ describe("ReportDialog", () => {
     expect(screen.getByText("#봉누도2")).toBeTruthy();
   });
 
-  it("여러 클립 중 지우기 버튼을 누르면 해당 입력 행을 제거함", async () => {
+  it("클립 내용 지우기와 추가 입력 행 제거를 구분함", async () => {
     const user = userEvent.setup();
     renderReportDialog();
 
@@ -200,6 +228,13 @@ describe("ReportDialog", () => {
       "https://chzzk.naver.com/clips/abcdef",
     );
     await user.click(screen.getByRole("button", { name: "클립 URL 2 지우기" }));
+    expect((screen.getByLabelText("클립 URL 2") as HTMLInputElement).value).toBe(
+      "",
+    );
+
+    await user.click(
+      screen.getByRole("button", { name: "클립 URL 2 입력 제거" }),
+    );
     expect(screen.queryByLabelText("클립 URL 2")).toBeNull();
   });
 

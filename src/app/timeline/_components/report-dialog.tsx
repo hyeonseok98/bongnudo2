@@ -8,6 +8,8 @@ import {
   FileImage,
   Hash,
   Link as LinkIcon,
+  LoaderCircle,
+  Minus,
   Plus,
   Search,
   Send,
@@ -435,9 +437,13 @@ export function ReportDialog({ onClose, onSuccess, today }: ReportDialogProps) {
                     ) : null}
                   </div>
                   {form.reportType === "timeline" ? (
-                    <div className="rounded-lg bg-brand/10 p-3 text-caption leading-relaxed text-secondary break-keep">
-                      <p>등록한 제보는 타임라인에 바로 반영됩니다.</p>
-                      <p>중복 제보 여부와 봉누도2 운영정책에 맞는지 한 번 더 확인해주세요.</p>
+                    <div className="rounded-lg border border-brand/30 bg-brand/20 p-3 text-caption leading-relaxed break-keep">
+                      <p className="font-semibold text-brand-text">
+                        등록한 제보는 타임라인에 바로 반영됩니다.
+                      </p>
+                      <p className="mt-1 text-secondary">
+                        중복 제보 여부와 봉누도2 운영정책에 맞는지 한 번 더 확인해주세요.
+                      </p>
                     </div>
                   ) : null}
                 </aside>
@@ -530,10 +536,12 @@ function FieldError({ children }: { children: string }) {
 }
 
 function ClearInputButton({
+  className,
   label,
   onClick,
   value,
 }: {
+  className?: string;
   label: string;
   onClick: () => void;
   value: string;
@@ -543,7 +551,10 @@ function ClearInputButton({
   return (
     <button
       aria-label={label}
-      className="absolute top-1/2 right-2 grid size-7 -translate-y-1/2 cursor-pointer place-items-center rounded-md text-tertiary hover:bg-surface-muted hover:text-primary focus-visible:outline-2 focus-visible:outline-focus-ring"
+      className={cn(
+        "absolute top-1/2 right-2 grid size-7 -translate-y-1/2 cursor-pointer place-items-center rounded-md text-tertiary hover:bg-surface-muted hover:text-primary focus-visible:outline-2 focus-visible:outline-focus-ring",
+        className,
+      )}
       onClick={onClick}
       type="button"
     >
@@ -605,7 +616,12 @@ function ParticipantPicker({
   const selectedIds = new Set(
     participants.map((participant) => participant.seasonParticipantId),
   );
-  const results = searchQuery.data ?? [];
+  const results = (searchQuery.data ?? []).filter((participant) =>
+    Boolean(participant.rpName?.trim()),
+  );
+  const isSearching =
+    Boolean(query.trim()) &&
+    (query.trim() !== debouncedQuery.trim() || searchQuery.isFetching);
 
   return (
     <fieldset className="space-y-2">
@@ -665,8 +681,12 @@ function ParticipantPicker({
               initialFocus={false}
             >
               <Popover.Title className="sr-only">관련 인물 검색 결과</Popover.Title>
-              {searchQuery.isPending ? (
-                <div aria-label="인물을 검색하는 중" className="space-y-2 p-2" role="status">
+              {isSearching ? (
+                <div className="space-y-2 p-2" role="status">
+                  <p className="flex items-center gap-2 px-1 text-caption text-secondary">
+                    <LoaderCircle aria-hidden="true" className="size-4 animate-spin" />
+                    인물을 검색하는 중입니다.
+                  </p>
                   {Array.from({ length: 3 }, (_, index) => (
                     <div className="flex items-center gap-3 p-1" key={index}>
                       <Skeleton className="size-8 shrink-0 rounded-full" />
@@ -683,6 +703,8 @@ function ParticipantPicker({
                 </p>
               ) : results.length > 0 ? (
                 results.map((participant) => {
+                  const rpName = participant.rpName?.trim();
+                  if (!rpName) return null;
                   const isSelected = selectedIds.has(participant.seasonParticipantId);
                   return (
                     <button
@@ -704,13 +726,13 @@ function ParticipantPicker({
                     >
                       <CharacterAvatar
                         className="size-8 rounded-full"
-                        name={participant.rpName ?? "RP명 없음"}
+                        name={rpName}
                         profileImageUrl={participant.profileImageUrl}
                         sizes="32px"
                       />
                       <span className="min-w-0 flex-1">
                         <strong className="block truncate text-body-sm text-primary">
-                          {participant.rpName ?? "RP명 없음"}
+                          {rpName}
                         </strong>
                         <span className="block truncate text-caption text-secondary">
                           {getParticipantDescription(participant)}
@@ -733,42 +755,47 @@ function ParticipantPicker({
           </Popover.Positioner>
         </Popover.Portal>
       </Popover.Root>
-      {participants.length > 0 ? (
+      {participants.some((participant) => participant.rpName?.trim()) ? (
         <ul aria-label="선택한 관련 인물" className="flex flex-wrap gap-1.5">
-          {participants.map((participant, index) => (
-            <li
-              className="inline-flex items-center gap-1.5 rounded-full bg-surface-muted py-0.5 pr-2 pl-0.5"
-              key={participant.seasonParticipantId}
-            >
-              <CharacterAvatar
-                className="size-7 rounded-full"
-                name={participant.rpName ?? "RP명 없음"}
-                profileImageUrl={participant.profileImageUrl}
-                sizes="28px"
-              />
-              <span className="text-caption text-primary">
-                {index === 0 ? (
-                  <strong className="mr-1 text-brand-text">[대표]</strong>
-                ) : null}
-                {participant.rpName ?? "RP명 없음"}
-              </span>
-              <button
-                aria-label={`${participant.rpName ?? "RP명 없음"} 선택 해제`}
-                className="cursor-pointer rounded-full text-tertiary hover:text-primary focus-visible:outline-2 focus-visible:outline-focus-ring"
-                onClick={() =>
-                  onChange(
-                    participants.filter(
-                      (item) =>
-                        item.seasonParticipantId !== participant.seasonParticipantId,
-                    ),
-                  )
-                }
-                type="button"
+          {participants.map((participant, index) => {
+            const rpName = participant.rpName?.trim();
+            if (!rpName) return null;
+
+            return (
+              <li
+                className="inline-flex items-center gap-1.5 rounded-full bg-surface-muted py-0.5 pr-2 pl-0.5"
+                key={participant.seasonParticipantId}
               >
-                <X aria-hidden="true" className="size-3.5" />
-              </button>
-            </li>
-          ))}
+                <CharacterAvatar
+                  className="size-7 rounded-full"
+                  name={rpName}
+                  profileImageUrl={participant.profileImageUrl}
+                  sizes="28px"
+                />
+                <span className="text-caption text-primary">
+                  {index === 0 ? (
+                    <strong className="mr-1 text-brand-text">[대표]</strong>
+                  ) : null}
+                  {rpName}
+                </span>
+                <button
+                  aria-label={`${rpName} 선택 해제`}
+                  className="cursor-pointer rounded-full text-tertiary hover:text-primary focus-visible:outline-2 focus-visible:outline-focus-ring"
+                  onClick={() =>
+                    onChange(
+                      participants.filter(
+                        (item) =>
+                          item.seasonParticipantId !== participant.seasonParticipantId,
+                      ),
+                    )
+                  }
+                  type="button"
+                >
+                  <X aria-hidden="true" className="size-3.5" />
+                </button>
+              </li>
+            );
+          })}
         </ul>
       ) : null}
       {error ? <FieldError>{error}</FieldError> : null}
@@ -1054,7 +1081,7 @@ function ClipFields({
               <Input
                 aria-invalid={Boolean(errors?.[field.id])}
                 aria-label={`클립 URL ${index + 1}`}
-                className="h-9 pr-10"
+                className={cn("h-9 pr-10", index > 0 && "pr-20")}
                 onChange={(event) =>
                   onChange(
                     values.map((candidate) =>
@@ -1069,16 +1096,29 @@ function ClipFields({
                 value={field.value}
               />
               <ClearInputButton
+                className={index > 0 ? "right-10" : undefined}
                 label={`클립 URL ${index + 1} 지우기`}
                 onClick={() =>
                   onChange(
-                    values.length > 1
-                      ? removeReportClipField(values, field.id)
-                      : [{ ...field, value: "" }],
+                    values.map((candidate) =>
+                      candidate.id === field.id
+                        ? { ...candidate, value: "" }
+                        : candidate,
+                    ),
                   )
                 }
                 value={field.value}
               />
+              {index > 0 ? (
+                <button
+                  aria-label={`클립 URL ${index + 1} 입력 제거`}
+                  className="absolute top-1/2 right-2 grid size-7 -translate-y-1/2 cursor-pointer place-items-center rounded-md text-tertiary hover:bg-surface-muted hover:text-status-danger focus-visible:outline-2 focus-visible:outline-focus-ring"
+                  onClick={() => onChange(removeReportClipField(values, field.id))}
+                  type="button"
+                >
+                  <Minus aria-hidden="true" className="size-4" />
+                </button>
+              ) : null}
             </div>
             {errors?.[field.id] ? <FieldError>{errors[field.id]}</FieldError> : null}
           </div>

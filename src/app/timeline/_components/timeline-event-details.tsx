@@ -13,10 +13,10 @@ interface TimelineEventDetailsProps {
 
 export function TimelineEventDetails({ event, onTagChange }: TimelineEventDetailsProps) {
   const primaryParticipant = event.participants.find(
-    (participant) => participant.isPrimary,
+    (participant) => participant.isPrimary && participant.rpName?.trim(),
   );
   const relatedParticipants = event.participants.filter(
-    (participant) => !participant.isPrimary,
+    (participant) => !participant.isPrimary && participant.rpName?.trim(),
   );
 
   return (
@@ -79,7 +79,8 @@ function ParticipantSummary({
 }: {
   participant: TimelineEvent["participants"][number];
 }) {
-  const name = participant.rpName ?? "RP명 없음";
+  const name = participant.rpName?.trim();
+  if (!name) return null;
 
   return (
     <div className="flex items-center gap-2">
@@ -106,7 +107,8 @@ function ParticipantChip({
 }: {
   participant: TimelineEvent["participants"][number];
 }) {
-  const name = participant.rpName ?? "RP명 없음";
+  const name = participant.rpName?.trim();
+  if (!name) return null;
 
   return (
     <span className="inline-flex min-w-0 items-center gap-2 rounded-full border border-default bg-surface-muted pr-3 pl-1">

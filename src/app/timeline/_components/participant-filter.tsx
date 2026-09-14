@@ -29,6 +29,9 @@ export function ParticipantFilter({
   const participantsQuery = useQuery(
     reportQueries.participantSearch(debouncedQuery),
   );
+  const participants = (participantsQuery.data ?? []).filter((participant) =>
+    Boolean(participant.rpName?.trim()),
+  );
 
   function handleSelect(participantId: string) {
     onValueChange(participantId);
@@ -92,12 +95,14 @@ export function ParticipantFilter({
                 <p className="px-3 py-8 text-center text-body-sm text-status-danger" role="alert">
                   인물 검색에 실패했습니다.
                 </p>
-              ) : participantsQuery.data.length === 0 ? (
+              ) : participants.length === 0 ? (
                 <p className="px-3 py-8 text-center text-body-sm text-secondary">
                   검색 결과가 없습니다.
                 </p>
               ) : (
-                participantsQuery.data.map((participant) => {
+                participants.map((participant) => {
+                  const rpName = participant.rpName?.trim();
+                  if (!rpName) return null;
                   const isSelected = participant.seasonParticipantId === value;
 
                   return (
@@ -110,13 +115,13 @@ export function ParticipantFilter({
                     >
                       <CharacterAvatar
                         className="size-8 shrink-0 rounded-full"
-                        name={participant.rpName ?? "RP명 없음"}
+                        name={rpName}
                         profileImageUrl={participant.profileImageUrl}
                         sizes="32px"
                       />
                       <span className="min-w-0 flex-1">
                         <span className="block truncate text-body-sm font-semibold text-primary">
-                          {participant.rpName ?? "RP명 없음"}
+                          {rpName}
                         </span>
                         <span className="block truncate text-caption text-secondary">
                           {[participant.organizationName, participant.role]

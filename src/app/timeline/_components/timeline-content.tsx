@@ -1,5 +1,6 @@
 "use client";
 
+import { CircleCheck } from "lucide-react";
 import { useRef, useState } from "react";
 
 import {
@@ -75,9 +76,7 @@ export function TimelineContent({
   const selectedParticipant = characters.find(
     (character) => character.id === directory.participant,
   );
-  const selectedParticipantLabel = selectedParticipant
-    ? (selectedParticipant.rpName ?? "RP명 없음")
-    : null;
+  const selectedParticipantLabel = selectedParticipant?.rpName?.trim() || null;
   const timeline = timelineQuery.data;
   const pageEvents = timeline?.events ?? [];
   const navigationEvents = navigationQuery.data?.events ?? [];
@@ -163,10 +162,13 @@ export function TimelineContent({
 
       {feedback ? (
         <div
-          className="flex items-center justify-between gap-3 rounded-lg bg-brand/15 px-3 py-2 text-body-sm text-primary"
+          className="flex items-center justify-between gap-3 rounded-lg border border-brand/40 bg-brand/20 px-3 py-2.5 text-body-sm text-primary shadow-sm"
           role="status"
         >
-          <p>{feedback}</p>
+          <p className="flex items-center gap-2 font-semibold">
+            <CircleCheck aria-hidden="true" className="size-5 shrink-0 text-brand-text" />
+            {feedback}
+          </p>
           <Button
             aria-label="알림 닫기"
             onClick={() => setFeedback(null)}
@@ -205,6 +207,11 @@ export function TimelineContent({
                 {timeline.totalCount}건
               </strong>
             ) : null}
+            {timelineQuery.isFetching && !timelineQuery.isPlaceholderData ? (
+              <span className="ml-2 text-caption text-tertiary" role="status">
+                업데이트 중
+              </span>
+            ) : null}
           </h2>
           <div className="flex items-center gap-2">
             <span className="text-body-sm text-secondary">정렬</span>
@@ -223,7 +230,7 @@ export function TimelineContent({
           <TimelineStatus isError>
             타임라인을 불러오지 못했습니다.
           </TimelineStatus>
-        ) : !timeline || timelineQuery.isFetching ? (
+        ) : !timeline || timelineQuery.isPlaceholderData ? (
           <TimelineListSkeleton />
         ) : timeline.events.length > 0 ? (
           <>

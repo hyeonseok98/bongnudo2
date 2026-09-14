@@ -15,7 +15,11 @@ interface TimelineParticipantStackProps {
 export function TimelineParticipantStack({
   participants,
 }: TimelineParticipantStackProps) {
-  if (participants.length === 0) {
+  const namedParticipants = participants.filter((participant) =>
+    Boolean(participant.rpName?.trim()),
+  );
+
+  if (namedParticipants.length === 0) {
     return (
       <span className="inline-flex items-center gap-1 text-body-sm text-secondary">
         <UsersRound aria-hidden="true" className="size-4" />
@@ -24,19 +28,20 @@ export function TimelineParticipantStack({
     );
   }
 
-  const visible = participants.slice(0, VISIBLE_PARTICIPANTS);
-  const hiddenCount = participants.length - visible.length;
+  const visible = namedParticipants.slice(0, VISIBLE_PARTICIPANTS);
+  const hiddenCount = namedParticipants.length - visible.length;
 
   return (
     <Popover.Root>
       <Popover.Trigger
-        aria-label={`관련 인물 ${participants.length}명 보기`}
+        aria-label={`관련 인물 ${namedParticipants.length}명 보기`}
         className="flex w-fit cursor-pointer items-center rounded-full pr-2 hover:bg-surface-selected focus-visible:outline-2 focus-visible:outline-focus-ring"
         onClick={(clickEvent) => clickEvent.stopPropagation()}
       >
         <span className="flex -space-x-2">
           {visible.map((participant) => {
-            const name = participant.rpName ?? "RP명 없음";
+            const name = participant.rpName?.trim();
+            if (!name) return null;
             return (
               <CharacterAvatar
                 className="size-8 rounded-full border-2 border-surface-raised"
@@ -49,7 +54,7 @@ export function TimelineParticipantStack({
           })}
         </span>
         <span className="ml-2 max-w-24 truncate text-body-sm font-medium text-primary">
-          {participants[0]?.rpName ?? "RP명 없음"}
+          {namedParticipants[0]?.rpName}
         </span>
         {hiddenCount > 0 ? (
           <span className="ml-1 text-caption text-secondary">
@@ -68,11 +73,12 @@ export function TimelineParticipantStack({
             onClick={(clickEvent) => clickEvent.stopPropagation()}
           >
             <Popover.Title className="px-2 py-1 text-caption font-semibold text-secondary">
-              관련 인물 {participants.length}명
+              관련 인물 {namedParticipants.length}명
             </Popover.Title>
             <ul className="mt-1 space-y-1">
-              {participants.map((participant) => {
-                const name = participant.rpName ?? "RP명 없음";
+              {namedParticipants.map((participant) => {
+                const name = participant.rpName?.trim();
+                if (!name) return null;
                 return (
                   <li
                     className="flex items-center gap-2 rounded-lg px-2 py-1.5"

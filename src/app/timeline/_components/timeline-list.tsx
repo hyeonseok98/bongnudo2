@@ -81,7 +81,7 @@ export function TimelineListSkeleton({ count = 5 }: { count?: number }) {
         {Array.from({ length: count }, (_, index) => (
           <div
             className={cn(
-              "grid min-h-32 gap-4 px-4 py-4 xl:items-center",
+              "grid min-h-28 gap-4 px-4 py-3 xl:items-center",
               TIMELINE_GRID,
             )}
             key={index}
@@ -153,7 +153,7 @@ function TimelineRow({
     <li
       aria-label={`${event.title} 상세 보기`}
       className={cn(
-        "grid min-h-32 cursor-pointer gap-4 px-4 py-4 transition-colors duration-default hover:bg-surface-muted focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-focus-ring xl:items-center",
+        "grid min-h-28 cursor-pointer gap-4 px-4 py-3 transition-colors duration-default hover:bg-surface-muted focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-focus-ring xl:items-center",
         TIMELINE_GRID,
       )}
       onClick={openEvent}

@@ -35,14 +35,18 @@ export async function searchReportParticipants(
     });
   }
 
-  if (result.data.length === 0) return [];
+  const participants = result.data.filter((participant) =>
+    Boolean(participant.rp_name?.trim()),
+  );
+
+  if (participants.length === 0) return [];
 
   const imageResult = await supabase
     .from("season_participants")
     .select("id, portrait_image_key")
     .in(
       "id",
-      result.data.map((participant) => participant.season_participant_id),
+      participants.map((participant) => participant.season_participant_id),
     );
 
   if (imageResult.error) {
@@ -58,7 +62,7 @@ export async function searchReportParticipants(
     ]),
   );
 
-  return result.data.map((participant) => ({
+  return participants.map((participant) => ({
     seasonParticipantId: participant.season_participant_id,
     rpName: participant.rp_name,
     streamerName: participant.streamer_name,
