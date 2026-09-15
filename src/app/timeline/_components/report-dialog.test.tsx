@@ -27,6 +27,7 @@ vi.mock("@/queries/report-queries", () => ({
       enabled: Boolean(query),
       queryFn: async () => [
         {
+          chzzkLiveUrl: null,
           organizationName: "EMS",
           profileImageUrl: null,
           role: "원장",
@@ -35,6 +36,7 @@ vi.mock("@/queries/report-queries", () => ({
           streamerName: "강지",
         },
         {
+          chzzkLiveUrl: null,
           organizationName: null,
           profileImageUrl: null,
           role: null,

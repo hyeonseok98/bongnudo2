@@ -38,6 +38,7 @@ function createValidForm() {
     },
     participants: [
       {
+        chzzkLiveUrl: null,
         organizationName: "EMS",
         profileImageUrl: null,
         role: "원장",

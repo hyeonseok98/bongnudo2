@@ -11,6 +11,7 @@ export interface ReportParticipantSearchResult {
   seasonParticipantId: string;
   rpName: string | null;
   streamerName: string;
+  chzzkLiveUrl: string | null;
   organizationName: string | null;
   profileImageUrl: string | null;
   role: string | null;
@@ -40,13 +41,11 @@ export async function searchReportParticipants(
     throw new ReportRequestError("검색어를 입력해주세요.");
   }
 
-  const result = await getSupabaseAdminClient().rpc(
-    "search_report_participants",
-    {
-      p_query: normalizedQuery,
-      p_limit: 20,
-    },
-  );
+  const supabase = getSupabaseAdminClient();
+  const result = await supabase.rpc("search_report_participants", {
+    p_query: normalizedQuery,
+    p_limit: 20,
+  });
 
   if (result.error) {
     throw new ReportRequestError("인물 검색에 실패했습니다.", 500, {
@@ -55,6 +54,36 @@ export async function searchReportParticipants(
   }
 
   const participants = reportParticipantSearchSchema.parse(result.data);
+  const participantIds = participants.map(
+    (participant) => participant.season_participant_id,
+  );
+
+  if (participantIds.length === 0) {
+    return [];
+  }
+
+  const channelResult = await supabase
+    .from("season_participants")
+    .select(`
+      id,
+      streamer:streamers!inner (
+        chzzk_channel_id
+      )
+    `)
+    .in("id", participantIds);
+
+  if (channelResult.error) {
+    throw new ReportRequestError("인물 검색에 실패했습니다.", 500, {
+      cause: channelResult.error,
+    });
+  }
+
+  const chzzkChannelIds = new Map(
+    channelResult.data.map(({ id, streamer }) => [
+      id,
+      streamer.chzzk_channel_id,
+    ]),
+  );
 
   return participants.map((participant) => ({
     seasonParticipantId: participant.season_participant_id,
@@ -63,5 +92,16 @@ export async function searchReportParticipants(
     organizationName: participant.organization_name,
     profileImageUrl: getR2PublicUrl(participant.profile_image_key),
     role: participant.role,
+    chzzkLiveUrl: createChzzkLiveUrl(
+      chzzkChannelIds.get(participant.season_participant_id),
+    ),
   }));
+}
+
+function createChzzkLiveUrl(channelId: string | null | undefined): string | null {
+  const normalizedChannelId = channelId?.trim();
+
+  return normalizedChannelId
+    ? `https://chzzk.naver.com/live/${encodeURIComponent(normalizedChannelId)}`
+    : null;
 }
