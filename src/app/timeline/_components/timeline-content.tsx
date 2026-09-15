@@ -79,7 +79,7 @@ export function TimelineContent({
   const selectedParticipantLabel = selectedParticipant?.rpName?.trim() || null;
   const timeline = timelineQuery.data;
   const pageEvents = timeline?.events ?? [];
-  const navigationEvents = navigationQuery.data?.events ?? [];
+  const navigationEvents = navigationQuery.data?.events ?? pageEvents;
   const selectedEvent = resolveTimelineEvent(
     pageEvents,
     navigationEvents,
@@ -274,6 +274,7 @@ export function TimelineContent({
         eventId={directory.eventId}
         events={navigationEvents}
         isLoading={navigationQuery.isPending && !selectedEvent}
+        isNavigationLoading={navigationQuery.isPending}
         mediaFilter={directory.mediaType}
         mediaId={directory.mediaId}
         onClose={handleMediaClose}

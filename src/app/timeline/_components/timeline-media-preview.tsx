@@ -42,6 +42,7 @@ export function TimelineMediaPreview({
       ) : (
         <TimelineClipThumbnail
           alt={`${eventTitle} 치지직 클립 썸네일`}
+          clipUrl={preview.clipUrl}
           thumbnailUrl={preview.thumbnailUrl}
         />
       )}

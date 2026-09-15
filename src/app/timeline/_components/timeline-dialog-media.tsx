@@ -165,6 +165,7 @@ export function TimelineMediaThumbnailStrip({
           ) : (
             <TimelineClipThumbnail
               alt={`${eventTitle} ${index + 1}번째 치지직 클립 썸네일`}
+              clipUrl={item.clipUrl}
               thumbnailUrl={item.thumbnailUrl}
             />
           )}

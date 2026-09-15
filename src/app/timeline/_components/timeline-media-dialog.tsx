@@ -32,6 +32,7 @@ interface TimelineMediaDialogProps {
   eventId: string;
   events: TimelineEvent[];
   isLoading: boolean;
+  isNavigationLoading: boolean;
   mediaFilter: TimelineMediaFilter;
   mediaId: string;
   onClose: () => void;
@@ -46,6 +47,7 @@ export function TimelineMediaDialog({
   eventId,
   events,
   isLoading,
+  isNavigationLoading,
   mediaFilter,
   mediaId,
   onClose,
@@ -221,11 +223,13 @@ export function TimelineMediaDialog({
               <TimelineEventNavigationButton
                 direction="previous"
                 event={eventNeighbors.previous}
+                isLoading={isNavigationLoading}
                 onClick={handleEventChange}
               />
               <TimelineEventNavigationButton
                 direction="next"
                 event={eventNeighbors.next}
+                isLoading={isNavigationLoading}
                 onClick={handleEventChange}
               />
             </div>

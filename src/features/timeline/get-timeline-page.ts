@@ -6,7 +6,6 @@ import { getR2PublicUrl } from "@/lib/r2";
 import { getSupabaseAdminClient } from "@/lib/supabase/server";
 
 import type { TimelinePageData, TimelineQueryFilters } from "./timeline";
-import { resolveChzzkClipThumbnail } from "./chzzk-clip-thumbnail";
 import { orderTimelineMedia } from "./timeline-media";
 import { getTimelineDateRange } from "./timeline-params";
 
@@ -93,7 +92,7 @@ export async function getTimelinePage(
 
   const page = timelinePageSchema.parse(result.data);
 
-  const events = await Promise.all(page.events.map(async (event) => ({
+  const events = page.events.map((event) => ({
     ...event,
     participants: event.participants.map(
       ({ profileImageKey, ...participant }) => ({
@@ -101,13 +100,13 @@ export async function getTimelinePage(
         profileImageUrl: getR2PublicUrl(profileImageKey),
       }),
     ),
-    media: orderTimelineMedia(await Promise.all(event.media.map(async (media) => {
+    media: orderTimelineMedia(event.media.map((media) => {
       if (media.mediaType === "chzzk_clip") {
         return {
           id: media.id,
           mediaType: media.mediaType,
           clipUrl: media.clipUrl,
-          thumbnailUrl: await resolveChzzkClipThumbnail(media.clipUrl),
+          thumbnailUrl: null,
         };
       }
 
@@ -118,8 +117,8 @@ export async function getTimelinePage(
       }
 
       return { id: media.id, mediaType: media.mediaType, imageUrl };
-    }))),
-  })));
+    })),
+  }));
 
   return {
     ...page,

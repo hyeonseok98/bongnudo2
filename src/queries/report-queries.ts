@@ -16,5 +16,6 @@ export const reportQueries = {
       queryKey: [...reportQueries.participants(), "search", query] as const,
       queryFn: () => getReportParticipants(query),
       enabled: query.trim().length > 0,
+      staleTime: 5 * 60 * 1_000,
     }),
 };

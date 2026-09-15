@@ -12,12 +12,14 @@ import { TimelineClipThumbnail } from "./timeline-clip-thumbnail";
 interface TimelineEventNavigationButtonProps {
   direction: "previous" | "next";
   event: TimelineEvent | null;
+  isLoading: boolean;
   onClick: (event: TimelineEvent) => void;
 }
 
 export function TimelineEventNavigationButton({
   direction,
   event,
+  isLoading,
   onClick,
 }: TimelineEventNavigationButtonProps) {
   const isPrevious = direction === "previous";
@@ -48,6 +50,7 @@ export function TimelineEventNavigationButton({
           ) : previewMedia?.mediaType === "chzzk_clip" ? (
             <TimelineClipThumbnail
               alt=""
+              clipUrl={previewMedia.clipUrl}
               thumbnailUrl={previewMedia.thumbnailUrl}
             />
           ) : (
@@ -66,7 +69,7 @@ export function TimelineEventNavigationButton({
           {isPrevious ? "이전 기록" : "다음 기록"}
         </span>
         <span className="block max-w-48 truncate text-body-sm font-semibold text-primary">
-          {event?.title ?? "이동할 기록 없음"}
+          {event?.title ?? (isLoading ? "기록을 불러오는 중" : "이동할 기록 없음")}
         </span>
         {event ? (
           <time className="block text-caption text-secondary" dateTime={event.occurredAt}>

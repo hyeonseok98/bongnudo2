@@ -2,17 +2,28 @@
 
 import { PlayCircle } from "lucide-react";
 import Image from "next/image";
+import { useQuery } from "@tanstack/react-query";
 import { useState } from "react";
+
+import { timelineQueries } from "@/queries/timeline-queries";
 
 export function TimelineClipThumbnail({
   alt,
+  clipUrl,
   thumbnailUrl,
 }: {
   alt: string;
+  clipUrl: string;
   thumbnailUrl: string | null;
 }) {
+  const thumbnailQuery = useQuery({
+    ...timelineQueries.clipThumbnail(clipUrl),
+    enabled: !thumbnailUrl,
+  });
+  const resolvedThumbnailUrl = thumbnailUrl ?? thumbnailQuery.data ?? null;
   const [failedUrl, setFailedUrl] = useState<string | null>(null);
-  const canShowThumbnail = thumbnailUrl && failedUrl !== thumbnailUrl;
+  const canShowThumbnail =
+    resolvedThumbnailUrl && failedUrl !== resolvedThumbnailUrl;
 
   return (
     <span className="absolute inset-0 grid place-items-center overflow-hidden bg-black/70 text-white">
@@ -22,9 +33,9 @@ export function TimelineClipThumbnail({
           unoptimized
           alt={alt}
           className="object-cover"
-          onError={() => setFailedUrl(thumbnailUrl)}
+          onError={() => setFailedUrl(resolvedThumbnailUrl)}
           sizes="144px"
-          src={thumbnailUrl}
+          src={resolvedThumbnailUrl}
         />
       ) : null}
       <span className="absolute inset-0 bg-black/20" />

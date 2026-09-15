@@ -1,5 +1,7 @@
 import "server-only";
 
+import { z } from "zod";
+
 import { getR2PublicUrl } from "@/lib/r2";
 import { getSupabaseAdminClient } from "@/lib/supabase/server";
 
@@ -14,6 +16,21 @@ export interface ReportParticipantSearchResult {
   role: string | null;
 }
 
+const reportParticipantSearchSchema = z.array(
+  z.object({
+    organization_name: z.string().nullable(),
+    profile_image_key: z
+      .string()
+      .nullable()
+      .optional()
+      .transform((value) => value ?? null),
+    role: z.string().nullable(),
+    rp_name: z.string(),
+    season_participant_id: z.string().uuid(),
+    streamer_name: z.string(),
+  }),
+);
+
 export async function searchReportParticipants(
   query: string,
 ): Promise<ReportParticipantSearchResult[]> {
@@ -23,11 +40,13 @@ export async function searchReportParticipants(
     throw new ReportRequestError("검색어를 입력해주세요.");
   }
 
-  const supabase = getSupabaseAdminClient();
-  const result = await supabase.rpc("search_report_participants", {
-    p_query: normalizedQuery,
-    p_limit: 20,
-  });
+  const result = await getSupabaseAdminClient().rpc(
+    "search_report_participants",
+    {
+      p_query: normalizedQuery,
+      p_limit: 20,
+    },
+  );
 
   if (result.error) {
     throw new ReportRequestError("인물 검색에 실패했습니다.", 500, {
@@ -35,41 +54,14 @@ export async function searchReportParticipants(
     });
   }
 
-  const participants = result.data.filter((participant) =>
-    Boolean(participant.rp_name?.trim()),
-  );
-
-  if (participants.length === 0) return [];
-
-  const imageResult = await supabase
-    .from("season_participants")
-    .select("id, portrait_image_key")
-    .in(
-      "id",
-      participants.map((participant) => participant.season_participant_id),
-    );
-
-  if (imageResult.error) {
-    throw new ReportRequestError("인물 검색에 실패했습니다.", 500, {
-      cause: imageResult.error,
-    });
-  }
-
-  const imageKeys = new Map(
-    imageResult.data.map((participant) => [
-      participant.id,
-      participant.portrait_image_key,
-    ]),
-  );
+  const participants = reportParticipantSearchSchema.parse(result.data);
 
   return participants.map((participant) => ({
     seasonParticipantId: participant.season_participant_id,
     rpName: participant.rp_name,
     streamerName: participant.streamer_name,
     organizationName: participant.organization_name,
-    profileImageUrl: getR2PublicUrl(
-      imageKeys.get(participant.season_participant_id) ?? null,
-    ),
+    profileImageUrl: getR2PublicUrl(participant.profile_image_key),
     role: participant.role,
   }));
 }
