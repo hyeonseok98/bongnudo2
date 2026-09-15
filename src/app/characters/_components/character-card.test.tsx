@@ -2,6 +2,7 @@ import { fireEvent, render, screen } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
 
 import type { CharacterListItem } from "@/features/characters/character";
+import { RpModeProvider } from "@/providers/rp-mode-provider";
 
 import { buildCharacterDirectoryItems } from "../_utils/character-directory";
 import { CharacterCard } from "./character-card";
@@ -56,9 +57,22 @@ const character: CharacterListItem = {
 
 const item = buildCharacterDirectoryItems([character], "streamer")[0]!;
 
+function renderCharacterCard(cardItem = item) {
+  return render(
+    <RpModeProvider
+      initialSettings={{
+        isRpMode: false,
+        isLiveThumbnailBlurEnabled: false,
+      }}
+    >
+      <CharacterCard item={cardItem} />
+    </RpModeProvider>,
+  );
+}
+
 describe("CharacterCard", () => {
   it("현재 RP 조직은 두 개와 +N만 표시하고 현실 소속은 MCN부터 표시함", () => {
-    render(<CharacterCard item={item} />);
+    renderCharacterCard();
 
     expect(screen.getByText("EMS")).toBeTruthy();
     expect(screen.getByText("병원장 ✦").className).not.toContain(
@@ -85,14 +99,10 @@ describe("CharacterCard", () => {
   });
 
   it("프로필 이미지 로드 실패 시 프로필 placeholder로 복구함", () => {
-    const { container } = render(
-      <CharacterCard
-        item={{
-          ...item,
-          profileImageUrl: "https://assets.example.com/profile.webp",
-        }}
-      />,
-    );
+    const { container } = renderCharacterCard({
+      ...item,
+      profileImageUrl: "https://assets.example.com/profile.webp",
+    });
 
     const image = screen.getByRole("img", { name: "스트리머 프로필" });
 

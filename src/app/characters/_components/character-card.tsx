@@ -9,6 +9,8 @@ import {
   getOrderedAffiliations,
   getOrderedStreamerAffiliations,
 } from "@/features/characters/character";
+import { getDisplayName } from "@/features/rp-mode/rp-mode";
+import { useRpModeSettings } from "@/providers/rp-mode-provider";
 import { cn } from "@/utils/cn";
 
 import type { CharacterDirectoryItem } from "../_utils/character-directory";
@@ -19,6 +21,12 @@ interface CharacterCardProps {
 }
 
 export function CharacterCard({ item }: CharacterCardProps) {
+  const { isRpMode } = useRpModeSettings();
+  const displayName = getDisplayName(
+    item,
+    item.kind === "streamer" ? "streamer-card" : "character-card",
+    isRpMode,
+  );
   const affiliations = getOrderedAffiliations(item.affiliations);
   const visibleAffiliations = affiliations.slice(0, 2);
   const hiddenAffiliationCount =
@@ -29,7 +37,7 @@ export function CharacterCard({ item }: CharacterCardProps) {
 
   return (
     <Link
-      aria-label={`${item.primaryName} 상세 페이지`}
+      aria-label={`${displayName.primaryName} 상세 페이지`}
       className="group block min-w-0 cursor-pointer rounded-xl"
       href={item.href}
       prefetch={false}
@@ -38,7 +46,7 @@ export function CharacterCard({ item }: CharacterCardProps) {
         <CharacterAvatar
           className="absolute inset-0 size-full"
           imageClassName="transition-transform duration-slow group-hover:scale-[1.03] motion-reduce:transform-none motion-reduce:transition-none"
-          name={item.primaryName}
+          name={displayName.primaryName}
           profileImageUrl={item.profileImageUrl}
           sizes="(min-width: 1536px) 16vw, (min-width: 1280px) 20vw, (min-width: 1024px) 25vw, (min-width: 640px) 33vw, 50vw"
         />
@@ -51,11 +59,11 @@ export function CharacterCard({ item }: CharacterCardProps) {
         <div className="absolute inset-x-0 bottom-0 min-w-0 p-3">
           <div className="min-w-0">
             <h3 className="truncate text-body font-semibold text-white">
-              {item.primaryName}
+              {displayName.primaryName}
             </h3>
-            {item.secondaryName ? (
+            {displayName.secondaryName ? (
               <p className="mt-0.5 truncate text-body-sm text-white/75">
-                {item.secondaryName}
+                {displayName.secondaryName}
               </p>
             ) : null}
           </div>

@@ -32,6 +32,8 @@ export interface CharacterDirectoryItem {
   href: string;
   primaryName: string;
   secondaryName: string | null;
+  streamerName: string;
+  rpName: string | null;
   profileImageUrl: string | null;
   affiliations: CharacterAffiliation[];
   streamerAffiliations: CharacterListItem["streamerAffiliations"];
@@ -50,7 +52,9 @@ export function buildCharacterDirectoryItems(
               kind: "rp" as const,
               href: `/characters/rp/${character.id}`,
               primaryName: character.rpName,
-              secondaryName: null,
+              secondaryName: character.streamerName,
+              streamerName: character.streamerName,
+              rpName: character.rpName,
               profileImageUrl: character.rpProfileImageUrl ?? null,
               affiliations: character.affiliations,
               streamerAffiliations: [],
@@ -73,6 +77,8 @@ export function buildCharacterDirectoryItems(
       href: `/characters/streamer/${encodeURIComponent(character.slug)}`,
       primaryName: character.streamerName,
       secondaryName: character.rpName,
+      streamerName: character.streamerName,
+      rpName: character.rpName,
       profileImageUrl: character.profileImageUrl,
       affiliations: character.affiliations,
       streamerAffiliations: character.streamerAffiliations,

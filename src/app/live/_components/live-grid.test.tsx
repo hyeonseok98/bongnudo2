@@ -2,6 +2,7 @@ import { render } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import type { LiveStream } from "@/features/live/live-stream";
+import { RpModeProvider } from "@/providers/rp-mode-provider";
 
 import { LiveGrid } from "./live-grid";
 
@@ -40,22 +41,29 @@ describe("LiveGrid", () => {
       .mockImplementation(() => undefined);
 
     render(
-      <LiveGrid
-        streams={[
-          stream,
-          {
-            ...stream,
-            character: {
-              ...stream.character,
-              id: "participant-two",
-              streamerId: "streamer-two",
-              chzzkChannelId: "participant-two-channel-id",
-              slug: "streamer-two",
-              streamerName: "두 번째 스트리머",
+      <RpModeProvider
+        initialSettings={{
+          isRpMode: false,
+          isLiveThumbnailBlurEnabled: false,
+        }}
+      >
+        <LiveGrid
+          streams={[
+            stream,
+            {
+              ...stream,
+              character: {
+                ...stream.character,
+                id: "participant-two",
+                streamerId: "streamer-two",
+                chzzkChannelId: "participant-two-channel-id",
+                slug: "streamer-two",
+                streamerName: "두 번째 스트리머",
+              },
             },
-          },
-        ]}
-      />,
+          ]}
+        />
+      </RpModeProvider>,
     );
 
     expect(consoleError).not.toHaveBeenCalled();

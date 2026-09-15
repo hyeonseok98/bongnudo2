@@ -7,6 +7,8 @@ import {
 } from "@/constants/rp-affiliation-badge-styles";
 import { getOrderedAffiliations } from "@/features/characters/character";
 import type { LiveStream } from "@/features/live/live-stream";
+import { getDisplayName } from "@/features/rp-mode/rp-mode";
+import { useRpModeSettings } from "@/providers/rp-mode-provider";
 import { cn } from "@/utils/cn";
 
 interface LiveCardProps {
@@ -17,6 +19,9 @@ const viewerCountFormatter = new Intl.NumberFormat("ko-KR");
 
 export function LiveCard({ stream }: LiveCardProps) {
   const { broadcast, character } = stream;
+  const { isLiveThumbnailBlurEnabled, isRpMode } = useRpModeSettings();
+  const displayName = getDisplayName(character, "live", isRpMode);
+  const shouldBlurThumbnail = isRpMode && isLiveThumbnailBlurEnabled;
   const primaryAffiliation = getOrderedAffiliations(
     character.affiliations,
   )[0];
@@ -26,7 +31,7 @@ export function LiveCard({ stream }: LiveCardProps) {
   return (
     <article className="group min-w-0 overflow-hidden rounded-xl border border-default bg-surface-raised transition-[background-color,border-color] duration-fast hover:border-brand dark:hover:bg-surface-selected">
       <a
-        aria-label={`${character.rpName ?? character.streamerName} 방송 시청하기`}
+        aria-label={`${displayName.primaryName} 방송 시청하기`}
         className="block h-full focus-visible:outline-2 focus-visible:outline-focus-ring focus-visible:outline-offset-[-2px]"
         href={channelUrl}
         rel="noopener noreferrer"
@@ -34,11 +39,18 @@ export function LiveCard({ stream }: LiveCardProps) {
       >
         <div
           aria-label={`${broadcast.title} 방송 썸네일`}
-          className="relative aspect-video bg-surface-muted bg-cover bg-center transition-[filter] duration-fast dark:group-hover:brightness-105"
+          className="relative aspect-video overflow-hidden bg-surface-muted"
           role="img"
-          style={{ backgroundImage: `url(${JSON.stringify(thumbnailUrl)})` }}
         >
-          <div className="absolute inset-x-0 top-0 flex items-start justify-between gap-2 p-2.5">
+          <div
+            aria-hidden="true"
+            className={cn(
+              "absolute inset-0 bg-cover bg-center transition-[filter] duration-fast dark:group-hover:brightness-105",
+              shouldBlurThumbnail && "scale-105 blur-md",
+            )}
+            style={{ backgroundImage: `url(${JSON.stringify(thumbnailUrl)})` }}
+          />
+          <div className="relative flex items-start justify-between gap-2 p-2.5">
             <Badge className="gap-1 bg-status-danger font-bold text-background">
               <Radio aria-hidden="true" className="size-3" />
               LIVE
@@ -56,20 +68,20 @@ export function LiveCard({ stream }: LiveCardProps) {
           </p>
 
           <div className="min-w-0">
-            {character.rpName ? (
-              <>
-                <h2 className="truncate text-body font-bold text-primary">
-                  {character.rpName}
-                </h2>
-                <p className="mt-0.5 truncate text-body-sm text-secondary">
-                  {character.streamerName}
-                </p>
-              </>
-            ) : (
-              <h2 className="truncate text-body-sm font-bold text-primary">
-                {character.streamerName}
-              </h2>
-            )}
+            <h2
+              className={
+                displayName.secondaryName
+                  ? "truncate text-body font-bold text-primary"
+                  : "truncate text-body-sm font-bold text-primary"
+              }
+            >
+              {displayName.primaryName}
+            </h2>
+            {displayName.secondaryName ? (
+              <p className="mt-0.5 truncate text-body-sm text-secondary">
+                {displayName.secondaryName}
+              </p>
+            ) : null}
           </div>
 
           {primaryAffiliation ? (

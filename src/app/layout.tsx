@@ -5,7 +5,13 @@ import { Sidebar } from "@/components/layouts/sidebar";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { SIDEBAR_COOKIE_NAME } from "@/constants/sidebar";
 import { getCurrentUser } from "@/features/auth/session";
+import {
+  getRpModeSettings,
+  LIVE_THUMBNAIL_BLUR_COOKIE_NAME,
+  RP_MODE_COOKIE_NAME,
+} from "@/features/rp-mode/rp-mode";
 import { QueryProvider } from "@/providers/query-provider";
+import { RpModeProvider } from "@/providers/rp-mode-provider";
 import { SidebarProvider } from "@/providers/sidebar-provider";
 import { ThemeProvider } from "@/providers/theme-provider";
 import { GoogleAnalytics } from "@next/third-parties/google";
@@ -40,6 +46,10 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
   ]);
 
   const initialIsOpen = cookieStore.get(SIDEBAR_COOKIE_NAME)?.value !== "false";
+  const initialRpModeSettings = getRpModeSettings(
+    cookieStore.get(RP_MODE_COOKIE_NAME)?.value,
+    cookieStore.get(LIVE_THUMBNAIL_BLUR_COOKIE_NAME)?.value,
+  );
 
   return (
     <html
@@ -50,26 +60,28 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
       <body className="min-h-dvh">
         <ThemeProvider>
           <TooltipProvider>
-            <SidebarProvider initialIsOpen={initialIsOpen}>
-              <div className="flex h-dvh flex-col overflow-hidden bg-background">
-                <Header currentUser={currentUser} />
+            <RpModeProvider initialSettings={initialRpModeSettings}>
+              <SidebarProvider initialIsOpen={initialIsOpen}>
+                <div className="flex h-dvh flex-col overflow-hidden bg-background">
+                  <Header currentUser={currentUser} />
 
-                <div className="flex min-h-0 flex-1">
-                  <Sidebar />
+                  <div className="flex min-h-0 flex-1">
+                    <Sidebar />
 
-                  <div className="@container flex min-h-0 min-w-0 flex-1 flex-col overflow-y-auto bg-background">
-                    <NuqsAdapter>
-                      <QueryProvider>
-                        <MainContainer className="flex min-h-full flex-col">
-                          <div className="flex-1">{children}</div>
-                          <Footer />
-                        </MainContainer>
-                      </QueryProvider>
-                    </NuqsAdapter>
+                    <div className="@container flex min-h-0 min-w-0 flex-1 flex-col overflow-y-auto bg-background">
+                      <NuqsAdapter>
+                        <QueryProvider>
+                          <MainContainer className="flex min-h-full flex-col">
+                            <div className="flex-1">{children}</div>
+                            <Footer />
+                          </MainContainer>
+                        </QueryProvider>
+                      </NuqsAdapter>
+                    </div>
                   </div>
                 </div>
-              </div>
-            </SidebarProvider>
+              </SidebarProvider>
+            </RpModeProvider>
           </TooltipProvider>
         </ThemeProvider>
 

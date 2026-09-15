@@ -50,7 +50,7 @@ export function CharacterFilters({
         label="이름 또는 키워드 검색"
         onChange={(event) => onQueryChange(event.target.value)}
         onClear={() => onQueryChange("")}
-        placeholder="이름 또는 키워드로 검색해보세요."
+        placeholder="스트리머명 또는 RP 캐릭터 이름으로 검색해보세요"
         value={query}
       />
 

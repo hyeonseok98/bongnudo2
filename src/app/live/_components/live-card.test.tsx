@@ -2,6 +2,7 @@ import { render, screen } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
 
 import type { LiveStream } from "@/features/live/live-stream";
+import { RpModeProvider } from "@/providers/rp-mode-provider";
 
 import { LiveCard } from "./live-card";
 
@@ -27,9 +28,22 @@ const stream: LiveStream = {
   },
 };
 
+function renderLiveCard(cardStream = stream) {
+  return render(
+    <RpModeProvider
+      initialSettings={{
+        isRpMode: false,
+        isLiveThumbnailBlurEnabled: false,
+      }}
+    >
+      <LiveCard stream={cardStream} />
+    </RpModeProvider>,
+  );
+}
+
 describe("LiveCard", () => {
   it("참가자의 치지직 채널로 연결하고 RP 정보가 없을 때 제목 높이를 예약하지 않음", () => {
-    const { unmount } = render(<LiveCard stream={stream} />);
+    const { unmount } = renderLiveCard();
 
     expect(screen.getByRole("link", { name: "스트리머 방송 시청하기" }).getAttribute(
       "href",
@@ -53,8 +67,9 @@ describe("LiveCard", () => {
       "hover:border-brand",
     );
     expect(
-      screen.getByRole("img", { name: "한 줄 방송 제목 방송 썸네일" })
-        .className,
+      screen
+        .getByRole("img", { name: "한 줄 방송 제목 방송 썸네일" })
+        .querySelector("div[aria-hidden='true']")?.className,
     ).toContain("dark:group-hover:brightness-105");
     expect(
       screen.getByRole("link", { name: "스트리머 방송 시청하기" })
@@ -67,14 +82,10 @@ describe("LiveCard", () => {
   });
 
   it("RP 정보가 있으면 RP명과 스트리머명을 순서대로 표시함", () => {
-    const { unmount } = render(
-      <LiveCard
-        stream={{
-          ...stream,
-          character: { ...stream.character, rpName: "RP 이름" },
-        }}
-      />,
-    );
+    const { unmount } = renderLiveCard({
+      ...stream,
+      character: { ...stream.character, rpName: "RP 이름" },
+    });
 
     expect(screen.getByText("RP 이름")).toBeTruthy();
     expect(screen.getAllByText("스트리머")[0].className).toContain(
@@ -85,28 +96,24 @@ describe("LiveCard", () => {
   });
 
   it("일반 surface에서는 라이트 모드용 고대비 배지 스타일을 사용함", () => {
-    const { unmount } = render(
-      <LiveCard
-        stream={{
-          ...stream,
-          character: {
-            ...stream.character,
-            affiliations: [
-              {
-                id: "ems",
-                slug: "ems",
-                name: "EMS",
-                category: "public-service",
-                role: "병원장",
-                isPrimary: true,
-                displayOrder: 1,
-                isLeader: true,
-              },
-            ],
+    const { unmount } = renderLiveCard({
+      ...stream,
+      character: {
+        ...stream.character,
+        affiliations: [
+          {
+            id: "ems",
+            slug: "ems",
+            name: "EMS",
+            category: "public-service",
+            role: "병원장",
+            isPrimary: true,
+            displayOrder: 1,
+            isLeader: true,
           },
-        }}
-      />,
-    );
+        ],
+      },
+    });
 
     for (const badge of [screen.getByText("EMS"), screen.getByText("병원장 ✦")]) {
       expect(badge.className).toContain("bg-job-ems/15");

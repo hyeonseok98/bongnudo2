@@ -4,6 +4,8 @@ import {
   getOrderedAffiliations,
   getOrderedStreamerAffiliations,
 } from "@/features/characters/character";
+import { getDisplayName } from "@/features/rp-mode/rp-mode";
+import { useRpModeSettings } from "@/providers/rp-mode-provider";
 import { cn } from "@/utils/cn";
 
 import type { CharacterDirectoryItem } from "../_utils/character-directory";
@@ -11,23 +13,33 @@ import { CharacterAvatar } from "./character-avatar";
 
 const DESKTOP_LIST_COLUMNS =
   "grid-cols-[3rem_minmax(5rem,0.65fr)_minmax(6rem,0.9fr)_minmax(14rem,2.2fr)_minmax(6rem,0.8fr)_minmax(7rem,1fr)]";
+const DESKTOP_RP_MODE_LIST_COLUMNS =
+  "grid-cols-[3rem_minmax(6rem,0.9fr)_minmax(14rem,2.2fr)_minmax(6rem,0.8fr)_minmax(7rem,1fr)]";
 
 interface CharacterListProps {
   items: CharacterDirectoryItem[];
 }
 
 export function CharacterList({ items }: CharacterListProps) {
+  const { isRpMode } = useRpModeSettings();
+  const isRpDirectory = items[0]?.kind === "rp";
+  const desktopListColumns = isRpMode
+    ? DESKTOP_RP_MODE_LIST_COLUMNS
+    : DESKTOP_LIST_COLUMNS;
+
   return (
     <div className="overflow-hidden rounded-xl border border-default bg-surface-raised">
       <div
         className={cn(
           "hidden items-center gap-4 border-b border-default bg-surface-muted px-4 py-3 text-caption font-medium text-secondary xl:grid",
-          DESKTOP_LIST_COLUMNS,
+          desktopListColumns,
         )}
       >
         <span>프로필</span>
-        <span>이름</span>
-        <span>RP 이름</span>
+        <span>{isRpDirectory ? "RP 이름" : "스트리머명"}</span>
+        {!isRpMode ? (
+          <span>{isRpDirectory ? "스트리머명" : "RP 이름"}</span>
+        ) : null}
         <span>현재 소속</span>
         <span>직책</span>
         <span>현실 소속</span>
@@ -50,6 +62,11 @@ export function CharacterList({ items }: CharacterListProps) {
           const streamerAffiliationNames = streamerAffiliations
             .map((affiliation) => affiliation.name)
             .join(", ");
+          const displayName = getDisplayName(
+            item,
+            item.kind === "streamer" ? "streamer-card" : "character-card",
+            isRpMode,
+          );
 
           return (
             <li key={`${item.kind}:${item.id}`}>
@@ -61,17 +78,17 @@ export function CharacterList({ items }: CharacterListProps) {
                 <div className="flex items-center gap-3 p-4 xl:hidden">
                   <CharacterAvatar
                     className="size-12 rounded-lg text-body"
-                    name={item.primaryName}
+                    name={displayName.primaryName}
                     profileImageUrl={item.profileImageUrl}
                     sizes="48px"
                   />
                   <div className="min-w-0 flex-1">
                     <p className="truncate text-body-sm font-semibold text-primary">
-                      {item.primaryName}
+                      {displayName.primaryName}
                     </p>
-                    {item.secondaryName ? (
+                    {displayName.secondaryName ? (
                       <p className="truncate text-body-sm text-secondary">
-                      {item.secondaryName}
+                        {displayName.secondaryName}
                       </p>
                     ) : null}
                     {affiliations.length > 0 ||
@@ -91,21 +108,23 @@ export function CharacterList({ items }: CharacterListProps) {
                 <div
                   className={cn(
                     "hidden items-center gap-4 px-4 py-3 text-body-sm xl:grid",
-                    DESKTOP_LIST_COLUMNS,
+                    desktopListColumns,
                   )}
                 >
                   <CharacterAvatar
                     className="size-10 rounded-lg text-body-sm"
-                    name={item.primaryName}
+                    name={displayName.primaryName}
                     profileImageUrl={item.profileImageUrl}
                     sizes="40px"
                   />
                   <span className="truncate font-medium text-primary">
-                    {item.primaryName}
+                    {displayName.primaryName}
                   </span>
-                  <span className="truncate text-secondary">
-                    {item.secondaryName ?? "-"}
-                  </span>
+                  {!isRpMode ? (
+                    <span className="truncate text-secondary">
+                      {displayName.secondaryName ?? "-"}
+                    </span>
+                  ) : null}
                   <span className="truncate text-secondary">
                     {affiliationNames || "-"}
                   </span>

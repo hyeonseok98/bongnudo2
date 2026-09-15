@@ -6,6 +6,7 @@ import {
   Cake,
   CalendarDays,
   ChevronRight,
+  Eye,
   ExternalLink,
   FileText,
   History,
@@ -18,7 +19,7 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import type { ReactNode } from "react";
+import { useState, type ReactNode } from "react";
 
 import { Badge } from "@/components/ui/badge";
 import { ThemeImage } from "@/components/ui/theme-image";
@@ -238,15 +239,7 @@ function RpDetail({
     {
       icon: UserRound,
       label: "스트리머명",
-      value: (
-        <Link
-          className="cursor-pointer transition-colors hover:text-brand-text"
-          href={streamerHref}
-          replace
-        >
-          {character.streamerName}
-        </Link>
-      ),
+      value: <RevealedStreamerName streamerName={character.streamerName} />,
     },
     { icon: UsersRound, label: "RP 소속", value: affiliation?.name ?? "-" },
     { icon: BriefcaseBusiness, label: "직책", value: affiliation?.role ?? "-" },
@@ -283,6 +276,28 @@ function RpDetail({
         </div>
       }
     />
+  );
+}
+
+function RevealedStreamerName({ streamerName }: { streamerName: string }) {
+  const [isRevealed, setIsRevealed] = useState(false);
+
+  if (isRevealed) {
+    return <span>{streamerName}</span>;
+  }
+
+  return (
+    <button
+      aria-label="스트리머명 공개"
+      className="inline-flex cursor-pointer items-center gap-2 rounded-md text-primary transition-colors hover:text-brand-text focus-visible:border-focus-ring"
+      type="button"
+      onClick={() => setIsRevealed(true)}
+    >
+      <span aria-hidden="true" className="tracking-[0.2em]">
+        ██████
+      </span>
+      <Eye aria-hidden="true" className="size-4" />
+    </button>
   );
 }
 

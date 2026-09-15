@@ -1,7 +1,14 @@
 "use client";
 
 import { Popover } from "@base-ui/react/popover";
-import { ChevronDown, LogOut, Menu, Moon, Sun } from "lucide-react";
+import {
+  ChevronDown,
+  LogOut,
+  Menu,
+  Moon,
+  SlidersHorizontal,
+  Sun,
+} from "lucide-react";
 import { useTheme } from "next-themes";
 import Image from "next/image";
 import Link from "next/link";
@@ -17,6 +24,7 @@ import {
 
 import { Button, buttonVariants } from "@/components/ui/button";
 import type { AuthenticatedUser } from "@/features/auth/session";
+import { useRpModeSettings } from "@/providers/rp-mode-provider";
 import { useSidebar } from "@/providers/sidebar-provider";
 
 export function Header({
@@ -25,6 +33,12 @@ export function Header({
   currentUser: AuthenticatedUser | null;
 }) {
   const { isOpen, isMobileOpen, isMobile, toggleSidebar } = useSidebar();
+  const {
+    isLiveThumbnailBlurEnabled,
+    isRpMode,
+    setIsLiveThumbnailBlurEnabled,
+    setIsRpMode,
+  } = useRpModeSettings();
   const { resolvedTheme, setTheme } = useTheme();
   const router = useRouter();
   const [logoutError, setLogoutError] = useState<string | null>(null);
@@ -126,6 +140,59 @@ export function Header({
         className="header-account-menu ml-auto flex min-w-0 items-center gap-2"
         data-slot="header-account-menu"
       >
+        <Popover.Root>
+          <Popover.Trigger className="flex h-9 shrink-0 cursor-pointer items-center gap-1 rounded-lg border border-default px-2 text-body-sm font-semibold text-primary transition-[background-color,border-color] duration-default hover:border-brand/45 hover:bg-surface-muted focus-visible:border-focus-ring motion-reduce:transition-none">
+            <SlidersHorizontal
+              aria-hidden="true"
+              className="size-4 text-brand-text"
+            />
+            <span className="hidden sm:inline">
+              RP 모드 {isRpMode ? "ON" : "OFF"}
+            </span>
+            <span className="sr-only">RP 모드 설정</span>
+            <ChevronDown aria-hidden="true" className="size-4 text-secondary" />
+          </Popover.Trigger>
+          <Popover.Portal>
+            <Popover.Positioner
+              align="end"
+              className="z-popover"
+              collisionPadding={12}
+              side="bottom"
+              sideOffset={8}
+            >
+              <Popover.Popup className="w-64 rounded-lg border border-default bg-surface-raised p-3 shadow-lg outline-none">
+                <Popover.Title className="text-body-sm font-semibold text-primary">
+                  RP 모드 설정
+                </Popover.Title>
+                <p className="mt-1 text-caption text-secondary">
+                  표시 이름과 LIVE 썸네일을 설정합니다.
+                </p>
+                <div className="mt-3 space-y-2">
+                  <RpModeSettingButton
+                    description="RP 이름을 중심으로 표시합니다."
+                    isEnabled={isRpMode}
+                    label="RP 모드"
+                    onClick={() => setIsRpMode(!isRpMode)}
+                  />
+                  <RpModeSettingButton
+                    description={
+                      isRpMode
+                        ? "LIVE 썸네일을 흐리게 표시합니다."
+                        : "RP 모드가 켜져 있을 때 적용됩니다."
+                    }
+                    isEnabled={isLiveThumbnailBlurEnabled}
+                    label="LIVE 썸네일 흐리기"
+                    onClick={() =>
+                      setIsLiveThumbnailBlurEnabled(
+                        !isLiveThumbnailBlurEnabled,
+                      )
+                    }
+                  />
+                </div>
+              </Popover.Popup>
+            </Popover.Positioner>
+          </Popover.Portal>
+        </Popover.Root>
         <Button
           aria-label={isDarkMode ? "라이트 모드로 전환" : "다크 모드로 전환"}
           aria-pressed={isDarkMode}
@@ -194,5 +261,44 @@ export function Header({
         )}
       </div>
     </header>
+  );
+}
+
+function RpModeSettingButton({
+  description,
+  isEnabled,
+  label,
+  onClick,
+}: {
+  description: string;
+  isEnabled: boolean;
+  label: string;
+  onClick: () => void;
+}) {
+  return (
+    <button
+      aria-pressed={isEnabled}
+      className="flex w-full cursor-pointer items-center justify-between gap-3 rounded-lg border border-default bg-background/50 px-3 py-2.5 text-left transition-[background-color,border-color] duration-default hover:border-brand/45 hover:bg-brand/5 focus-visible:border-focus-ring"
+      type="button"
+      onClick={onClick}
+    >
+      <span>
+        <span className="block text-body-sm font-medium text-primary">
+          {label}
+        </span>
+        <span className="mt-0.5 block text-caption text-secondary">
+          {description}
+        </span>
+      </span>
+      <span
+        className={`rounded-md px-2 py-1 text-caption font-semibold ${
+          isEnabled
+            ? "bg-brand/15 text-brand-text"
+            : "bg-surface-muted text-secondary"
+        }`}
+      >
+        {isEnabled ? "ON" : "OFF"}
+      </span>
+    </button>
   );
 }
