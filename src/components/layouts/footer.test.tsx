@@ -15,7 +15,7 @@ describe("Footer", () => {
   beforeEach(() => vi.clearAllMocks());
 
   it("일반 페이지에는 정책 문서 링크를 표시함", () => {
-    mocks.usePathname.mockReturnValue("/timeline");
+    mocks.usePathname.mockReturnValue("/live");
 
     render(<Footer />);
 

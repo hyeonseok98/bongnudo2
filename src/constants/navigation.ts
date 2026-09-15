@@ -2,7 +2,7 @@ import {
   BookOpen,
   Building2,
   CirclePlay,
-  Clock,
+  FilePenLine,
   Heart,
   House,
   Radio,
@@ -30,7 +30,6 @@ export const SIDEBAR_NAV: SidebarNavigationGroup[] = [
     label: "실시간",
     items: [
       { label: "LIVE", href: "/live", icon: Radio },
-      { label: "타임라인", icon: Clock, href: "/timeline" },
     ],
   },
   {
@@ -50,6 +49,7 @@ export const SIDEBAR_NAV: SidebarNavigationGroup[] = [
   {
     label: "봉누도2 공식",
     items: [
+      { label: "제보하기", href: "/reports", icon: FilePenLine },
       {
         label: "공식 위키",
         href: "https://bongnudo.super.site/",

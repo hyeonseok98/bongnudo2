@@ -73,6 +73,7 @@ supabase/migrations/*
 !supabase/migrations/20260914005623_polish_timeline_product.sql
 !supabase/migrations/20260914150747_add_season_participant_full_body_image_key.sql
 !supabase/migrations/20260914195955_optimize_timeline_participant_search.sql
+!supabase/migrations/20260915111131_create_season_days.sql
 supabase/.temp/
 
 # test

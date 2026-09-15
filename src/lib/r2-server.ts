@@ -16,7 +16,7 @@ import {
 import { ReportRequestError } from "@/features/reports/report-validation";
 
 const REPORT_UPLOAD_EXPIRES_IN_SECONDS = 5 * 60;
-const REPORT_UPLOAD_PREFIX = "timeline/tmp";
+const REPORT_UPLOAD_PREFIX = "reports/tmp";
 const REPORT_UPLOAD_METADATA_KEY = "uploader-id";
 
 interface R2Configuration {

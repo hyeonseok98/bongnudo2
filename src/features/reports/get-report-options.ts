@@ -9,7 +9,7 @@ export async function getReportOptions(): Promise<ReportOptions> {
   const categoriesResult = await supabase
     .from("report_categories")
     .select("id, name, report_type, slug")
-    .in("report_type", ["timeline", "bug", "idea"])
+    .in("report_type", ["bug", "idea"])
     .eq("is_active", true)
     .order("report_type", { ascending: true })
     .order("sort_order", { ascending: true });
@@ -22,22 +22,20 @@ export async function getReportOptions(): Promise<ReportOptions> {
 
   return {
     categories: categoriesResult.data.flatMap((category) =>
-      !isUserReportType(category.report_type) ||
-      (category.report_type === "timeline" &&
-        ["job-economy", "notice-guide"].includes(category.slug))
-        ? []
-        : [
+      isUserReportType(category.report_type)
+        ? [
             {
               id: category.id,
               name: category.name,
               reportType: category.report_type,
               slug: category.slug,
             },
-          ],
+          ]
+        : [],
     ),
   };
 }
 
 function isUserReportType(value: string): value is UserReportType {
-  return value === "timeline" || value === "bug" || value === "idea";
+  return value === "bug" || value === "idea";
 }

@@ -6,7 +6,7 @@ export function HomeDirectoryLink({
   href,
 }: {
   children: string;
-  href: "/characters" | "/live" | "/organizations" | "/timeline";
+  href: "/characters" | "/live" | "/organizations";
 }) {
   return (
     <Link

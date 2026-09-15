@@ -7,7 +7,7 @@ const reportOptionsResponseSchema: z.ZodType<ReportOptions> = z.object({
     z.object({
       id: z.string().uuid(),
       name: z.string(),
-      reportType: z.enum(["timeline", "bug", "idea"]),
+      reportType: z.enum(["bug", "idea"]),
       slug: z.string(),
     }),
   ),

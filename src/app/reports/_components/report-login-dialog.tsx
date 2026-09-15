@@ -6,17 +6,11 @@ import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 
 interface ReportLoginDialogProps {
-  intent: "report" | "correction";
   onClose: () => void;
 }
 
-export function ReportLoginDialog({
-  intent,
-  onClose,
-}: ReportLoginDialogProps) {
+export function ReportLoginDialog({ onClose }: ReportLoginDialogProps) {
   const router = useRouter();
-  const actionDescription =
-    intent === "report" ? "제보를" : "수정 요청을";
 
   function handleLogin(): void {
     const returnTo = `${window.location.pathname}${window.location.search}${window.location.hash}`;
@@ -37,8 +31,7 @@ export function ReportLoginDialog({
             로그인이 필요합니다
           </DialogPrimitive.Title>
           <DialogPrimitive.Description className="mt-2 text-body-sm text-secondary">
-            {actionDescription} 작성하려면 로그인해야 합니다. 로그인 페이지로
-            이동하시겠습니까?
+            제보를 작성하려면 로그인해야 합니다. 로그인 페이지로 이동하시겠습니까?
           </DialogPrimitive.Description>
           <div className="mt-5 flex justify-end gap-2">
             <Button onClick={onClose} variant="outline">

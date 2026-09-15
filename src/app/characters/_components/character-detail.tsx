@@ -62,8 +62,6 @@ interface DetailVisualAssets {
   light: CharacterAffiliationDetailAssets;
 }
 
-const FIRST_ENTRY_DATE = "2026.09.14";
-
 export function CharacterDetail({ kind, identifier }: CharacterDetailProps) {
   const charactersQuery = useCharacters();
 
@@ -215,7 +213,6 @@ function StreamerDetail({
       }
       right={
         <div className="grid content-start gap-4">
-          <TimelinePanel />
           <RpCharactersPanel items={rpItems} />
           <StreamerLinksPanel character={character} />
         </div>
@@ -281,7 +278,6 @@ function RpDetail({
       }
       right={
         <div className="grid content-start gap-4">
-          <TimelinePanel title="주요 사건 타임라인" />
           <RoleHistoryPanel histories={character.roleHistories} />
           <AdditionalInfoPanel />
         </div>
@@ -405,23 +401,6 @@ function ProfileColumn({
         variant="detail"
       />
     </div>
-  );
-}
-
-function TimelinePanel({ title = "주요 타임라인" }: { title?: string }) {
-  return (
-    <DetailPanel icon={CalendarDays} title={title}>
-      <ol className="relative mt-2 min-h-20 pb-1 before:absolute before:bottom-[1.125rem] before:left-1.5 before:top-2 before:w-px before:bg-linear-to-b before:from-brand/70 before:via-brand/35 before:to-border-default">
-        <li className="relative grid grid-cols-[5.75rem_minmax(0,1fr)] gap-3 pl-5 text-body-sm">
-          <span
-            aria-hidden="true"
-            className="absolute left-0 top-1.5 size-3 rounded-full bg-brand ring-4 ring-surface-raised"
-          />
-          <time className="text-secondary">{FIRST_ENTRY_DATE}</time>
-          <p className="font-medium text-primary">봉누도2 최초 입주</p>
-        </li>
-      </ol>
-    </DetailPanel>
   );
 }
 

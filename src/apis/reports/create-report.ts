@@ -2,7 +2,6 @@ import type { ReportRequest } from "@/features/reports/report-validation";
 
 interface CreateReportResponse {
   reportId: string;
-  timelineEventId: string | null;
 }
 
 export async function postReport(

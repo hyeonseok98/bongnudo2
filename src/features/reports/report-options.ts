@@ -1,4 +1,4 @@
-export type UserReportType = "timeline" | "bug" | "idea";
+export type UserReportType = "bug" | "idea";
 
 export interface ReportCategoryOption {
   id: string;

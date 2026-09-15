@@ -4,7 +4,6 @@ import { HomeCharacters } from "./_components/home-characters";
 import { HomeHero } from "./_components/home-hero";
 import { HomeLive } from "./_components/home-live";
 import { HomeOrganizations } from "./_components/home-organizations";
-import { HomeTimelineNotices } from "./_components/home-timeline-notices";
 
 export const metadata: Metadata = {
   title: "봉누록",
@@ -17,7 +16,6 @@ export default function HomePage() {
     <main>
       <HomeHero />
       <div className="space-y-10 py-8 sm:space-y-12 sm:py-10 lg:py-12">
-        <HomeTimelineNotices />
         <HomeLive />
         <HomeCharacters />
         <HomeOrganizations />
