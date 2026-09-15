@@ -488,6 +488,7 @@ function createStreamerAffiliation(
     Pick<StreamerAffiliation, "id" | "slug" | "name">,
 ): StreamerAffiliation {
   return {
+    birthDate: null,
     type: "mcn",
     parentAffiliationId: null,
     isFilterVisible: true,
@@ -542,5 +543,6 @@ function createCharacter({
     streamerAffiliations,
     affiliations,
     roleHistories: [],
+    statedAge: null,
   };
 }

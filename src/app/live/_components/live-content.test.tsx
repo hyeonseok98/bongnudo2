@@ -31,6 +31,7 @@ describe("LiveContent", () => {
     mocks.useCharacters.mockReturnValue({
       data: {
         characters: [{
+          birthDate: null,
           id: "participant-1",
           streamerId: "streamer-1",
           chzzkChannelId: "channel-1",
@@ -42,6 +43,7 @@ describe("LiveContent", () => {
           streamerAffiliations: [],
           affiliations: [],
           roleHistories: [],
+          statedAge: null,
         }],
         streamerAffiliations: [],
       },

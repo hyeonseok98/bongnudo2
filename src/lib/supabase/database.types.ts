@@ -14,6 +14,96 @@ export type Database = {
   }
   public: {
     Tables: {
+      character_career_events: {
+        Row: {
+          created_at: string
+          event_at: string | null
+          event_date: string
+          event_type: string
+          from_organization_id: string | null
+          from_role: string | null
+          id: string
+          note: string | null
+          participant_id: string
+          season_day_id: string | null
+          season_id: number
+          sequence_in_day: number
+          source_url: string | null
+          to_organization_id: string | null
+          to_role: string | null
+        }
+        Insert: {
+          created_at?: string
+          event_at?: string | null
+          event_date: string
+          event_type: string
+          from_organization_id?: string | null
+          from_role?: string | null
+          id?: string
+          note?: string | null
+          participant_id: string
+          season_day_id?: string | null
+          season_id: number
+          sequence_in_day: number
+          source_url?: string | null
+          to_organization_id?: string | null
+          to_role?: string | null
+        }
+        Update: {
+          created_at?: string
+          event_at?: string | null
+          event_date?: string
+          event_type?: string
+          from_organization_id?: string | null
+          from_role?: string | null
+          id?: string
+          note?: string | null
+          participant_id?: string
+          season_day_id?: string | null
+          season_id?: number
+          sequence_in_day?: number
+          source_url?: string | null
+          to_organization_id?: string | null
+          to_role?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "character_career_events_from_organization_same_season_fkey"
+            columns: ["from_organization_id", "season_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id", "season_id"]
+          },
+          {
+            foreignKeyName: "character_career_events_participant_same_season_fkey"
+            columns: ["participant_id", "season_id"]
+            isOneToOne: false
+            referencedRelation: "season_participants"
+            referencedColumns: ["id", "season_id"]
+          },
+          {
+            foreignKeyName: "character_career_events_season_day_same_season_fkey"
+            columns: ["season_day_id", "season_id"]
+            isOneToOne: false
+            referencedRelation: "season_days"
+            referencedColumns: ["id", "season_id"]
+          },
+          {
+            foreignKeyName: "character_career_events_season_id_fkey"
+            columns: ["season_id"]
+            isOneToOne: false
+            referencedRelation: "seasons"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "character_career_events_to_organization_same_season_fkey"
+            columns: ["to_organization_id", "season_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id", "season_id"]
+          },
+        ]
+      }
       job_applications: {
         Row: {
           created_at: string
@@ -763,10 +853,49 @@ export type Database = {
           },
         ]
       }
+      season_days: {
+        Row: {
+          created_at: string
+          day_number: number
+          ends_at: string
+          id: string
+          season_id: number
+          session_date: string
+          starts_at: string
+        }
+        Insert: {
+          created_at?: string
+          day_number: number
+          ends_at: string
+          id?: string
+          season_id: number
+          session_date: string
+          starts_at: string
+        }
+        Update: {
+          created_at?: string
+          day_number?: number
+          ends_at?: string
+          id?: string
+          season_id?: number
+          session_date?: string
+          starts_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "season_days_season_id_fkey"
+            columns: ["season_id"]
+            isOneToOne: false
+            referencedRelation: "seasons"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       season_participants: {
         Row: {
           admission_recruitment_id: string | null
           bio: string | null
+          birth_date: string | null
           created_at: string
           full_body_image_key: string | null
           id: string
@@ -774,11 +903,13 @@ export type Database = {
           portrait_image_source_url: string | null
           rp_name: string | null
           season_id: number
+          stated_age: number | null
           streamer_id: string
         }
         Insert: {
           admission_recruitment_id?: string | null
           bio?: string | null
+          birth_date?: string | null
           created_at?: string
           full_body_image_key?: string | null
           id?: string
@@ -786,11 +917,13 @@ export type Database = {
           portrait_image_source_url?: string | null
           rp_name?: string | null
           season_id: number
+          stated_age?: number | null
           streamer_id: string
         }
         Update: {
           admission_recruitment_id?: string | null
           bio?: string | null
+          birth_date?: string | null
           created_at?: string
           full_body_image_key?: string | null
           id?: string
@@ -798,6 +931,7 @@ export type Database = {
           portrait_image_source_url?: string | null
           rp_name?: string | null
           season_id?: number
+          stated_age?: number | null
           streamer_id?: string
         }
         Relationships: [
@@ -1387,6 +1521,7 @@ export type Database = {
         Args: { p_limit?: number; p_query: string }
         Returns: {
           organization_name: string
+          profile_image_key: string
           role: string
           rp_name: string
           season_participant_id: string

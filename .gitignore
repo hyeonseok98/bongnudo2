@@ -53,10 +53,14 @@ CLAUDE.md
 !/tools/
 /tools/*
 !/tools/upload-rp-profile-images.mjs
+!/tools/bongnudo2-excel-data.mjs
+!/tools/bongnudo2-sync-plan.mjs
 /data
 
 # server
 supabase/migrations/*
+!supabase/migrations/20260915151221_create_character_career_events.sql
+!supabase/migrations/20260915153816_allow_public_season_days_read.sql
 !supabase/migrations/20260911052508_create_live_viewer_snapshots.sql
 !supabase/migrations/20260912070700_create_chzzk_oauth_users.sql
 !supabase/migrations/20260912071651_tighten_chzzk_oauth_table_privileges.sql

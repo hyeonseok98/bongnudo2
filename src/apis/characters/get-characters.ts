@@ -23,6 +23,8 @@ function createCharactersQuery() {
     .select(`
       id,
       rp_name,
+      birth_date,
+      stated_age,
       full_body_image_key,
       portrait_image_key,
       seasons!season_participants_season_id_fkey!inner (),
@@ -109,6 +111,7 @@ export function toCharacterListItem(
   participant: CharacterParticipant,
 ): CharacterListItem {
   return {
+    birthDate: participant.birth_date,
     id: participant.id,
     streamerId: participant.streamer.id,
     chzzkChannelId: participant.streamer.chzzk_channel_id,
@@ -130,6 +133,7 @@ export function toCharacterListItem(
       participant.memberships.flatMap(toCurrentCharacterAffiliation),
     ),
     roleHistories: participant.memberships.flatMap(toCharacterRoleHistories),
+    statedAge: participant.stated_age,
   };
 }
 

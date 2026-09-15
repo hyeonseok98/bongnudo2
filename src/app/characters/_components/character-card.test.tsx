@@ -8,6 +8,7 @@ import { buildCharacterDirectoryItems } from "../_utils/character-directory";
 import { CharacterCard } from "./character-card";
 
 const character: CharacterListItem = {
+  birthDate: null,
   id: "participant",
   streamerId: "streamer",
   chzzkChannelId: "channel",
@@ -53,6 +54,7 @@ const character: CharacterListItem = {
     },
   ],
   roleHistories: [],
+  statedAge: null,
 };
 
 const item = buildCharacterDirectoryItems([character], "streamer")[0]!;

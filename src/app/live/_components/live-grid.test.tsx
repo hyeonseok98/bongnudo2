@@ -16,6 +16,7 @@ const stream: LiveStream = {
     channelName: "방송 채널명",
   },
   character: {
+    birthDate: null,
     id: "participant-one",
     streamerId: "streamer-one",
     chzzkChannelId: "participant-one-channel-id",
@@ -27,6 +28,7 @@ const stream: LiveStream = {
     streamerAffiliations: [],
     affiliations: [],
     roleHistories: [],
+    statedAge: null,
   },
 };
 

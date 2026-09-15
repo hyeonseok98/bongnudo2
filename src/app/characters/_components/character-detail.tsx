@@ -34,6 +34,8 @@ import {
   type CharacterListItem,
   type CharacterRoleHistory,
 } from "@/features/characters/character";
+import type { CharacterCareerEvent } from "@/features/characters/character-career";
+import { useCharacterCareerEvents } from "../_hooks/use-character-career-events";
 import { useCharacters } from "../_hooks/use-characters";
 import {
   buildCharacterDirectoryItems,
@@ -243,9 +245,12 @@ function RpDetail({
     },
     { icon: UsersRound, label: "RP 소속", value: affiliation?.name ?? "-" },
     { icon: BriefcaseBusiness, label: "직책", value: affiliation?.role ?? "-" },
-    { icon: UserRound, label: "나이", value: "-" },
-    { icon: Cake, label: "생일", value: "-" },
-    { icon: UserRound, label: "성별", value: "-" },
+    ...(character.statedAge === null
+      ? []
+      : [{ icon: UserRound, label: "나이", value: `${character.statedAge}세` }]),
+    ...(character.birthDate === null
+      ? []
+      : [{ icon: Cake, label: "생일", value: formatDate(character.birthDate) }]),
   ];
 
   return (
@@ -271,7 +276,10 @@ function RpDetail({
       }
       right={
         <div className="grid content-start gap-4">
-          <RoleHistoryPanel histories={character.roleHistories} />
+          <CareerHistoryPanel
+            fallbackHistories={character.roleHistories}
+            participantId={character.id}
+          />
           <AdditionalInfoPanel />
         </div>
       }
@@ -507,6 +515,50 @@ function StreamerLinksPanel({ character }: { character: CharacterListItem }) {
   );
 }
 
+function CareerHistoryPanel({
+  fallbackHistories,
+  participantId,
+}: {
+  fallbackHistories: CharacterRoleHistory[];
+  participantId: string;
+}) {
+  const careerEventsQuery = useCharacterCareerEvents(participantId);
+
+  if (careerEventsQuery.isError) {
+    throw careerEventsQuery.error;
+  }
+
+  if (careerEventsQuery.data && careerEventsQuery.data.length > 0) {
+    return <CareerEventsPanel events={careerEventsQuery.data} />;
+  }
+
+  return <RoleHistoryPanel histories={fallbackHistories} />;
+}
+
+function CareerEventsPanel({ events }: { events: CharacterCareerEvent[] }) {
+  return (
+    <DetailPanel icon={History} title="직책/소속 이력">
+      <ol className="divide-y divide-border-default overflow-hidden rounded-lg border border-default">
+        {events.map((event) => (
+          <li className="px-4 py-3" key={event.id}>
+            <time className="text-caption font-medium text-secondary">
+              {formatCareerEventDateTime(event)}
+            </time>
+            <p className="mt-1 text-body-sm font-semibold text-primary">
+              {formatCareerEventSummary(event)}
+            </p>
+            {event.note ? (
+              <p className="mt-1 text-caption leading-relaxed text-secondary">
+                {event.note}
+              </p>
+            ) : null}
+          </li>
+        ))}
+      </ol>
+    </DetailPanel>
+  );
+}
+
 function RoleHistoryPanel({
   histories,
 }: {
@@ -650,6 +702,42 @@ function formatHistoryPeriod(history: CharacterRoleHistory) {
 
 function formatDate(date: string | null) {
   return date?.replaceAll("-", ".") ?? "";
+}
+
+function formatCareerEventDateTime(event: CharacterCareerEvent): string {
+  if (event.eventAt === null) {
+    return formatDate(event.eventDate);
+  }
+
+  const time = new Intl.DateTimeFormat("ko-KR", {
+    hour: "2-digit",
+    hourCycle: "h23",
+    minute: "2-digit",
+    timeZone: "Asia/Seoul",
+  }).format(new Date(event.eventAt));
+
+  return `${formatDate(event.eventDate)} ${time}`;
+}
+
+function formatCareerEventSummary(event: CharacterCareerEvent): string {
+  const fromOrganization = event.fromOrganization?.name ?? "소속 정보 없음";
+  const toOrganization = event.toOrganization?.name ?? "소속 정보 없음";
+  const fromRole = event.fromRole ?? "직책 없음";
+  const toRole = event.toRole ?? "직책 없음";
+
+  switch (event.eventType) {
+    case "join":
+      return `${toOrganization} 입사`;
+    case "leave":
+      return `${fromOrganization} 퇴사`;
+    case "transfer":
+      return `${fromOrganization} → ${toOrganization}${event.toRole ? ` · ${toRole}` : ""}`;
+    case "appoint":
+      return `${toOrganization} ${toRole} 임명`;
+    case "promote":
+    case "demote":
+      return `${fromRole} → ${toRole}`;
+  }
 }
 
 function DetailMessage({ children }: { children: ReactNode }) {

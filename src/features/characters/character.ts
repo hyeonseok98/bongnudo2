@@ -55,6 +55,7 @@ export interface CharacterRoleHistory {
 }
 
 export interface CharacterListItem {
+  birthDate: string | null;
   id: string;
   streamerId: string;
   chzzkChannelId: string | null;
@@ -68,6 +69,7 @@ export interface CharacterListItem {
   streamerAffiliations: CharacterStreamerAffiliation[];
   affiliations: CharacterAffiliation[];
   roleHistories: CharacterRoleHistory[];
+  statedAge: number | null;
 }
 
 export function getOrderedAffiliations(
