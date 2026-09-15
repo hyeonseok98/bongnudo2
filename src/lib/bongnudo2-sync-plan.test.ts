@@ -204,6 +204,52 @@ describe("buildSyncPlan", () => {
     expect(plan.sections.roleHistories.delete).toHaveLength(1);
   });
 
+  it("DB에 없는 스트리머와 시즌 참가자를 생성 대상으로 계산함", () => {
+    const excel = makeExcel({ rpName: "새 RP" });
+    const plan = buildSyncPlan(excel, makeContext(excel, {
+      people: [{
+        person: excel.people[0],
+        streamer: null,
+        participant: null,
+      }],
+    }));
+
+    expect(plan.sections.streamers.create).toEqual([
+      expect.objectContaining({
+        key: "channel",
+        desired: expect.objectContaining({
+          name: "테스트",
+          slug: "streamer-channel",
+        }),
+      }),
+    ]);
+    expect(plan.sections.participants.create).toEqual([
+      expect.objectContaining({
+        key: "channel",
+        desired: { chzzkChannelId: "channel", rpName: "새 RP" },
+      }),
+    ]);
+  });
+
+  it("기존 스트리머에 대상 시즌 참가자가 없으면 참가자만 생성 대상으로 계산함", () => {
+    const excel = makeExcel();
+    const plan = buildSyncPlan(excel, makeContext(excel, {
+      people: [{
+        person: excel.people[0],
+        streamer: {
+          id: "streamer",
+          name: "테스트",
+          chzzk_channel_id: "channel",
+          profile_image_key: null,
+        },
+        participant: null,
+      }],
+    }));
+
+    expect(plan.sections.streamers.create).toHaveLength(0);
+    expect(plan.sections.participants.create).toHaveLength(1);
+  });
+
   it("면접 결과 변경을 지원 현황 수정으로 계산함", () => {
     const excel = makeExcel();
     excel.recruitments = [{ key: "recruitment", organization: "공무직 조직", title: "모집", type: "initial", round: 1, status: "closed", notes: null }];
