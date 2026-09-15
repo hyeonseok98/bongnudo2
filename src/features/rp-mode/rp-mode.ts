@@ -21,6 +21,7 @@ export interface DisplayName {
 export type DisplayNameContext =
   | "streamer-card"
   | "character-card"
+  | "clip-card"
   | "live"
   | "generated-text";
 
@@ -55,7 +56,7 @@ export function getDisplayName(
         };
   }
 
-  if (context === "live") {
+  if (context === "live" || context === "clip-card") {
     return isRpMode
       ? {
           primaryName: entity.rpName ?? RP_NAME_UNAVAILABLE,

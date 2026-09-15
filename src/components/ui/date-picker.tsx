@@ -28,7 +28,8 @@ interface DatePickerProps {
   label: string;
   max: string;
   onValueChange: (value: string) => void;
-  value: string;
+  placeholder?: string;
+  value: string | null;
 }
 
 const WEEKDAYS = ["일", "월", "화", "수", "목", "금", "토"];
@@ -39,10 +40,11 @@ export function DatePicker({
   label,
   max,
   onValueChange,
+  placeholder = "날짜 선택",
   value,
 }: DatePickerProps) {
-  const selectedDate = parseDate(value);
   const maxDate = parseDate(max);
+  const selectedDate = value ? parseDate(value) : maxDate;
   const [visibleMonth, setVisibleMonth] = useState(() =>
     startOfMonth(selectedDate),
   );
@@ -90,7 +92,7 @@ export function DatePicker({
           className,
         )}
       >
-        <span className="tabular-nums">{value}</span>
+        <span className="tabular-nums">{value ?? placeholder}</span>
         <CalendarDays aria-hidden="true" className="size-4 shrink-0 text-tertiary" />
       </Popover.Trigger>
       <Popover.Portal>

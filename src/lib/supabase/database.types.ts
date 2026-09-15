@@ -104,6 +104,95 @@ export type Database = {
           },
         ]
       }
+      clips: {
+        Row: {
+          clip_created_at: string
+          clip_url: string
+          collected_at: string
+          created_at: string
+          duration_seconds: number | null
+          id: string
+          provider: string
+          provider_clip_id: string
+          provider_video_id: string | null
+          season_day_id: string | null
+          season_id: number
+          season_participant_id: string | null
+          streamer_id: string
+          thumbnail_url: string | null
+          title: string
+          updated_at: string
+          view_count: number | null
+        }
+        Insert: {
+          clip_created_at: string
+          clip_url: string
+          collected_at: string
+          created_at?: string
+          duration_seconds?: number | null
+          id?: string
+          provider?: string
+          provider_clip_id: string
+          provider_video_id?: string | null
+          season_day_id?: string | null
+          season_id: number
+          season_participant_id?: string | null
+          streamer_id: string
+          thumbnail_url?: string | null
+          title: string
+          updated_at?: string
+          view_count?: number | null
+        }
+        Update: {
+          clip_created_at?: string
+          clip_url?: string
+          collected_at?: string
+          created_at?: string
+          duration_seconds?: number | null
+          id?: string
+          provider?: string
+          provider_clip_id?: string
+          provider_video_id?: string | null
+          season_day_id?: string | null
+          season_id?: number
+          season_participant_id?: string | null
+          streamer_id?: string
+          thumbnail_url?: string | null
+          title?: string
+          updated_at?: string
+          view_count?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "clips_participant_same_season_fkey"
+            columns: ["season_participant_id", "season_id"]
+            isOneToOne: false
+            referencedRelation: "season_participants"
+            referencedColumns: ["id", "season_id"]
+          },
+          {
+            foreignKeyName: "clips_season_day_same_season_fkey"
+            columns: ["season_day_id", "season_id"]
+            isOneToOne: false
+            referencedRelation: "season_days"
+            referencedColumns: ["id", "season_id"]
+          },
+          {
+            foreignKeyName: "clips_season_id_fkey"
+            columns: ["season_id"]
+            isOneToOne: false
+            referencedRelation: "seasons"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "clips_streamer_id_fkey"
+            columns: ["streamer_id"]
+            isOneToOne: false
+            referencedRelation: "streamers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       job_applications: {
         Row: {
           created_at: string
@@ -578,6 +667,98 @@ export type Database = {
           slug?: string
         }
         Relationships: []
+      }
+      replays: {
+        Row: {
+          collected_at: string
+          created_at: string
+          duration_seconds: number | null
+          id: string
+          live_started_at: string | null
+          provider: string
+          provider_video_id: string
+          provider_video_no: number | null
+          published_at: string | null
+          replay_url: string
+          season_day_id: string | null
+          season_id: number
+          season_participant_id: string | null
+          streamer_id: string
+          thumbnail_url: string | null
+          title: string
+          updated_at: string
+          view_count: number | null
+        }
+        Insert: {
+          collected_at: string
+          created_at?: string
+          duration_seconds?: number | null
+          id?: string
+          live_started_at?: string | null
+          provider?: string
+          provider_video_id: string
+          provider_video_no?: number | null
+          published_at?: string | null
+          replay_url: string
+          season_day_id?: string | null
+          season_id: number
+          season_participant_id?: string | null
+          streamer_id: string
+          thumbnail_url?: string | null
+          title: string
+          updated_at?: string
+          view_count?: number | null
+        }
+        Update: {
+          collected_at?: string
+          created_at?: string
+          duration_seconds?: number | null
+          id?: string
+          live_started_at?: string | null
+          provider?: string
+          provider_video_id?: string
+          provider_video_no?: number | null
+          published_at?: string | null
+          replay_url?: string
+          season_day_id?: string | null
+          season_id?: number
+          season_participant_id?: string | null
+          streamer_id?: string
+          thumbnail_url?: string | null
+          title?: string
+          updated_at?: string
+          view_count?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "replays_participant_same_season_fkey"
+            columns: ["season_participant_id", "season_id"]
+            isOneToOne: false
+            referencedRelation: "season_participants"
+            referencedColumns: ["id", "season_id"]
+          },
+          {
+            foreignKeyName: "replays_season_day_same_season_fkey"
+            columns: ["season_day_id", "season_id"]
+            isOneToOne: false
+            referencedRelation: "season_days"
+            referencedColumns: ["id", "season_id"]
+          },
+          {
+            foreignKeyName: "replays_season_id_fkey"
+            columns: ["season_id"]
+            isOneToOne: false
+            referencedRelation: "seasons"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "replays_streamer_id_fkey"
+            columns: ["streamer_id"]
+            isOneToOne: false
+            referencedRelation: "streamers"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       report_categories: {
         Row: {

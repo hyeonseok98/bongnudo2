@@ -1,0 +1,161 @@
+"use client";
+
+import {
+  parseAsArrayOf,
+  parseAsInteger,
+  parseAsString,
+  parseAsStringLiteral,
+  useQueryStates,
+} from "nuqs";
+
+import type { HierarchicalFilterSelection } from "@/components/filters/hierarchical-filter";
+import {
+  CLIP_SORT_VALUES,
+  CLIP_VIEW_VALUES,
+  type ClipListFilters,
+  type ClipSort,
+  type ClipView,
+} from "@/features/clips/clip";
+
+const clipQueryParsers = {
+  q: parseAsString.withDefault(""),
+  groups: parseAsArrayOf(parseAsString).withDefault([]),
+  jobs: parseAsArrayOf(parseAsString).withDefault([]),
+  participant: parseAsString,
+  day: parseAsInteger,
+  date: parseAsString,
+  sort: parseAsStringLiteral(CLIP_SORT_VALUES).withDefault("latest"),
+  view: parseAsStringLiteral(CLIP_VIEW_VALUES).withDefault("timeline"),
+};
+
+export interface ClipDirectory {
+  date: string | null;
+  day: number | null;
+  filters: ClipListFilters;
+  groupSelection: HierarchicalFilterSelection;
+  jobSelection: HierarchicalFilterSelection;
+  participantId: string | null;
+  query: string;
+  sort: ClipSort;
+  view: ClipView;
+  applyGroups: (selection: HierarchicalFilterSelection) => void;
+  applyJobs: (selection: HierarchicalFilterSelection) => void;
+  changeDate: (date: string | null) => void;
+  changeDay: (day: number | null) => void;
+  changeParticipant: (participantId: string | null) => void;
+  changeQuery: (query: string) => void;
+  changeSort: (sort: ClipSort) => void;
+  changeView: (view: ClipView) => void;
+  resetFilters: () => void;
+}
+
+export function useClipDirectory(): ClipDirectory {
+  const [{ q, groups, jobs, participant, day, date, sort, view }, setQueryState] =
+    useQueryStates(clipQueryParsers);
+
+  function changeQuery(query: string) {
+    void setQueryState({ q: query || null }, { history: "replace" });
+  }
+
+  function applyGroups(selection: HierarchicalFilterSelection) {
+    void setQueryState(
+      { groups: toFilterValues(selection) },
+      { history: "replace" },
+    );
+  }
+
+  function applyJobs(selection: HierarchicalFilterSelection) {
+    void setQueryState(
+      { jobs: toFilterValues(selection) },
+      { history: "replace" },
+    );
+  }
+
+  function changeParticipant(participantId: string | null) {
+    void setQueryState({ participant: participantId }, { history: "replace" });
+  }
+
+  function changeDay(nextDay: number | null) {
+    void setQueryState(
+      { date: null, day: nextDay },
+      { history: "replace" },
+    );
+  }
+
+  function changeDate(nextDate: string | null) {
+    void setQueryState(
+      { date: nextDate, day: null },
+      { history: "replace" },
+    );
+  }
+
+  function changeSort(nextSort: ClipSort) {
+    void setQueryState(
+      { sort: nextSort === "latest" ? null : nextSort },
+      { history: "replace" },
+    );
+  }
+
+  function changeView(nextView: ClipView) {
+    void setQueryState(
+      {
+        sort: nextView === "people" ? null : undefined,
+        view: nextView === "timeline" ? null : nextView,
+      },
+      { history: "replace" },
+    );
+  }
+
+  function resetFilters() {
+    void setQueryState(
+      {
+        q: null,
+        groups: null,
+        jobs: null,
+        participant: null,
+        day: null,
+        date: null,
+      },
+      { history: "replace" },
+    );
+  }
+
+  return {
+    date,
+    day,
+    filters: {
+      date,
+      day,
+      groups,
+      jobs,
+      participantId: participant,
+      query: q,
+      sort,
+    },
+    groupSelection: { ids: groups },
+    jobSelection: { ids: jobs },
+    participantId: participant,
+    query: q,
+    sort,
+    view,
+    applyGroups,
+    applyJobs,
+    changeDate,
+    changeDay,
+    changeParticipant,
+    changeQuery,
+    changeSort,
+    changeView,
+    resetFilters,
+  };
+}
+
+function toFilterValues(
+  selection: HierarchicalFilterSelection,
+): string[] | null {
+  const values = Array.from(
+    new Set(selection.ids.map((id) => id.trim()).filter(Boolean)),
+  );
+
+  return values.length > 0 ? values : null;
+}
