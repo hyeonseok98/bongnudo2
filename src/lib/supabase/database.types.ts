@@ -14,6 +14,200 @@ export type Database = {
   }
   public: {
     Tables: {
+      archive_chapters: {
+        Row: {
+          archive_id: string
+          created_at: string
+          description: string | null
+          id: string
+          sort_order: number
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          archive_id: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          sort_order: number
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          archive_id?: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          sort_order?: number
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "archive_chapters_archive_id_fkey"
+            columns: ["archive_id"]
+            isOneToOne: false
+            referencedRelation: "archives"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      archive_items: {
+        Row: {
+          archive_id: string
+          chapter_id: string
+          clip_id: string
+          created_at: string
+          id: string
+          note: string | null
+          sort_order: number
+          updated_at: string
+        }
+        Insert: {
+          archive_id: string
+          chapter_id: string
+          clip_id: string
+          created_at?: string
+          id?: string
+          note?: string | null
+          sort_order: number
+          updated_at?: string
+        }
+        Update: {
+          archive_id?: string
+          chapter_id?: string
+          clip_id?: string
+          created_at?: string
+          id?: string
+          note?: string | null
+          sort_order?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "archive_items_archive_chapter_fkey"
+            columns: ["archive_id", "chapter_id"]
+            isOneToOne: false
+            referencedRelation: "archive_chapters"
+            referencedColumns: ["archive_id", "id"]
+          },
+          {
+            foreignKeyName: "archive_items_clip_id_fkey"
+            columns: ["clip_id"]
+            isOneToOne: false
+            referencedRelation: "clips"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      archive_revisions: {
+        Row: {
+          archive_id: string
+          created_at: string
+          created_by: string
+          id: string
+          revision_number: number
+          snapshot: Json
+        }
+        Insert: {
+          archive_id: string
+          created_at?: string
+          created_by: string
+          id?: string
+          revision_number: number
+          snapshot: Json
+        }
+        Update: {
+          archive_id?: string
+          created_at?: string
+          created_by?: string
+          id?: string
+          revision_number?: number
+          snapshot?: Json
+        }
+        Relationships: [
+          {
+            foreignKeyName: "archive_revisions_archive_id_fkey"
+            columns: ["archive_id"]
+            isOneToOne: false
+            referencedRelation: "archives"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "archive_revisions_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      archives: {
+        Row: {
+          category: string
+          created_at: string
+          current_revision: number
+          deleted_at: string | null
+          description: string | null
+          edit_policy: string
+          id: string
+          owner_id: string
+          published_at: string | null
+          season_id: number
+          status: string
+          title: string
+          updated_at: string
+          visibility: string
+        }
+        Insert: {
+          category: string
+          created_at?: string
+          current_revision?: number
+          deleted_at?: string | null
+          description?: string | null
+          edit_policy?: string
+          id?: string
+          owner_id: string
+          published_at?: string | null
+          season_id: number
+          status?: string
+          title: string
+          updated_at?: string
+          visibility?: string
+        }
+        Update: {
+          category?: string
+          created_at?: string
+          current_revision?: number
+          deleted_at?: string | null
+          description?: string | null
+          edit_policy?: string
+          id?: string
+          owner_id?: string
+          published_at?: string | null
+          season_id?: number
+          status?: string
+          title?: string
+          updated_at?: string
+          visibility?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "archives_owner_id_fkey"
+            columns: ["owner_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "archives_season_id_fkey"
+            columns: ["season_id"]
+            isOneToOne: false
+            referencedRelation: "seasons"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       character_career_events: {
         Row: {
           created_at: string
@@ -1666,6 +1860,19 @@ export type Database = {
       }
     }
     Functions: {
+      create_archive: {
+        Args: {
+          p_actor_user_id: string
+          p_content: Json
+          p_metadata: Json
+          p_season_id: number
+        }
+        Returns: {
+          archive_id: string
+          current_revision: number
+          snapshot: Json
+        }[]
+      }
       create_report:
         | {
             Args: { p_payload: Json }
@@ -1701,6 +1908,36 @@ export type Database = {
         Args: { p_live_streams: Json; p_refreshed_at: string; p_run_id: string }
         Returns: number
       }
+      restore_archive: {
+        Args: { p_actor_user_id: string; p_archive_id: string }
+        Returns: undefined
+      }
+      restore_archive_revision: {
+        Args: {
+          p_actor_user_id: string
+          p_archive_id: string
+          p_base_revision: number
+          p_revision_number: number
+        }
+        Returns: {
+          archive_id: string
+          current_revision: number
+          snapshot: Json
+        }[]
+      }
+      save_archive_content: {
+        Args: {
+          p_actor_user_id: string
+          p_archive_id: string
+          p_base_revision: number
+          p_content: Json
+        }
+        Returns: {
+          archive_id: string
+          current_revision: number
+          snapshot: Json
+        }[]
+      }
       search_report_participants: {
         Args: { p_limit?: number; p_query: string }
         Returns: {
@@ -1712,9 +1949,26 @@ export type Database = {
           streamer_name: string
         }[]
       }
+      soft_delete_archive: {
+        Args: { p_actor_user_id: string; p_archive_id: string }
+        Returns: undefined
+      }
       try_acquire_live_refresh: {
         Args: { p_lease_seconds?: number; p_run_id: string }
         Returns: boolean
+      }
+      update_archive_metadata: {
+        Args: {
+          p_actor_user_id: string
+          p_archive_id: string
+          p_base_revision: number
+          p_metadata: Json
+        }
+        Returns: {
+          archive_id: string
+          current_revision: number
+          snapshot: Json
+        }[]
       }
     }
     Enums: {
