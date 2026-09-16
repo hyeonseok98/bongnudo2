@@ -65,6 +65,7 @@ export interface ArchiveDetail {
   canEditMetadata: boolean;
   category: ArchiveCategory;
   chapters: ArchiveDetailChapter[];
+  creatorName: string | null;
   currentRevision: number | null;
   description: string | null;
   editPolicy: ArchiveEditPolicy;
@@ -75,6 +76,7 @@ export interface ArchiveDetail {
   structureMode: ArchiveStructureMode | null;
   systemParticipant: ArchiveSystemParticipant | null;
   title: string;
+  updatedAt: string;
   visibility: ArchiveVisibility;
 }
 
@@ -83,8 +85,15 @@ export interface ArchiveDetailChapter {
   id: string;
   items: ArchiveDetailItem[];
   seasonDayId: string | null;
+  seasonDay: ArchiveSeasonDay | null;
   sortOrder: number;
   title: string;
+}
+
+export interface ArchiveSeasonDay {
+  dayNumber: number;
+  id: string;
+  sessionDate: string;
 }
 
 export interface ArchiveDetailItem {
@@ -127,4 +136,11 @@ export interface ArchiveSystemParticipant {
   id: string;
   rpName: string | null;
   streamerName: string;
+}
+
+export interface ArchiveSystemClipSummary {
+  clipCount: number;
+  firstClipCreatedAt: string | null;
+  lastClipCreatedAt: string | null;
+  seasonDays: ArchiveSeasonDay[];
 }

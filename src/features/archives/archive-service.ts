@@ -6,7 +6,7 @@ import type { AuthenticatedUser } from "@/features/auth/session";
 import {
   getClipPageForArchiveParticipant,
 } from "@/features/clips/get-clips";
-import type { ClipCursor, ClipPage } from "@/features/clips/clip";
+import type { ClipCursor, ClipPage, ClipSort } from "@/features/clips/clip";
 import type { Json } from "@/lib/supabase/database.types";
 import { getR2PublicUrl } from "@/lib/r2";
 import { getSupabaseAdminClient } from "@/lib/supabase/server";
@@ -20,6 +20,7 @@ import type {
   ArchiveSaveResult,
   ArchiveStatus,
   ArchiveStructureMode,
+  ArchiveSystemClipSummary,
   ArchiveVisibility,
 } from "./archive";
 import { ArchiveRequestError } from "./archive-error";
@@ -202,7 +203,11 @@ export async function getArchiveDetail(
       edit_policy,
       status,
       current_revision,
+      updated_at,
       deleted_at,
+      owner:users!archives_owner_id_fkey (
+        chzzk_channel_name
+      ),
       system_participant:season_participants!archives_system_participant_same_season_fkey (
         id,
         rp_name,
@@ -233,7 +238,18 @@ export async function getArchiveDetail(
   const [chaptersResult, itemsResult] = await Promise.all([
     supabase
       .from("archive_chapters")
-      .select("id, title, description, sort_order, season_day_id")
+      .select(`
+        id,
+        title,
+        description,
+        sort_order,
+        season_day_id,
+        season_day:season_days!archive_chapters_season_day_id_fkey (
+          id,
+          day_number,
+          session_date
+        )
+      `)
       .eq("archive_id", archive.id)
       .order("sort_order", { ascending: true }),
     supabase
@@ -294,10 +310,18 @@ export async function getArchiveDetail(
       id: chapter.id,
       items: itemsByChapterId.get(chapter.id) ?? [],
       seasonDayId: chapter.season_day_id,
+      seasonDay: chapter.season_day
+        ? {
+            dayNumber: chapter.season_day.day_number,
+            id: chapter.season_day.id,
+            sessionDate: chapter.season_day.session_date,
+          }
+        : null,
       sortOrder: chapter.sort_order,
       title: chapter.title,
     })),
     currentRevision: archive.current_revision,
+    creatorName: archive.owner?.chzzk_channel_name ?? null,
     description: archive.description,
     editPolicy: toArchiveEditPolicy(archive.edit_policy),
     id: archive.id,
@@ -313,6 +337,7 @@ export async function getArchiveDetail(
         }
       : null,
     title: archive.title,
+    updatedAt: archive.updated_at,
     visibility: toArchiveVisibility(archive.visibility),
   };
 }
@@ -358,6 +383,7 @@ export async function getSystemArchiveClipPage(
   archiveId: string,
   dayNumber: number | null,
   cursor: ClipCursor | null,
+  sort: ClipSort,
 ): Promise<ClipPage | null> {
   const supabase = getSupabaseAdminClient();
   const archiveResult = await supabase
@@ -412,7 +438,46 @@ export async function getSystemArchiveClipPage(
     archive.system_participant_id,
     seasonDayId,
     cursor,
+    sort,
   );
+}
+
+export async function getSystemArchiveClipSummary(
+  archiveId: string,
+): Promise<ArchiveSystemClipSummary | null> {
+  const supabase = getSupabaseAdminClient();
+  const result = await supabase.rpc("get_system_archive_clip_summary", {
+    p_archive_id: archiveId,
+  });
+
+  if (result.error) {
+    throw new ArchiveRequestError("시스템 아카이브 정보를 불러오지 못했습니다.", 500, {
+      cause: result.error,
+    });
+  }
+
+  const summaryRows = result.data;
+
+  if (summaryRows.length === 0) {
+    return null;
+  }
+
+  const first = summaryRows[0];
+
+  return {
+    clipCount: Number(first.clip_count),
+    firstClipCreatedAt: first.first_clip_created_at,
+    lastClipCreatedAt: first.last_clip_created_at,
+    seasonDays: summaryRows.flatMap((row) =>
+      row.season_day_id === null || row.day_number === null || row.session_date === null
+        ? []
+        : [{
+            dayNumber: row.day_number,
+            id: row.season_day_id,
+            sessionDate: row.session_date,
+          }],
+    ),
+  };
 }
 
 function parseArchiveRequest<T>(schema: { safeParse: (value: unknown) => { data: T; success: true } | { error: { issues: Array<{ message: string }> }; success: false } }, value: unknown): T {

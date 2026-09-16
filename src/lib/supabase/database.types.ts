@@ -1928,6 +1928,17 @@ export type Database = {
               created_timeline_event_id: string
             }[]
           }
+      get_system_archive_clip_summary: {
+        Args: { p_archive_id: string }
+        Returns: {
+          clip_count: number
+          day_number: number
+          first_clip_created_at: string
+          last_clip_created_at: string
+          season_day_id: string
+          session_date: string
+        }[]
+      }
       get_timeline_page: { Args: { p_filters: Json }; Returns: Json }
       release_live_refresh: { Args: { p_run_id: string }; Returns: undefined }
       replace_live_current: {

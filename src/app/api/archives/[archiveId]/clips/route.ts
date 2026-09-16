@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 
+import { isClipSort } from "@/features/clips/clip";
 import { parseClipCursor } from "@/features/clips/clip-cursor";
 import {
   createArchiveErrorResponse,
@@ -15,8 +16,13 @@ export async function GET(
   const cursorValue = searchParams.get("cursor");
   const cursor = parseClipCursor(cursorValue);
   const day = parseDay(searchParams.get("day"));
+  const sortValue = searchParams.get("sort") ?? "oldest";
 
-  if ((cursorValue !== null && cursor === null) || day === undefined) {
+  if (
+    (cursorValue !== null && cursor === null) ||
+    day === undefined ||
+    !isClipSort(sortValue)
+  ) {
     return NextResponse.json(
       { error: "시스템 아카이브 클립 조회 정보가 올바르지 않습니다." },
       { status: 400 },
@@ -25,7 +31,12 @@ export async function GET(
 
   try {
     const { archiveId } = await params;
-    const page = await getSystemArchiveClipPage(parseArchiveId(archiveId), day, cursor);
+    const page = await getSystemArchiveClipPage(
+      parseArchiveId(archiveId),
+      day,
+      cursor,
+      sortValue,
+    );
 
     if (page === null) {
       return NextResponse.json({ error: "시스템 아카이브를 찾을 수 없습니다." }, { status: 404 });

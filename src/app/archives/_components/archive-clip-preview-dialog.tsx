@@ -1,7 +1,7 @@
 "use client";
 
 import { Dialog as DialogPrimitive } from "@base-ui/react/dialog";
-import { ExternalLink, X } from "lucide-react";
+import { ChevronLeft, ChevronRight, ExternalLink, X } from "lucide-react";
 
 import { buttonVariants } from "@/components/ui/button";
 import type { ArchiveClipSummary } from "@/features/archives/archive";
@@ -9,12 +9,22 @@ import { getChzzkClipEmbedUrl } from "@/features/reports/chzzk-clip";
 
 interface ArchiveClipPreviewDialogProps {
   clip: ArchiveClipSummary | null;
+  hasNext?: boolean;
+  hasPrevious?: boolean;
+  note?: string | null;
   onClose: () => void;
+  onNext?: () => void;
+  onPrevious?: () => void;
 }
 
 export function ArchiveClipPreviewDialog({
   clip,
+  hasNext = false,
+  hasPrevious = false,
+  note = null,
   onClose,
+  onNext,
+  onPrevious,
 }: ArchiveClipPreviewDialogProps) {
   const embedUrl = clip ? getChzzkClipEmbedUrl(clip.clipUrl) : null;
 
@@ -38,6 +48,28 @@ export function ArchiveClipPreviewDialog({
                 >
                   <ExternalLink aria-hidden="true" className="size-5" />
                 </a>
+                {onPrevious ? (
+                  <button
+                    aria-label="이전 클립"
+                    className="cursor-pointer text-secondary transition-colors hover:text-primary disabled:cursor-not-allowed disabled:opacity-40"
+                    disabled={!hasPrevious}
+                    onClick={onPrevious}
+                    type="button"
+                  >
+                    <ChevronLeft aria-hidden="true" className="size-5" />
+                  </button>
+                ) : null}
+                {onNext ? (
+                  <button
+                    aria-label="다음 클립"
+                    className="cursor-pointer text-secondary transition-colors hover:text-primary disabled:cursor-not-allowed disabled:opacity-40"
+                    disabled={!hasNext}
+                    onClick={onNext}
+                    type="button"
+                  >
+                    <ChevronRight aria-hidden="true" className="size-5" />
+                  </button>
+                ) : null}
                 <DialogPrimitive.Close
                   aria-label="미리보기 닫기"
                   className="cursor-pointer text-secondary transition-colors hover:text-primary"
@@ -71,6 +103,9 @@ export function ArchiveClipPreviewDialog({
                   </div>
                 )}
               </div>
+              {note ? (
+                <p className="border-t border-default px-4 py-3 text-body-sm text-secondary">{note}</p>
+              ) : null}
             </>
           ) : null}
         </DialogPrimitive.Popup>

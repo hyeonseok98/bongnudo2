@@ -5,7 +5,10 @@ import type {
   ArchiveEditorOptions,
   ArchiveSaveInput,
   ArchiveSaveResult,
+  ArchiveSystemClipSummary,
 } from "@/features/archives/archive";
+import { serializeClipCursor } from "@/features/clips/clip-cursor";
+import type { ClipCursor, ClipPage, ClipSort } from "@/features/clips/clip";
 
 const archiveMetadataSchema = z.object({
   category: z.enum(["character", "incident", "series", "other"]),
@@ -62,10 +65,16 @@ const archiveDetailSchema = z.object({
       sortOrder: z.number().int().nonnegative(),
     })),
     seasonDayId: z.uuid().nullable(),
+    seasonDay: z.object({
+      dayNumber: z.number().int().positive(),
+      id: z.uuid(),
+      sessionDate: z.string().date(),
+    }).nullable(),
     sortOrder: z.number().int().nonnegative(),
     title: z.string(),
   })),
   currentRevision: z.number().int().positive().nullable(),
+  creatorName: z.string().nullable(),
   description: z.string().nullable(),
   editPolicy: z.enum(["owner_only", "public_edit"]),
   id: z.uuid(),
@@ -79,7 +88,51 @@ const archiveDetailSchema = z.object({
     streamerName: z.string(),
   }).nullable(),
   title: z.string(),
+  updatedAt: z.string().datetime({ offset: true }),
   visibility: z.enum(["private", "public"]),
+});
+
+const systemArchiveClipSummarySchema = z.object({
+  clipCount: z.number().int().nonnegative(),
+  firstClipCreatedAt: z.string().datetime({ offset: true }).nullable(),
+  lastClipCreatedAt: z.string().datetime({ offset: true }).nullable(),
+  seasonDays: z.array(z.object({
+    dayNumber: z.number().int().positive(),
+    id: z.uuid(),
+    sessionDate: z.string().date(),
+  })),
+});
+
+const archiveClipPageSchema = z.object({
+  items: z.array(z.object({
+    clipCreatedAt: z.string().datetime({ offset: true }),
+    clipUrl: z.string().url(),
+    durationSeconds: z.number().int().nonnegative().nullable(),
+    historicalAffiliations: z.array(z.object({
+      organizationName: z.string(),
+      organizationSlug: z.string(),
+      role: z.string().nullable(),
+    })),
+    id: z.uuid(),
+    participant: z.object({
+      id: z.uuid(),
+      profileImageUrl: z.string().url().nullable(),
+      rpName: z.string().nullable(),
+      streamerName: z.string(),
+    }).nullable(),
+    seasonDay: z.object({
+      dayNumber: z.number().int().positive(),
+      id: z.uuid(),
+      sessionDate: z.string().date(),
+    }).nullable(),
+    thumbnailUrl: z.string().url().nullable(),
+    title: z.string(),
+    viewCount: z.number().int().nonnegative().nullable(),
+  })),
+  nextCursor: z.object({
+    clipCreatedAt: z.string().datetime({ offset: true }),
+    id: z.uuid(),
+  }).nullable(),
 });
 
 const archiveEditorOptionsSchema = z.object({
@@ -135,6 +188,49 @@ export async function getArchiveEditorOptions(): Promise<ArchiveEditorOptions> {
   }
 
   return archiveEditorOptionsSchema.parse(await response.json());
+}
+
+export async function getSystemArchiveClipSummary(
+  archiveId: string,
+): Promise<ArchiveSystemClipSummary> {
+  const response = await fetch(`/api/archives/${archiveId}/clip-summary`, {
+    cache: "no-store",
+  });
+
+  if (!response.ok) {
+    throw new Error(await getArchiveErrorMessage(response, "시스템 아카이브 정보를 불러오지 못했습니다."));
+  }
+
+  return systemArchiveClipSummarySchema.parse(await response.json());
+}
+
+export async function getSystemArchiveClips(
+  archiveId: string,
+  {
+    cursor,
+    day,
+    sort,
+  }: {
+    cursor: ClipCursor | null;
+    day: number | null;
+    sort: ClipSort;
+  },
+): Promise<ClipPage> {
+  const searchParams = new URLSearchParams({ sort });
+
+  if (day !== null) searchParams.set("day", String(day));
+  if (cursor !== null) searchParams.set("cursor", serializeClipCursor(cursor));
+
+  const response = await fetch(
+    `/api/archives/${archiveId}/clips?${searchParams.toString()}`,
+    { cache: "no-store" },
+  );
+
+  if (!response.ok) {
+    throw new Error(await getArchiveErrorMessage(response, "시스템 아카이브 클립을 불러오지 못했습니다."));
+  }
+
+  return archiveClipPageSchema.parse(await response.json());
 }
 
 export async function createArchive(input: {

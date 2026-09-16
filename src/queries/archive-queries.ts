@@ -1,12 +1,20 @@
-import { mutationOptions, queryOptions } from "@tanstack/react-query";
+import {
+  infiniteQueryOptions,
+  mutationOptions,
+  queryOptions,
+  type InfiniteData,
+} from "@tanstack/react-query";
 
 import {
   createArchive,
   getArchive,
   getArchiveEditorOptions,
+  getSystemArchiveClips,
+  getSystemArchiveClipSummary,
   saveArchive,
 } from "@/apis/archives/get-archives";
 import type { ArchiveSaveInput } from "@/features/archives/archive";
+import type { ClipCursor, ClipPage, ClipSort } from "@/features/clips/clip";
 
 export const archiveQueries = {
   all: () => ["archives"] as const,
@@ -19,6 +27,34 @@ export const archiveQueries = {
     queryOptions({
       queryKey: [...archiveQueries.all(), "editor-options"] as const,
       queryFn: getArchiveEditorOptions,
+    }),
+  systemClipSummary: (archiveId: string) =>
+    queryOptions({
+      queryKey: [...archiveQueries.all(), "system-clip-summary", archiveId] as const,
+      queryFn: () => getSystemArchiveClipSummary(archiveId),
+    }),
+  systemClips: (
+    archiveId: string,
+    { day, sort }: { day: number | null; sort: ClipSort },
+  ) =>
+    infiniteQueryOptions<
+      ClipPage,
+      Error,
+      InfiniteData<ClipPage, ClipCursor | null>,
+      readonly ["archives", "system-clips", string, number | null, ClipSort],
+      ClipCursor | null
+    >({
+      queryKey: [
+        ...archiveQueries.all(),
+        "system-clips",
+        archiveId,
+        day,
+        sort,
+      ] as const,
+      queryFn: ({ pageParam }) =>
+        getSystemArchiveClips(archiveId, { cursor: pageParam, day, sort }),
+      initialPageParam: null,
+      getNextPageParam: (page) => page.nextCursor,
     }),
 };
 

@@ -228,13 +228,14 @@ export async function getClipPageForArchiveParticipant(
   participantId: string,
   seasonDayId: string | null,
   cursor: ClipCursor | null,
+  sort: ClipListFilters["sort"],
 ): Promise<ClipPage> {
   const client = getSupabaseServerClient();
   let query = createClipRowsQuery(client)
     .eq("season_id", seasonId)
     .eq("season_participant_id", participantId)
-    .order("clip_created_at", { ascending: false })
-    .order("id", { ascending: false })
+    .order("clip_created_at", { ascending: sort === "oldest" })
+    .order("id", { ascending: sort === "oldest" })
     .limit(PAGE_SIZE + 1);
 
   if (seasonDayId !== null) {
@@ -242,7 +243,7 @@ export async function getClipPageForArchiveParticipant(
   }
 
   if (cursor !== null) {
-    query = query.or(getCursorFilter(cursor, "latest"));
+    query = query.or(getCursorFilter(cursor, sort));
   }
 
   const { data, error } = await query;
