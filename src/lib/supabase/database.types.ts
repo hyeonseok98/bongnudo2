@@ -1951,6 +1951,20 @@ export type Database = {
           snapshot: Json
         }[]
       }
+      save_archive: {
+        Args: {
+          p_actor_user_id: string
+          p_archive_id: string
+          p_base_revision: number
+          p_content: Json
+          p_metadata?: Json
+        }
+        Returns: {
+          archive_id: string
+          current_revision: number
+          snapshot: Json
+        }[]
+      }
       save_archive_content: {
         Args: {
           p_actor_user_id: string

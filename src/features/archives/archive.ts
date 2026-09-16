@@ -53,8 +53,16 @@ export interface ArchiveSaveResult {
   snapshot: ArchiveSnapshot;
 }
 
+export interface ArchiveSaveInput {
+  baseRevision: number;
+  content: ArchiveContentInput;
+  metadata?: ArchiveMetadataInput;
+}
+
 export interface ArchiveDetail {
   archiveKind: ArchiveKind;
+  canEditContent: boolean;
+  canEditMetadata: boolean;
   category: ArchiveCategory;
   chapters: ArchiveDetailChapter[];
   currentRevision: number | null;
@@ -80,10 +88,39 @@ export interface ArchiveDetailChapter {
 }
 
 export interface ArchiveDetailItem {
+  clip: ArchiveClipSummary;
   clipId: string;
   id: string;
   note: string | null;
   sortOrder: number;
+}
+
+export interface ArchiveClipSummary {
+  clipCreatedAt: string;
+  clipUrl: string;
+  id: string;
+  participant: {
+    id: string;
+    profileImageUrl: string | null;
+    rpName: string | null;
+    streamerName: string;
+  } | null;
+  seasonDay: {
+    dayNumber: number;
+    id: string;
+    sessionDate: string;
+  } | null;
+  thumbnailUrl: string | null;
+  title: string;
+}
+
+export interface ArchiveEditorOptions {
+  seasonDays: Array<{
+    dayNumber: number;
+    id: string;
+    sessionDate: string;
+  }>;
+  seasonId: number;
 }
 
 export interface ArchiveSystemParticipant {

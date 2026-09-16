@@ -3,6 +3,7 @@ import { z } from "zod";
 import type {
   ArchiveContentInput,
   ArchiveMetadataInput,
+  ArchiveSaveInput,
   ArchiveSnapshot,
 } from "./archive";
 import { ArchiveRequestError } from "./archive-error";
@@ -72,6 +73,12 @@ export const updateArchiveMetadataRequestSchema = z.strictObject({
   metadata: archiveMetadataSchema,
 });
 
+export const saveArchiveRequestSchema = z.strictObject({
+  baseRevision: revisionSchema,
+  content: archiveContentSchema,
+  metadata: archiveMetadataSchema.optional(),
+});
+
 export const restoreArchiveRevisionRequestSchema = z.strictObject({
   baseRevision: revisionSchema,
   revisionNumber: z.number().int().positive("복구할 revision 정보가 올바르지 않습니다."),
@@ -80,6 +87,7 @@ export const restoreArchiveRevisionRequestSchema = z.strictObject({
 export type CreateArchiveRequest = z.output<typeof createArchiveRequestSchema>;
 export type SaveArchiveContentRequest = z.output<typeof saveArchiveContentRequestSchema>;
 export type UpdateArchiveMetadataRequest = z.output<typeof updateArchiveMetadataRequestSchema>;
+export type SaveArchiveRequest = z.output<typeof saveArchiveRequestSchema>;
 export type RestoreArchiveRevisionRequest = z.output<typeof restoreArchiveRevisionRequestSchema>;
 
 const archiveSnapshotSchema = z.strictObject({
@@ -125,6 +133,14 @@ export function toArchiveContentInput(content: ArchiveContentInput): ArchiveCont
         note: item.note || null,
       })),
     })),
+  };
+}
+
+export function toArchiveSaveInput(input: ArchiveSaveInput): ArchiveSaveInput {
+  return {
+    baseRevision: input.baseRevision,
+    content: toArchiveContentInput(input.content),
+    metadata: input.metadata ? toArchiveMetadataInput(input.metadata) : undefined,
   };
 }
 

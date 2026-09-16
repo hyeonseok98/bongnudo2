@@ -29,6 +29,7 @@ interface ClipFiltersProps {
   options: ClipOptions;
   participantId: string | null;
   query: string;
+  searchLabel?: string;
   streamerAffiliations: StreamerAffiliation[];
   onDateChange: (date: string | null) => void;
   onDayChange: (day: number | null) => void;
@@ -48,6 +49,7 @@ export function ClipFilters({
   options,
   participantId,
   query,
+  searchLabel = "클립 검색",
   streamerAffiliations,
   onDateChange,
   onDayChange,
@@ -81,7 +83,7 @@ export function ClipFilters({
   return (
     <section aria-label="클립 검색 및 필터" className="space-y-3">
       <SearchField
-        label="클립 검색"
+        label={searchLabel}
         onChange={(event) => onQueryChange(event.target.value)}
         onClear={() => onQueryChange("")}
         placeholder="스트리머명 또는 RP 캐릭터 이름으로 검색해보세요"

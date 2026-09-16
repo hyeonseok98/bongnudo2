@@ -1,16 +1,20 @@
 import "server-only";
 
+import type { QueryData } from "@supabase/supabase-js";
+
 import type { AuthenticatedUser } from "@/features/auth/session";
 import {
   getClipPageForArchiveParticipant,
 } from "@/features/clips/get-clips";
 import type { ClipCursor, ClipPage } from "@/features/clips/clip";
 import type { Json } from "@/lib/supabase/database.types";
+import { getR2PublicUrl } from "@/lib/r2";
 import { getSupabaseAdminClient } from "@/lib/supabase/server";
 
 import type {
   ArchiveCategory,
   ArchiveDetail,
+  ArchiveEditorOptions,
   ArchiveEditPolicy,
   ArchiveKind,
   ArchiveSaveResult,
@@ -24,14 +28,41 @@ import {
   parseArchiveSnapshot,
   restoreArchiveRevisionRequestSchema,
   saveArchiveContentRequestSchema,
+  saveArchiveRequestSchema,
   toArchiveContentInput,
   toArchiveMetadataInput,
+  toArchiveSaveInput,
   updateArchiveMetadataRequestSchema,
 } from "./archive-validation";
 
 interface ArchiveRpcError {
   message: string;
 }
+
+function createArchiveClipSummaryQuery() {
+  return getSupabaseAdminClient().from("clips").select(`
+    id,
+    title,
+    thumbnail_url,
+    clip_url,
+    clip_created_at,
+    participant:season_participants!clips_participant_same_season_fkey (
+      id,
+      rp_name,
+      portrait_image_key,
+      streamer:streamers!inner (
+        name
+      )
+    ),
+    season_day:season_days!clips_season_day_same_season_fkey (
+      id,
+      day_number,
+      session_date
+    )
+  `);
+}
+
+type ArchiveClipSummaryRow = QueryData<ReturnType<typeof createArchiveClipSummaryQuery>>[number];
 
 export async function createArchive(
   user: AuthenticatedUser,
@@ -61,6 +92,26 @@ export async function saveArchiveContent(
     p_archive_id: archiveId,
     p_base_revision: request.baseRevision,
     p_content: toArchiveContentJson(toArchiveContentInput(request.content)),
+  });
+
+  return toArchiveSaveResult(result.data, result.error);
+}
+
+export async function saveArchive(
+  user: AuthenticatedUser,
+  archiveId: string,
+  rawRequest: unknown,
+): Promise<ArchiveSaveResult> {
+  const request = toArchiveSaveInput(
+    parseArchiveRequest(saveArchiveRequestSchema, rawRequest),
+  );
+  const supabase = getSupabaseAdminClient();
+  const result = await supabase.rpc("save_archive", {
+    p_actor_user_id: user.id,
+    p_archive_id: archiveId,
+    p_base_revision: request.baseRevision,
+    p_content: toArchiveContentJson(request.content),
+    p_metadata: request.metadata ? toArchiveMetadataJson(request.metadata) : null,
   });
 
   return toArchiveSaveResult(result.data, result.error);
@@ -198,11 +249,33 @@ export async function getArchiveDetail(
     });
   }
 
+  const clipIds = itemsResult.data.map((item) => item.clip_id);
+  const clipsResult = clipIds.length > 0
+    ? await createArchiveClipSummaryQuery().in("id", clipIds)
+    : { data: [], error: null };
+
+  if (clipsResult.error) {
+    throw new ArchiveRequestError("아카이브 클립을 불러오지 못했습니다.", 500, {
+      cause: clipsResult.error,
+    });
+  }
+
+  const clipsById = new Map(
+    clipsResult.data.map((clip) => [clip.id, toArchiveClipSummary(clip)]),
+  );
+
   const itemsByChapterId = new Map<string, ArchiveDetail["chapters"][number]["items"]>();
 
   for (const item of itemsResult.data) {
+    const clip = clipsById.get(item.clip_id);
+
+    if (!clip) {
+      throw new ArchiveRequestError("아카이브 클립 정보가 올바르지 않습니다.", 500);
+    }
+
     const items = itemsByChapterId.get(item.chapter_id) ?? [];
     items.push({
+      clip,
       clipId: item.clip_id,
       id: item.id,
       note: item.note,
@@ -214,6 +287,8 @@ export async function getArchiveDetail(
   return {
     category: toArchiveCategory(archive.category),
     archiveKind: toArchiveKind(archive.archive_kind),
+    canEditContent: canEditArchiveContent(archive, viewer),
+    canEditMetadata: archive.archive_kind === "user" && archive.owner_id === viewer?.id && viewer?.status === "active",
     chapters: chaptersResult.data.map((chapter) => ({
       description: chapter.description,
       id: chapter.id,
@@ -239,6 +314,43 @@ export async function getArchiveDetail(
       : null,
     title: archive.title,
     visibility: toArchiveVisibility(archive.visibility),
+  };
+}
+
+export async function getArchiveEditorOptions(): Promise<ArchiveEditorOptions> {
+  const supabase = getSupabaseAdminClient();
+  const seasonResult = await supabase
+    .from("seasons")
+    .select("id")
+    .eq("is_active", true)
+    .limit(2);
+
+  if (seasonResult.error || seasonResult.data.length !== 1) {
+    throw new ArchiveRequestError("현재 시즌 정보를 불러오지 못했습니다.", 500, {
+      cause: seasonResult.error ?? undefined,
+    });
+  }
+
+  const seasonId = seasonResult.data[0].id;
+  const seasonDaysResult = await supabase
+    .from("season_days")
+    .select("id, day_number, session_date")
+    .eq("season_id", seasonId)
+    .order("day_number", { ascending: true });
+
+  if (seasonDaysResult.error) {
+    throw new ArchiveRequestError("봉누도 일차를 불러오지 못했습니다.", 500, {
+      cause: seasonDaysResult.error,
+    });
+  }
+
+  return {
+    seasonDays: seasonDaysResult.data.map((seasonDay) => ({
+      dayNumber: seasonDay.day_number,
+      id: seasonDay.id,
+      sessionDate: seasonDay.session_date,
+    })),
+    seasonId,
   };
 }
 
@@ -395,11 +507,58 @@ function throwArchiveRpcError(error: ArchiveRpcError): never {
       throw new ArchiveRequestError("아카이브와 다른 시즌의 클립은 추가할 수 없습니다.", 400, {
         cause: error,
       });
+    case "archive_day_based_clip_mismatch":
+      throw new ArchiveRequestError("클립의 봉누도 일차와 챕터 일차가 일치하지 않습니다.", 400, {
+        cause: error,
+      });
     default:
       throw new ArchiveRequestError("아카이브를 저장하지 못했습니다.", 500, {
         cause: error,
       });
   }
+}
+
+function canEditArchiveContent(
+  archive: {
+    archive_kind: string;
+    edit_policy: string;
+    owner_id: string | null;
+    visibility: string;
+  },
+  viewer: AuthenticatedUser | null,
+): boolean {
+  if (archive.archive_kind !== "user" || viewer?.status !== "active") {
+    return false;
+  }
+
+  return archive.owner_id === viewer.id || (
+    archive.visibility === "public" && archive.edit_policy === "public_edit"
+  );
+}
+
+function toArchiveClipSummary(row: ArchiveClipSummaryRow) {
+  return {
+    clipCreatedAt: row.clip_created_at,
+    clipUrl: row.clip_url,
+    id: row.id,
+    participant: row.participant
+      ? {
+          id: row.participant.id,
+          profileImageUrl: getR2PublicUrl(row.participant.portrait_image_key),
+          rpName: row.participant.rp_name,
+          streamerName: row.participant.streamer.name,
+        }
+      : null,
+    seasonDay: row.season_day
+      ? {
+          dayNumber: row.season_day.day_number,
+          id: row.season_day.id,
+          sessionDate: row.season_day.session_date,
+        }
+      : null,
+    thumbnailUrl: row.thumbnail_url,
+    title: row.title,
+  };
 }
 
 function toArchiveCategory(value: string): ArchiveCategory {
