@@ -63,6 +63,7 @@ supabase/migrations/*
 !supabase/migrations/20260915153816_allow_public_season_days_read.sql
 !supabase/migrations/20260915183422_create_collected_clips_and_replays.sql
 !supabase/migrations/20260915193743_add_clips_pagination_indexes.sql
+!supabase/migrations/20260916060056_add_replay_sort_keyset_pagination.sql
 !supabase/migrations/20260911052508_create_live_viewer_snapshots.sql
 !supabase/migrations/20260912070700_create_chzzk_oauth_users.sql
 !supabase/migrations/20260912071651_tighten_chzzk_oauth_table_privileges.sql

@@ -683,6 +683,7 @@ export type Database = {
           season_day_id: string | null
           season_id: number
           season_participant_id: string | null
+          sort_at: string | null
           streamer_id: string
           thumbnail_url: string | null
           title: string
@@ -703,6 +704,7 @@ export type Database = {
           season_day_id?: string | null
           season_id: number
           season_participant_id?: string | null
+          sort_at?: string | null
           streamer_id: string
           thumbnail_url?: string | null
           title: string
@@ -723,6 +725,7 @@ export type Database = {
           season_day_id?: string | null
           season_id?: number
           season_participant_id?: string | null
+          sort_at?: string | null
           streamer_id?: string
           thumbnail_url?: string | null
           title?: string

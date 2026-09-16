@@ -22,7 +22,8 @@ import type {
 } from "./replay";
 
 const PAGE_SIZE = 24;
-const MAX_REPLAY_ROWS = 5_000;
+const SOURCE_BATCH_SIZE = 48;
+const MAX_SCAN_BATCHES = 6;
 
 function createActiveSeasonQuery(client: SupabaseClient<Database>) {
   return client.from("seasons").select("id").eq("is_active", true).limit(2);
@@ -55,6 +56,7 @@ function createReplayRowsQuery(client: SupabaseClient<Database>) {
     view_count,
     live_started_at,
     published_at,
+    sort_at,
     season_participant_id,
     participant:season_participants!replays_participant_same_season_fkey (
       id,
@@ -149,48 +151,80 @@ export async function getReplayPage(
     return { items: [], nextCursor: null };
   }
 
-  let query = createReplayRowsQuery(client)
-    .eq("season_id", seasonId)
-    .limit(MAX_REPLAY_ROWS);
-
-  if (participantIds !== null) {
-    query = query.in("season_participant_id", participantIds);
-  }
-
-  if (seasonDayId !== null) {
-    query = query.eq("season_day_id", seasonDayId);
-  }
-
-  const { data, error } = await query;
-
-  if (error) {
-    throw new Error("다시보기를 불러오지 못함.", { cause: error });
-  }
-
-  const careerEventsByParticipant = await getCareerEventsByParticipant(
-    client,
-    seasonId,
-    data,
-  );
   const dateRange = filters.date ? getKstDateRange(filters.date) : null;
-  const sortedItems = data
-    .map((row) => toReplayItem(row, careerEventsByParticipant))
-    .filter((replay) => matchesDate(replay, dateRange))
-    .filter((replay) => matchesJobFilters(replay, filters.jobs, careerEventsByParticipant))
-    .sort(compareReplays);
-  const remainingItems = cursor
-    ? sortedItems.filter((replay) => isAfterCursor(replay, cursor))
-    : sortedItems;
-  const items = remainingItems.slice(0, PAGE_SIZE);
-  const lastItem = items.at(-1);
+  const items: ReplayItem[] = [];
+  let sourceCursor = cursor;
+  const sourceBatchSize = filters.jobs.length > 0 ? SOURCE_BATCH_SIZE : PAGE_SIZE + 1;
 
-  return {
-    items,
-    nextCursor:
-      lastItem && remainingItems.length > items.length
-        ? { id: lastItem.id, sortAt: getReplaySortAt(lastItem) }
-        : null,
-  };
+  for (let scanBatch = 0; scanBatch < MAX_SCAN_BATCHES; scanBatch += 1) {
+    let query = createReplayRowsQuery(client)
+      .eq("season_id", seasonId)
+      .order("sort_at", { ascending: false, nullsFirst: false })
+      .order("id", { ascending: false })
+      .limit(sourceBatchSize);
+
+    if (participantIds !== null) {
+      query = query.in("season_participant_id", participantIds);
+    }
+
+    if (seasonDayId !== null) {
+      query = query.eq("season_day_id", seasonDayId);
+    }
+
+    if (dateRange !== null) {
+      query = query.gte("sort_at", dateRange.start).lt("sort_at", dateRange.end);
+    }
+
+    if (sourceCursor !== null) {
+      query = sourceCursor.sortAt === null
+        ? query.is("sort_at", null).lt("id", sourceCursor.id)
+        : query.or(getReplayCursorFilter(sourceCursor.sortAt, sourceCursor.id));
+    }
+
+    const { data, error } = await query;
+
+    if (error) {
+      throw new Error("다시보기를 불러오지 못함.", { cause: error });
+    }
+
+    if (data.length === 0) {
+      return { items, nextCursor: null };
+    }
+
+    const careerEventsByParticipant = await getCareerEventsByParticipant(
+      client,
+      seasonId,
+      data,
+    );
+
+    for (let index = 0; index < data.length; index += 1) {
+      const row = data[index];
+      sourceCursor = { id: row.id, sortAt: row.sort_at };
+      const replay = toReplayItem(row, careerEventsByParticipant);
+
+      if (!matchesJobFilters(replay, filters.jobs, careerEventsByParticipant)) {
+        continue;
+      }
+
+      items.push(replay);
+
+      if (items.length === PAGE_SIZE) {
+        const hasUnscannedSourceRows = index < data.length - 1;
+        const mayHaveMoreRows = hasUnscannedSourceRows || data.length === sourceBatchSize;
+
+        return {
+          items,
+          nextCursor: mayHaveMoreRows ? sourceCursor : null,
+        };
+      }
+    }
+
+    if (data.length < sourceBatchSize) {
+      return { items, nextCursor: null };
+    }
+  }
+
+  return { items, nextCursor: sourceCursor };
 }
 
 async function getActiveSeasonId(client: SupabaseClient<Database>): Promise<number> {
@@ -472,24 +506,6 @@ function toReplayItem(
   };
 }
 
-function matchesDate(
-  replay: ReplayItem,
-  dateRange: { end: string; start: string } | null,
-): boolean {
-  if (!dateRange) return true;
-
-  const replayTime = getReplaySortAt(replay);
-
-  if (replayTime === null) return false;
-
-  const replayTimestamp = Date.parse(replayTime);
-  return (
-    !Number.isNaN(replayTimestamp) &&
-    Date.parse(dateRange.start) <= replayTimestamp &&
-    replayTimestamp < Date.parse(dateRange.end)
-  );
-}
-
 function matchesJobFilters(
   replay: ReplayItem,
   selectedJobs: string[],
@@ -519,27 +535,8 @@ function getReplaySortAt(replay: ReplayItem): string | null {
   return replay.liveStartedAt ?? replay.publishedAt;
 }
 
-function compareReplays(left: ReplayItem, right: ReplayItem): number {
-  const leftTime = getReplaySortAt(left);
-  const rightTime = getReplaySortAt(right);
+function getReplayCursorFilter(sortAt: string, id: string): string {
+  const cursorSortAt = new Date(sortAt).toISOString();
 
-  if (leftTime === null && rightTime === null) return right.id.localeCompare(left.id);
-  if (leftTime === null) return 1;
-  if (rightTime === null) return -1;
-
-  const timeDifference = Date.parse(rightTime) - Date.parse(leftTime);
-  return timeDifference === 0 ? right.id.localeCompare(left.id) : timeDifference;
-}
-
-function isAfterCursor(replay: ReplayItem, cursor: ReplayCursor): boolean {
-  const replayTime = getReplaySortAt(replay);
-
-  if (cursor.sortAt === null) {
-    return replayTime === null && replay.id.localeCompare(cursor.id) < 0;
-  }
-
-  if (replayTime === null) return true;
-
-  const difference = Date.parse(replayTime) - Date.parse(cursor.sortAt);
-  return difference < 0 || (difference === 0 && replay.id.localeCompare(cursor.id) < 0);
+  return `sort_at.lt.${cursorSortAt},and(sort_at.eq.${cursorSortAt},id.lt.${id}),sort_at.is.null`;
 }
