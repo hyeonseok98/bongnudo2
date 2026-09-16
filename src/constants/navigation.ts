@@ -42,7 +42,7 @@ export const SIDEBAR_NAV: SidebarNavigationGroup[] = [
   {
     label: "영상",
     items: [
-      { label: "다시보기", icon: CirclePlay, isComingSoon: true },
+      { label: "다시보기", href: "/replays", icon: CirclePlay },
       { label: "클립", href: "/clips", icon: Scissors },
     ],
   },

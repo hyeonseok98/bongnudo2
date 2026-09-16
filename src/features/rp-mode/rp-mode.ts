@@ -22,6 +22,7 @@ export type DisplayNameContext =
   | "streamer-card"
   | "character-card"
   | "clip-card"
+  | "replay-card"
   | "live"
   | "generated-text";
 
@@ -56,7 +57,7 @@ export function getDisplayName(
         };
   }
 
-  if (context === "live" || context === "clip-card") {
+  if (context === "live" || context === "clip-card" || context === "replay-card") {
     return isRpMode
       ? {
           primaryName: entity.rpName ?? RP_NAME_UNAVAILABLE,
