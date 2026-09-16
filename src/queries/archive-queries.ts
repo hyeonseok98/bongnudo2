@@ -9,11 +9,18 @@ import {
   createArchive,
   getArchive,
   getArchiveEditorOptions,
+  getPublicArchives,
+  searchArchiveParticipants,
   getSystemArchiveClips,
   getSystemArchiveClipSummary,
   saveArchive,
 } from "@/apis/archives/get-archives";
-import type { ArchiveSaveInput } from "@/features/archives/archive";
+import type {
+  ArchiveListCursor,
+  ArchiveListFilters,
+  ArchivePage,
+  ArchiveSaveInput,
+} from "@/features/archives/archive";
 import type { ClipCursor, ClipPage, ClipSort } from "@/features/clips/clip";
 
 export const archiveQueries = {
@@ -27,6 +34,25 @@ export const archiveQueries = {
     queryOptions({
       queryKey: [...archiveQueries.all(), "editor-options"] as const,
       queryFn: getArchiveEditorOptions,
+    }),
+  list: (filters: ArchiveListFilters) =>
+    infiniteQueryOptions<
+      ArchivePage,
+      Error,
+      InfiniteData<ArchivePage, ArchiveListCursor | null>,
+      readonly ["archives", "list", ArchiveListFilters],
+      ArchiveListCursor | null
+    >({
+      queryKey: [...archiveQueries.all(), "list", filters] as const,
+      queryFn: ({ pageParam }) => getPublicArchives(filters, pageParam),
+      initialPageParam: null,
+      getNextPageParam: (page) => page.nextCursor,
+    }),
+  participantSearch: (query: string) =>
+    queryOptions({
+      enabled: query.length > 0,
+      queryKey: [...archiveQueries.all(), "participant-search", query] as const,
+      queryFn: () => searchArchiveParticipants(query),
     }),
   systemClipSummary: (archiveId: string) =>
     queryOptions({

@@ -1928,6 +1928,39 @@ export type Database = {
               created_timeline_event_id: string
             }[]
           }
+      get_public_archive_page: {
+        Args: {
+          p_category?: string
+          p_cursor_id?: string
+          p_cursor_sort_at?: string
+          p_limit?: number
+          p_participant_id?: string
+          p_query?: string
+          p_sort?: string
+          p_status?: string
+          p_type?: string
+        }
+        Returns: {
+          archive_id: string
+          archive_kind: string
+          category: string
+          clip_count: number
+          description: string
+          first_clip_created_at: string
+          last_clip_created_at: string
+          owner_name: string
+          published_at: string
+          representative_thumbnail_url: string
+          sort_at: string
+          status: string
+          system_participant_id: string
+          system_participant_profile_image_key: string
+          system_participant_rp_name: string
+          system_participant_streamer_name: string
+          title: string
+          updated_at: string
+        }[]
+      }
       get_system_archive_clip_summary: {
         Args: { p_archive_id: string }
         Returns: {

@@ -3,6 +3,7 @@ import {
   Building2,
   CirclePlay,
   FilePenLine,
+  FolderArchive,
   Heart,
   House,
   Radio,
@@ -42,6 +43,7 @@ export const SIDEBAR_NAV: SidebarNavigationGroup[] = [
     items: [
       { label: "다시보기", href: "/replays", icon: CirclePlay },
       { label: "클립", href: "/clips", icon: Scissors },
+      { label: "아카이브", href: "/archives", icon: FolderArchive },
     ],
   },
   {

@@ -3,10 +3,14 @@ import { z } from "zod";
 import type {
   ArchiveDetail,
   ArchiveEditorOptions,
+  ArchiveListCursor,
+  ArchiveListFilters,
+  ArchivePage,
   ArchiveSaveInput,
   ArchiveSaveResult,
   ArchiveSystemClipSummary,
 } from "@/features/archives/archive";
+import { serializeArchiveCursor } from "@/features/archives/archive-cursor";
 import { serializeClipCursor } from "@/features/clips/clip-cursor";
 import type { ClipCursor, ClipPage, ClipSort } from "@/features/clips/clip";
 
@@ -144,6 +148,43 @@ const archiveEditorOptionsSchema = z.object({
   seasonId: z.number().int().positive(),
 });
 
+const archivePageSchema = z.object({
+  items: z.array(z.object({
+    archiveKind: z.enum(["system_character", "user"]),
+    category: z.enum(["character", "incident", "series", "other"]),
+    clipCount: z.number().int().nonnegative(),
+    description: z.string().nullable(),
+    firstClipCreatedAt: z.string().datetime({ offset: true }).nullable(),
+    id: z.uuid(),
+    lastClipCreatedAt: z.string().datetime({ offset: true }).nullable(),
+    ownerName: z.string().nullable(),
+    publishedAt: z.string().datetime({ offset: true }).nullable(),
+    representativeImageUrl: z.string().url().nullable(),
+    sortAt: z.string().datetime({ offset: true }),
+    status: z.enum(["ongoing", "completed"]),
+    systemParticipant: z.object({
+      id: z.uuid(),
+      profileImageUrl: z.string().url().nullable(),
+      rpName: z.string().nullable(),
+      streamerName: z.string(),
+    }).nullable(),
+    title: z.string(),
+    updatedAt: z.string().datetime({ offset: true }),
+  })),
+  nextCursor: z.object({
+    id: z.uuid(),
+    sortAt: z.string().datetime({ offset: true }),
+  }).nullable(),
+});
+
+const archiveParticipantSearchSchema = z.object({
+  participants: z.array(z.object({
+    rpName: z.string().nullable(),
+    seasonParticipantId: z.uuid(),
+    streamerName: z.string(),
+  })),
+});
+
 const archiveSaveResultSchema = z.object({
   archiveId: z.uuid(),
   currentRevision: z.number().int().positive(),
@@ -178,6 +219,53 @@ export async function getArchive(archiveId: string): Promise<ArchiveDetail> {
   }
 
   return archiveDetailSchema.parse(await response.json());
+}
+
+export async function getPublicArchives(
+  filters: ArchiveListFilters,
+  cursor: ArchiveListCursor | null,
+): Promise<ArchivePage> {
+  const searchParams = new URLSearchParams();
+
+  if (filters.type !== "all") searchParams.set("type", filters.type);
+  if (filters.query) searchParams.set("q", filters.query);
+  if (filters.participantId) searchParams.set("participant", filters.participantId);
+  if (filters.category) searchParams.set("category", filters.category);
+  if (filters.status) searchParams.set("status", filters.status);
+  if (filters.sort !== "updated") searchParams.set("sort", filters.sort);
+  if (cursor) searchParams.set("cursor", serializeArchiveCursor(cursor));
+
+  const query = searchParams.toString();
+  const response = await fetch(`/api/archives${query ? `?${query}` : ""}`, {
+    cache: "no-store",
+  });
+
+  if (!response.ok) {
+    throw new Error(await getArchiveErrorMessage(response, "공개 아카이브를 불러오지 못했습니다."));
+  }
+
+  return archivePageSchema.parse(await response.json());
+}
+
+export interface ArchiveParticipantSearchResult {
+  rpName: string | null;
+  seasonParticipantId: string;
+  streamerName: string;
+}
+
+export async function searchArchiveParticipants(
+  query: string,
+): Promise<ArchiveParticipantSearchResult[]> {
+  const searchParams = new URLSearchParams({ query });
+  const response = await fetch(`/api/report-participants?${searchParams.toString()}`, {
+    cache: "no-store",
+  });
+
+  if (!response.ok) {
+    throw new Error(await getArchiveErrorMessage(response, "인물을 검색하지 못했습니다."));
+  }
+
+  return archiveParticipantSearchSchema.parse(await response.json()).participants;
 }
 
 export async function getArchiveEditorOptions(): Promise<ArchiveEditorOptions> {

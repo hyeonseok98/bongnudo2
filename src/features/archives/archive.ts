@@ -1,7 +1,14 @@
-export type ArchiveCategory = "character" | "incident" | "series" | "other";
+export const ARCHIVE_CATEGORY_VALUES = ["character", "incident", "series", "other"] as const;
+export const ARCHIVE_LIST_SORT_VALUES = ["updated", "published"] as const;
+export const ARCHIVE_LIST_TYPE_VALUES = ["all", "system", "user"] as const;
+export const ARCHIVE_STATUS_VALUES = ["ongoing", "completed"] as const;
+
+export type ArchiveCategory = (typeof ARCHIVE_CATEGORY_VALUES)[number];
 export type ArchiveKind = "system_character" | "user";
 export type ArchiveEditPolicy = "owner_only" | "public_edit";
-export type ArchiveStatus = "ongoing" | "completed";
+export type ArchiveListSort = (typeof ARCHIVE_LIST_SORT_VALUES)[number];
+export type ArchiveListType = (typeof ARCHIVE_LIST_TYPE_VALUES)[number];
+export type ArchiveStatus = (typeof ARCHIVE_STATUS_VALUES)[number];
 export type ArchiveStructureMode = "day_based" | "freeform";
 export type ArchiveVisibility = "private" | "public";
 
@@ -143,4 +150,43 @@ export interface ArchiveSystemClipSummary {
   firstClipCreatedAt: string | null;
   lastClipCreatedAt: string | null;
   seasonDays: ArchiveSeasonDay[];
+}
+
+export interface ArchiveListCursor {
+  id: string;
+  sortAt: string;
+}
+
+export interface ArchiveListFilters {
+  category: ArchiveCategory | null;
+  participantId: string | null;
+  query: string;
+  sort: ArchiveListSort;
+  status: ArchiveStatus | null;
+  type: ArchiveListType;
+}
+
+export interface ArchiveListItem {
+  archiveKind: ArchiveKind;
+  category: ArchiveCategory;
+  clipCount: number;
+  description: string | null;
+  firstClipCreatedAt: string | null;
+  id: string;
+  lastClipCreatedAt: string | null;
+  ownerName: string | null;
+  publishedAt: string | null;
+  representativeImageUrl: string | null;
+  sortAt: string;
+  status: ArchiveStatus;
+  systemParticipant: ArchiveSystemParticipant & {
+    profileImageUrl: string | null;
+  } | null;
+  title: string;
+  updatedAt: string;
+}
+
+export interface ArchivePage {
+  items: ArchiveListItem[];
+  nextCursor: ArchiveListCursor | null;
 }

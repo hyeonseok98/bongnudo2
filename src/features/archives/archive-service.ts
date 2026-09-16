@@ -7,7 +7,7 @@ import {
   getClipPageForArchiveParticipant,
 } from "@/features/clips/get-clips";
 import type { ClipCursor, ClipPage, ClipSort } from "@/features/clips/clip";
-import type { Json } from "@/lib/supabase/database.types";
+import type { Database, Json } from "@/lib/supabase/database.types";
 import { getR2PublicUrl } from "@/lib/r2";
 import { getSupabaseAdminClient } from "@/lib/supabase/server";
 
@@ -17,6 +17,10 @@ import type {
   ArchiveEditorOptions,
   ArchiveEditPolicy,
   ArchiveKind,
+  ArchiveListCursor,
+  ArchiveListFilters,
+  ArchiveListItem,
+  ArchivePage,
   ArchiveSaveResult,
   ArchiveStatus,
   ArchiveStructureMode,
@@ -64,6 +68,9 @@ function createArchiveClipSummaryQuery() {
 }
 
 type ArchiveClipSummaryRow = QueryData<ReturnType<typeof createArchiveClipSummaryQuery>>[number];
+type PublicArchivePageRow = Database["public"]["Functions"]["get_public_archive_page"]["Returns"][number];
+
+const ARCHIVE_LIST_PAGE_SIZE = 24;
 
 export async function createArchive(
   user: AuthenticatedUser,
@@ -180,6 +187,40 @@ export async function restoreArchive(
   if (result.error) {
     throwArchiveRpcError(result.error);
   }
+}
+
+export async function getPublicArchivePage(
+  filters: ArchiveListFilters,
+  cursor: ArchiveListCursor | null,
+): Promise<ArchivePage> {
+  const supabase = getSupabaseAdminClient();
+  const result = await supabase.rpc("get_public_archive_page", {
+    p_limit: ARCHIVE_LIST_PAGE_SIZE + 1,
+    p_sort: filters.sort,
+    p_type: filters.type,
+    ...(filters.category ? { p_category: filters.category } : {}),
+    ...(cursor ? { p_cursor_id: cursor.id, p_cursor_sort_at: cursor.sortAt } : {}),
+    ...(filters.participantId ? { p_participant_id: filters.participantId } : {}),
+    ...(filters.query ? { p_query: filters.query } : {}),
+    ...(filters.status ? { p_status: filters.status } : {}),
+  });
+
+  if (result.error) {
+    throw new ArchiveRequestError("공개 아카이브를 불러오지 못했습니다.", 500, {
+      cause: result.error,
+    });
+  }
+
+  const rows = result.data;
+  const items = rows.slice(0, ARCHIVE_LIST_PAGE_SIZE).map(toArchiveListItem);
+  const lastItem = items.at(-1);
+
+  return {
+    items,
+    nextCursor: rows.length > ARCHIVE_LIST_PAGE_SIZE && lastItem
+      ? { id: lastItem.id, sortAt: lastItem.sortAt }
+      : null,
+  };
 }
 
 export async function getArchiveDetail(
@@ -623,6 +664,39 @@ function toArchiveClipSummary(row: ArchiveClipSummaryRow) {
       : null,
     thumbnailUrl: row.thumbnail_url,
     title: row.title,
+  };
+}
+
+function toArchiveListItem(row: PublicArchivePageRow): ArchiveListItem {
+  const archiveKind = toArchiveKind(row.archive_kind);
+  const systemParticipant = row.system_participant_id && row.system_participant_streamer_name
+    ? {
+        id: row.system_participant_id,
+        profileImageUrl: getR2PublicUrl(row.system_participant_profile_image_key),
+        rpName: row.system_participant_rp_name,
+        streamerName: row.system_participant_streamer_name,
+      }
+    : null;
+  const profileImageUrl = archiveKind === "system_character"
+    ? systemParticipant?.profileImageUrl ?? null
+    : null;
+
+  return {
+    archiveKind,
+    category: toArchiveCategory(row.category),
+    clipCount: Number(row.clip_count),
+    description: row.description,
+    firstClipCreatedAt: row.first_clip_created_at,
+    id: row.archive_id,
+    lastClipCreatedAt: row.last_clip_created_at,
+    ownerName: row.owner_name,
+    publishedAt: row.published_at,
+    representativeImageUrl: profileImageUrl ?? row.representative_thumbnail_url,
+    sortAt: row.sort_at,
+    status: toArchiveStatus(row.status),
+    systemParticipant,
+    title: row.title,
+    updatedAt: row.updated_at,
   };
 }
 

@@ -2,10 +2,12 @@ import { z } from "zod";
 
 import type {
   ArchiveContentInput,
+  ArchiveListFilters,
   ArchiveMetadataInput,
   ArchiveSaveInput,
   ArchiveSnapshot,
 } from "./archive";
+import { parseArchiveCursor } from "./archive-cursor";
 import { ArchiveRequestError } from "./archive-error";
 
 const archiveMetadataSchema = z.strictObject({
@@ -56,6 +58,16 @@ const archiveContentSchema = z.strictObject({
 });
 
 const revisionSchema = z.number().int().nonnegative("수정 버전이 올바르지 않습니다.");
+
+const archiveListQuerySchema = z.object({
+  category: z.enum(["character", "incident", "series", "other"]).optional(),
+  cursor: z.string().optional(),
+  participant: z.uuid().optional(),
+  q: z.string().trim().max(100, "검색어는 100자 이하로 입력해주세요.").optional(),
+  sort: z.enum(["updated", "published"]).optional(),
+  status: z.enum(["ongoing", "completed"]).optional(),
+  type: z.enum(["all", "system", "user"]).optional(),
+});
 
 export const createArchiveRequestSchema = z.strictObject({
   content: archiveContentSchema,
@@ -152,4 +164,46 @@ export function parseArchiveSnapshot(value: unknown): ArchiveSnapshot {
   }
 
   return result.data;
+}
+
+export function parseArchiveListRequest(searchParams: URLSearchParams): {
+  cursor: { id: string; sortAt: string } | null;
+  filters: ArchiveListFilters;
+} {
+  const result = archiveListQuerySchema.safeParse({
+    category: searchParams.get("category") ?? undefined,
+    cursor: searchParams.get("cursor") ?? undefined,
+    participant: searchParams.get("participant") ?? undefined,
+    q: searchParams.get("q") ?? undefined,
+    sort: searchParams.get("sort") ?? undefined,
+    status: searchParams.get("status") ?? undefined,
+    type: searchParams.get("type") ?? undefined,
+  });
+
+  if (!result.success) {
+    throw new ArchiveRequestError(
+      result.error.issues[0]?.message ?? "아카이브 목록 조회 정보가 올바르지 않습니다.",
+      400,
+    );
+  }
+
+  const cursor = parseArchiveCursor(result.data.cursor ?? null);
+
+  if (result.data.cursor && cursor === null) {
+    throw new ArchiveRequestError("아카이브 목록 조회 정보가 올바르지 않습니다.", 400);
+  }
+
+  const type = result.data.type ?? "all";
+
+  return {
+    cursor,
+    filters: {
+      category: type === "user" ? result.data.category ?? null : null,
+      participantId: result.data.participant ?? null,
+      query: result.data.q ?? "",
+      sort: result.data.sort ?? "updated",
+      status: type === "user" ? result.data.status ?? null : null,
+      type,
+    },
+  };
 }
