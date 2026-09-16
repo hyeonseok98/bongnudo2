@@ -28,9 +28,7 @@ export const SIDEBAR_NAV: SidebarNavigationGroup[] = [
   { items: [{ label: "홈", href: "/", icon: House }] },
   {
     label: "실시간",
-    items: [
-      { label: "LIVE", href: "/live", icon: Radio },
-    ],
+    items: [{ label: "LIVE", href: "/live", icon: Radio }],
   },
   {
     label: "탐색",
@@ -58,7 +56,7 @@ export const SIDEBAR_NAV: SidebarNavigationGroup[] = [
       },
       {
         label: "봉누도2 따라가기",
-        href: "https://bnd2-fanwiki.app/",
+        href: "https://www.bongnudo.site/",
         icon: Heart,
         isExternal: true,
       },
