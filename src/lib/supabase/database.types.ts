@@ -20,6 +20,7 @@ export type Database = {
           created_at: string
           description: string | null
           id: string
+          season_day_id: string | null
           sort_order: number
           title: string
           updated_at: string
@@ -29,6 +30,7 @@ export type Database = {
           created_at?: string
           description?: string | null
           id?: string
+          season_day_id?: string | null
           sort_order: number
           title: string
           updated_at?: string
@@ -38,6 +40,7 @@ export type Database = {
           created_at?: string
           description?: string | null
           id?: string
+          season_day_id?: string | null
           sort_order?: number
           title?: string
           updated_at?: string
@@ -48,6 +51,13 @@ export type Database = {
             columns: ["archive_id"]
             isOneToOne: false
             referencedRelation: "archives"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "archive_chapters_season_day_id_fkey"
+            columns: ["season_day_id"]
+            isOneToOne: false
+            referencedRelation: "season_days"
             referencedColumns: ["id"]
           },
         ]
@@ -144,49 +154,58 @@ export type Database = {
       }
       archives: {
         Row: {
+          archive_kind: string
           category: string
           created_at: string
-          current_revision: number
+          current_revision: number | null
           deleted_at: string | null
           description: string | null
           edit_policy: string
           id: string
-          owner_id: string
+          owner_id: string | null
           published_at: string | null
           season_id: number
           status: string
+          structure_mode: string | null
+          system_participant_id: string | null
           title: string
           updated_at: string
           visibility: string
         }
         Insert: {
+          archive_kind?: string
           category: string
           created_at?: string
-          current_revision?: number
+          current_revision?: number | null
           deleted_at?: string | null
           description?: string | null
           edit_policy?: string
           id?: string
-          owner_id: string
+          owner_id?: string | null
           published_at?: string | null
           season_id: number
           status?: string
+          structure_mode?: string | null
+          system_participant_id?: string | null
           title: string
           updated_at?: string
           visibility?: string
         }
         Update: {
+          archive_kind?: string
           category?: string
           created_at?: string
-          current_revision?: number
+          current_revision?: number | null
           deleted_at?: string | null
           description?: string | null
           edit_policy?: string
           id?: string
-          owner_id?: string
+          owner_id?: string | null
           published_at?: string | null
           season_id?: number
           status?: string
+          structure_mode?: string | null
+          system_participant_id?: string | null
           title?: string
           updated_at?: string
           visibility?: string
@@ -205,6 +224,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "seasons"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "archives_system_participant_same_season_fkey"
+            columns: ["system_participant_id", "season_id"]
+            isOneToOne: false
+            referencedRelation: "season_participants"
+            referencedColumns: ["id", "season_id"]
           },
         ]
       }

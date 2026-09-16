@@ -223,6 +223,48 @@ export async function getClipPage(
   return { items, nextCursor: sourceCursor };
 }
 
+export async function getClipPageForArchiveParticipant(
+  seasonId: number,
+  participantId: string,
+  seasonDayId: string | null,
+  cursor: ClipCursor | null,
+): Promise<ClipPage> {
+  const client = getSupabaseServerClient();
+  let query = createClipRowsQuery(client)
+    .eq("season_id", seasonId)
+    .eq("season_participant_id", participantId)
+    .order("clip_created_at", { ascending: false })
+    .order("id", { ascending: false })
+    .limit(PAGE_SIZE + 1);
+
+  if (seasonDayId !== null) {
+    query = query.eq("season_day_id", seasonDayId);
+  }
+
+  if (cursor !== null) {
+    query = query.or(getCursorFilter(cursor, "latest"));
+  }
+
+  const { data, error } = await query;
+
+  if (error) {
+    throw new Error("시스템 아카이브 클립을 불러오지 못함.", { cause: error });
+  }
+
+  const hasNextPage = data.length > PAGE_SIZE;
+  const rows = hasNextPage ? data.slice(0, PAGE_SIZE) : data;
+  const careerEventsByParticipant = await getCareerEventsByParticipant(client, seasonId, rows);
+  const items = rows.map((row) => toClipItem(row, careerEventsByParticipant));
+  const last = items.at(-1);
+
+  return {
+    items,
+    nextCursor: hasNextPage && last
+      ? { clipCreatedAt: last.clipCreatedAt, id: last.id }
+      : null,
+  };
+}
+
 async function getActiveSeasonId(client: SupabaseClient<Database>): Promise<number> {
   const { data, error } = await createActiveSeasonQuery(client);
 

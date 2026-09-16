@@ -12,6 +12,7 @@ const archiveMetadataSchema = z.strictObject({
   description: z.string().trim().max(5000).nullable(),
   editPolicy: z.enum(["owner_only", "public_edit"]),
   status: z.enum(["ongoing", "completed"]),
+  structureMode: z.enum(["day_based", "freeform"]),
   title: z.string().trim().min(1, "제목을 입력해주세요.").max(160),
   visibility: z.enum(["private", "public"]),
 }).refine(
@@ -27,6 +28,7 @@ const archiveItemSchema = z.strictObject({
 const archiveChapterSchema = z.strictObject({
   description: z.string().trim().max(5000).nullable(),
   items: z.array(archiveItemSchema).max(500),
+  seasonDayId: z.uuid().nullable(),
   title: z.string().trim().min(1, "챕터 제목을 입력해주세요.").max(160),
 });
 
@@ -93,6 +95,7 @@ const archiveSnapshotSchema = z.strictObject({
           sortOrder: z.number().int().nonnegative(),
         }),
       ),
+      seasonDayId: z.uuid().nullable(),
       sortOrder: z.number().int().nonnegative(),
       title: z.string(),
     }),

@@ -48,7 +48,7 @@ begin
   from public.create_archive(
     v_owner_id,
     v_season_id,
-    '{"title":"archive-verification-private","description":null,"category":"other","visibility":"private","editPolicy":"owner_only","status":"ongoing"}'::jsonb,
+    '{"title":"archive-verification-private","description":null,"category":"other","visibility":"private","editPolicy":"owner_only","status":"ongoing","structureMode":"freeform"}'::jsonb,
     '{"chapters":[]}'::jsonb
   );
 
@@ -57,7 +57,7 @@ begin
   from public.create_archive(
     v_owner_id,
     v_season_id,
-    '{"title":"archive-verification-public","description":null,"category":"other","visibility":"public","editPolicy":"public_edit","status":"ongoing"}'::jsonb,
+    '{"title":"archive-verification-public","description":null,"category":"other","visibility":"public","editPolicy":"public_edit","status":"ongoing","structureMode":"freeform"}'::jsonb,
     '{"chapters":[]}'::jsonb
   );
 
@@ -145,7 +145,7 @@ begin
       v_owner_id,
       v_public_archive_id,
       v_public_revision,
-      '{"title":"archive-verification-public","description":null,"category":"other","visibility":"private","editPolicy":"owner_only","status":"ongoing"}'::jsonb
+      '{"title":"archive-verification-public","description":null,"category":"other","visibility":"private","editPolicy":"owner_only","status":"ongoing","structureMode":"freeform"}'::jsonb
     );
     raise exception 'archive_verification_public_to_private_allowed';
   exception
@@ -173,7 +173,7 @@ begin
       v_editor_id,
       v_public_archive_id,
       v_next_revision,
-      '{"title":"archive-verification-mutated","description":null,"category":"other","visibility":"public","editPolicy":"public_edit","status":"ongoing"}'::jsonb
+      '{"title":"archive-verification-mutated","description":null,"category":"other","visibility":"public","editPolicy":"public_edit","status":"ongoing","structureMode":"freeform"}'::jsonb
     );
     raise exception 'archive_verification_public_editor_metadata_allowed';
   exception

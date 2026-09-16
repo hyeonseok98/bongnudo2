@@ -1,6 +1,10 @@
 import "server-only";
 
 import type { AuthenticatedUser } from "@/features/auth/session";
+import {
+  getClipPageForArchiveParticipant,
+} from "@/features/clips/get-clips";
+import type { ClipCursor, ClipPage } from "@/features/clips/clip";
 import type { Json } from "@/lib/supabase/database.types";
 import { getSupabaseAdminClient } from "@/lib/supabase/server";
 
@@ -8,8 +12,10 @@ import type {
   ArchiveCategory,
   ArchiveDetail,
   ArchiveEditPolicy,
+  ArchiveKind,
   ArchiveSaveResult,
   ArchiveStatus,
+  ArchiveStructureMode,
   ArchiveVisibility,
 } from "./archive";
 import { ArchiveRequestError } from "./archive-error";
@@ -135,6 +141,9 @@ export async function getArchiveDetail(
       id,
       owner_id,
       season_id,
+      archive_kind,
+      structure_mode,
+      system_participant_id,
       title,
       description,
       category,
@@ -142,7 +151,14 @@ export async function getArchiveDetail(
       edit_policy,
       status,
       current_revision,
-      deleted_at
+      deleted_at,
+      system_participant:season_participants!archives_system_participant_same_season_fkey (
+        id,
+        rp_name,
+        streamer:streamers!inner (
+          name
+        )
+      )
     `)
     .eq("id", archiveId)
     .maybeSingle();
@@ -166,7 +182,7 @@ export async function getArchiveDetail(
   const [chaptersResult, itemsResult] = await Promise.all([
     supabase
       .from("archive_chapters")
-      .select("id, title, description, sort_order")
+      .select("id, title, description, sort_order, season_day_id")
       .eq("archive_id", archive.id)
       .order("sort_order", { ascending: true }),
     supabase
@@ -197,10 +213,12 @@ export async function getArchiveDetail(
 
   return {
     category: toArchiveCategory(archive.category),
+    archiveKind: toArchiveKind(archive.archive_kind),
     chapters: chaptersResult.data.map((chapter) => ({
       description: chapter.description,
       id: chapter.id,
       items: itemsByChapterId.get(chapter.id) ?? [],
+      seasonDayId: chapter.season_day_id,
       sortOrder: chapter.sort_order,
       title: chapter.title,
     })),
@@ -211,9 +229,78 @@ export async function getArchiveDetail(
     isOwner: archive.owner_id === viewer?.id,
     seasonId: archive.season_id,
     status: toArchiveStatus(archive.status),
+    structureMode: toArchiveStructureMode(archive.structure_mode),
+    systemParticipant: archive.system_participant
+      ? {
+          id: archive.system_participant.id,
+          rpName: archive.system_participant.rp_name,
+          streamerName: archive.system_participant.streamer.name,
+        }
+      : null,
     title: archive.title,
     visibility: toArchiveVisibility(archive.visibility),
   };
+}
+
+export async function getSystemArchiveClipPage(
+  archiveId: string,
+  dayNumber: number | null,
+  cursor: ClipCursor | null,
+): Promise<ClipPage | null> {
+  const supabase = getSupabaseAdminClient();
+  const archiveResult = await supabase
+    .from("archives")
+    .select("archive_kind, deleted_at, season_id, system_participant_id, visibility")
+    .eq("id", archiveId)
+    .maybeSingle();
+
+  if (archiveResult.error) {
+    throw new ArchiveRequestError("아카이브를 불러오지 못했습니다.", 500, {
+      cause: archiveResult.error,
+    });
+  }
+
+  const archive = archiveResult.data;
+
+  if (
+    !archive ||
+    archive.archive_kind !== "system_character" ||
+    archive.deleted_at !== null ||
+    archive.visibility !== "public" ||
+    archive.system_participant_id === null
+  ) {
+    return null;
+  }
+
+  let seasonDayId: string | null = null;
+
+  if (dayNumber !== null) {
+    const seasonDayResult = await supabase
+      .from("season_days")
+      .select("id")
+      .eq("season_id", archive.season_id)
+      .eq("day_number", dayNumber)
+      .maybeSingle();
+
+    if (seasonDayResult.error) {
+      throw new ArchiveRequestError("봉누도 일차를 확인하지 못했습니다.", 500, {
+        cause: seasonDayResult.error,
+      });
+    }
+
+    if (!seasonDayResult.data) {
+      return { items: [], nextCursor: null };
+    }
+
+    seasonDayId = seasonDayResult.data.id;
+  }
+
+  return getClipPageForArchiveParticipant(
+    archive.season_id,
+    archive.system_participant_id,
+    seasonDayId,
+    cursor,
+  );
 }
 
 function parseArchiveRequest<T>(schema: { safeParse: (value: unknown) => { data: T; success: true } | { error: { issues: Array<{ message: string }> }; success: false } }, value: unknown): T {
@@ -255,6 +342,7 @@ function toArchiveContentJson(content: ReturnType<typeof toArchiveContentInput>)
         clipId: item.clipId,
         note: item.note,
       })),
+      seasonDayId: chapter.seasonDayId,
       title: chapter.title,
     })),
   };
@@ -266,6 +354,7 @@ function toArchiveMetadataJson(metadata: ReturnType<typeof toArchiveMetadataInpu
     description: metadata.description,
     editPolicy: metadata.editPolicy,
     status: metadata.status,
+    structureMode: metadata.structureMode,
     title: metadata.title,
     visibility: metadata.visibility,
   };
@@ -296,6 +385,8 @@ function throwArchiveRpcError(error: ArchiveRpcError): never {
       });
     case "archive_deleted":
       throw new ArchiveRequestError("삭제된 아카이브입니다.", 404, { cause: error });
+    case "system_archive_read_only":
+      throw new ArchiveRequestError("시스템 아카이브는 수정할 수 없습니다.", 403, { cause: error });
     case "archive_duplicate_clip":
       throw new ArchiveRequestError("같은 클립을 중복해서 추가할 수 없습니다.", 400, {
         cause: error,
@@ -319,6 +410,14 @@ function toArchiveCategory(value: string): ArchiveCategory {
   throw new ArchiveRequestError("아카이브 정보가 올바르지 않습니다.", 500);
 }
 
+function toArchiveKind(value: string): ArchiveKind {
+  if (value === "system_character" || value === "user") {
+    return value;
+  }
+
+  throw new ArchiveRequestError("아카이브 정보가 올바르지 않습니다.", 500);
+}
+
 function toArchiveEditPolicy(value: string): ArchiveEditPolicy {
   if (value === "owner_only" || value === "public_edit") {
     return value;
@@ -329,6 +428,14 @@ function toArchiveEditPolicy(value: string): ArchiveEditPolicy {
 
 function toArchiveStatus(value: string): ArchiveStatus {
   if (value === "ongoing" || value === "completed") {
+    return value;
+  }
+
+  throw new ArchiveRequestError("아카이브 정보가 올바르지 않습니다.", 500);
+}
+
+function toArchiveStructureMode(value: string | null): ArchiveStructureMode | null {
+  if (value === null || value === "day_based" || value === "freeform") {
     return value;
   }
 

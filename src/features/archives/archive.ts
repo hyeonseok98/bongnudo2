@@ -1,6 +1,8 @@
 export type ArchiveCategory = "character" | "incident" | "series" | "other";
+export type ArchiveKind = "system_character" | "user";
 export type ArchiveEditPolicy = "owner_only" | "public_edit";
 export type ArchiveStatus = "ongoing" | "completed";
+export type ArchiveStructureMode = "day_based" | "freeform";
 export type ArchiveVisibility = "private" | "public";
 
 export interface ArchiveMetadataInput {
@@ -8,6 +10,7 @@ export interface ArchiveMetadataInput {
   description: string | null;
   editPolicy: ArchiveEditPolicy;
   status: ArchiveStatus;
+  structureMode: ArchiveStructureMode;
   title: string;
   visibility: ArchiveVisibility;
 }
@@ -19,6 +22,7 @@ export interface ArchiveContentInput {
 export interface ArchiveChapterInput {
   description: string | null;
   items: ArchiveItemInput[];
+  seasonDayId: string | null;
   title: string;
 }
 
@@ -50,15 +54,18 @@ export interface ArchiveSaveResult {
 }
 
 export interface ArchiveDetail {
+  archiveKind: ArchiveKind;
   category: ArchiveCategory;
   chapters: ArchiveDetailChapter[];
-  currentRevision: number;
+  currentRevision: number | null;
   description: string | null;
   editPolicy: ArchiveEditPolicy;
   id: string;
   isOwner: boolean;
   seasonId: number;
   status: ArchiveStatus;
+  structureMode: ArchiveStructureMode | null;
+  systemParticipant: ArchiveSystemParticipant | null;
   title: string;
   visibility: ArchiveVisibility;
 }
@@ -67,6 +74,7 @@ export interface ArchiveDetailChapter {
   description: string | null;
   id: string;
   items: ArchiveDetailItem[];
+  seasonDayId: string | null;
   sortOrder: number;
   title: string;
 }
@@ -76,4 +84,10 @@ export interface ArchiveDetailItem {
   id: string;
   note: string | null;
   sortOrder: number;
+}
+
+export interface ArchiveSystemParticipant {
+  id: string;
+  rpName: string | null;
+  streamerName: string;
 }
