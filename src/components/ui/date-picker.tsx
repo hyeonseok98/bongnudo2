@@ -88,7 +88,7 @@ export function DatePicker({
         aria-invalid={isInvalid || undefined}
         aria-label={label}
         className={cn(
-          "flex h-11 w-full min-w-0 cursor-pointer items-center justify-between gap-3 rounded-lg border border-control bg-background px-3 text-body-sm font-medium text-primary outline-none transition-[background-color,border-color] duration-default hover:bg-surface-muted focus-visible:border-focus-ring data-popup-open:border-brand motion-reduce:transition-none",
+          "flex h-10 w-full min-w-0 cursor-pointer items-center justify-between gap-3 rounded-lg border border-default bg-background px-3 text-body-sm font-medium text-primary outline-none transition-[background-color,border-color] duration-default hover:bg-surface-muted focus-visible:border-focus-ring data-popup-open:border-brand motion-reduce:transition-none",
           className,
         )}
       >

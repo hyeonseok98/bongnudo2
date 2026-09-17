@@ -4,14 +4,19 @@ import {
   buildJobAffiliationFilterNodes,
   buildStreamerAffiliationFilterData,
 } from "@/app/characters/_utils/character-directory";
+import {
+  AppliedFilterSummary,
+  type AppliedFilterItem,
+} from "@/components/filters/applied-filter-summary";
 import { FilterBar } from "@/components/filters/filter-bar";
 import {
   HierarchicalFilter,
+  type FilterTreeNode,
   type HierarchicalFilterSelection,
 } from "@/components/filters/hierarchical-filter";
+import { ParticipantFilter } from "@/components/filters/participant-filter";
 import { Button } from "@/components/ui/button";
 import { DatePicker } from "@/components/ui/date-picker";
-import { SearchField } from "@/components/ui/search-field";
 import { Select } from "@/components/ui/select";
 import type { ClipOptions } from "@/features/clips/clip";
 import type {
@@ -27,16 +32,14 @@ interface ClipFiltersProps {
   groups: HierarchicalFilterSelection;
   jobs: HierarchicalFilterSelection;
   options: ClipOptions;
-  participantId: string | null;
-  query: string;
+  participantIds: string[];
   searchLabel?: string;
   streamerAffiliations: StreamerAffiliation[];
   onDateChange: (date: string | null) => void;
   onDayChange: (day: number | null) => void;
   onGroupsApply: (selection: HierarchicalFilterSelection) => void;
   onJobsApply: (selection: HierarchicalFilterSelection) => void;
-  onParticipantChange: (participantId: string | null) => void;
-  onQueryChange: (query: string) => void;
+  onParticipantsChange: (participantIds: string[]) => void;
   onReset: () => void;
 }
 
@@ -47,16 +50,14 @@ export function ClipFilters({
   groups,
   jobs,
   options,
-  participantId,
-  query,
-  searchLabel = "클립 검색",
+  participantIds,
+  searchLabel = "인물 검색",
   streamerAffiliations,
   onDateChange,
   onDayChange,
   onGroupsApply,
   onJobsApply,
-  onParticipantChange,
-  onQueryChange,
+  onParticipantsChange,
   onReset,
 }: ClipFiltersProps) {
   const jobNodes = buildJobAffiliationFilterNodes(characters);
@@ -64,66 +65,66 @@ export function ClipFilters({
     characters,
     streamerAffiliations,
   );
-  const participantNodes = characters
-    .filter((character) => character.rpName !== null)
-    .map((character) => ({
-      id: character.id,
+  const selectedParticipants = characters.filter((character) =>
+    participantIds.includes(character.id),
+  );
+  const items: AppliedFilterItem[] = [
+    ...(day === null
+      ? []
+      : [{ id: "day", label: `${day}일차`, onRemove: () => onDayChange(null) }]),
+    ...(date === null
+      ? []
+      : [{ id: "date", label: date, onRemove: () => onDateChange(null) }]),
+    ...jobs.ids.map((id) => ({
+      id: `job:${id}`,
+      label: findFilterLabel(jobNodes, id),
+      onRemove: () => onJobsApply({ ids: jobs.ids.filter((value) => value !== id) }),
+    })),
+    ...groups.ids.map((id) => ({
+      id: `group:${id}`,
+      label: findFilterLabel(groupFilterData.nodes, id),
+      onRemove: () => onGroupsApply({ ids: groups.ids.filter((value) => value !== id) }),
+    })),
+    ...selectedParticipants.map((character) => ({
+      id: `participant:${character.id}`,
       label: character.rpName ?? character.streamerName,
-    }))
-    .sort((left, right) => left.label.localeCompare(right.label, "ko-KR"));
-  const dayValue = day === null ? "all" : String(day);
-  const participantSelection = {
-    ids: participantId ? [participantId] : [],
-  };
+      onRemove: () =>
+        onParticipantsChange(
+          participantIds.filter((id) => id !== character.id),
+        ),
+    })),
+  ];
 
   function getResultCount(selection: HierarchicalFilterSelection): number {
-    return selection.ids.length === 0 ? characters.length : selection.ids.length;
+    return selection.ids.length;
   }
 
   return (
-    <section aria-label="클립 검색 및 필터" className="space-y-3">
-      <SearchField
-        label={searchLabel}
-        onChange={(event) => onQueryChange(event.target.value)}
-        onClear={() => onQueryChange("")}
-        placeholder="스트리머명 또는 RP 캐릭터 이름으로 검색해보세요"
-        value={query}
-      />
-
+    <section aria-label={`${searchLabel} 및 필터`} className="space-y-3">
       <FilterBar>
         <Select
+          className="w-44"
           label="봉누도 일차"
-          onValueChange={(value) => onDayChange(value === "all" ? null : Number(value))}
+          onValueChange={(value) =>
+            onDayChange(value === "all" ? null : Number(value))
+          }
           options={[
-            { label: "봉누도 일차 전체", value: "all" },
+            { label: "일차 전체", value: "all" },
             ...options.seasonDays.map((seasonDay) => ({
               label: `${seasonDay.dayNumber}일차 · ${seasonDay.sessionDate}`,
               value: String(seasonDay.dayNumber),
             })),
           ]}
-          value={dayValue}
+          value={day === null ? "all" : String(day)}
         />
-        <div className="flex items-center gap-1">
-          <DatePicker
-            className="w-44"
-            label="클립 날짜"
-            max={getCurrentKstDate()}
-            onValueChange={onDateChange}
-            placeholder="날짜 선택"
-            value={date}
-          />
-          {date ? (
-            <Button
-              aria-label="날짜 필터 지우기"
-              onClick={() => onDateChange(null)}
-              size="icon-sm"
-              type="button"
-              variant="ghost"
-            >
-              ×
-            </Button>
-          ) : null}
-        </div>
+        <DatePicker
+          className="w-44"
+          label="날짜"
+          max={getCurrentKstDate()}
+          onValueChange={onDateChange}
+          placeholder="날짜 선택"
+          value={date}
+        />
         <HierarchicalFilter
           getResultCount={getResultCount}
           label="직업"
@@ -140,19 +141,37 @@ export function ClipFilters({
           quickOptions={groupFilterData.quickOptions}
           value={groups}
         />
-        <HierarchicalFilter
-          getResultCount={getResultCount}
-          label="인물"
-          nodes={participantNodes}
-          onApply={(selection) => onParticipantChange(selection.ids[0] ?? null)}
-          panelSize="compact"
-          selectionMode="single"
-          value={participantSelection}
+        <ParticipantFilter
+          className="w-52"
+          onValueChange={onParticipantsChange}
+          value={participantIds}
         />
         <Button onClick={onReset} size="sm" type="button" variant="ghost">
           필터 초기화
         </Button>
       </FilterBar>
+      <AppliedFilterSummary items={items} onClearAll={onReset} />
     </section>
   );
+}
+
+function findFilterLabel(
+  nodes: FilterTreeNode[],
+  id: string,
+): string {
+  for (const node of nodes) {
+    if (node.id === id) {
+      return node.label;
+    }
+
+    if (node.children) {
+      const label = findFilterLabel(node.children, id);
+
+      if (label !== id) {
+        return label;
+      }
+    }
+  }
+
+  return id;
 }

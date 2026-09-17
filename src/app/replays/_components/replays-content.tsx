@@ -38,15 +38,13 @@ export function ReplaysContent({ canManageCollectedMedia }: ReplaysContentProps)
         groups={directory.groupSelection}
         jobs={directory.jobSelection}
         options={optionsQuery.data}
-        participantId={directory.participantId}
-        query={directory.query}
+        participantIds={directory.participantIds}
         streamerAffiliations={streamerAffiliations}
         onDateChange={directory.changeDate}
         onDayChange={directory.changeDay}
         onGroupsApply={directory.applyGroups}
         onJobsApply={directory.applyJobs}
-        onParticipantChange={directory.changeParticipant}
-        onQueryChange={directory.changeQuery}
+        onParticipantsChange={directory.changeParticipants}
         onReset={directory.resetFilters}
       />
 
@@ -56,9 +54,14 @@ export function ReplaysContent({ canManageCollectedMedia }: ReplaysContentProps)
         <p className="text-body-sm text-status-danger" role="alert">다시보기를 불러오지 못함.</p>
       ) : (
         <section aria-labelledby="replay-results-heading" className="space-y-4">
-          <h2 className="text-body-sm text-secondary" id="replay-results-heading">
-            현재 불러온 다시보기 <strong className="font-semibold text-brand-text">{replays.length}개</strong>
-          </h2>
+          <div>
+            <h2 className="text-body-sm text-secondary" id="replay-results-heading">
+              현재 불러온 다시보기 <strong className="font-semibold text-brand-text">{replays.length}개</strong>
+            </h2>
+            {replaysQuery.isFetching && !replaysQuery.isFetchingNextPage ? (
+              <p className="mt-1 text-caption text-tertiary" role="status">필터 결과를 업데이트하는 중입니다.</p>
+            ) : null}
+          </div>
           {replays.length > 0 ? (
             <ReplayCardGrid
               canManageCollectedMedia={canManageCollectedMedia}

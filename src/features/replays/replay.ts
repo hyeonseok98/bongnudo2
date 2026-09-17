@@ -3,7 +3,7 @@ export interface ReplayListFilters {
   day: number | null;
   groups: string[];
   jobs: string[];
-  participantId: string | null;
+  participantIds: string[];
   query: string;
 }
 

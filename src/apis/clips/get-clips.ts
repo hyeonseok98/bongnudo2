@@ -68,7 +68,7 @@ export async function getClips(
   if (filters.query) searchParams.set("q", filters.query);
   if (filters.groups.length > 0) searchParams.set("groups", filters.groups.join(","));
   if (filters.jobs.length > 0) searchParams.set("jobs", filters.jobs.join(","));
-  if (filters.participantId) searchParams.set("participant", filters.participantId);
+  if (filters.participantIds.length > 0) searchParams.set("participant", filters.participantIds.join(","));
   if (filters.day !== null) searchParams.set("day", String(filters.day));
   if (filters.date !== null) searchParams.set("date", filters.date);
   if (filters.sort !== "latest") searchParams.set("sort", filters.sort);

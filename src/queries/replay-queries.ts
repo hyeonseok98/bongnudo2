@@ -1,4 +1,9 @@
-import { infiniteQueryOptions, queryOptions, type InfiniteData } from "@tanstack/react-query";
+import {
+  infiniteQueryOptions,
+  keepPreviousData,
+  queryOptions,
+  type InfiniteData,
+} from "@tanstack/react-query";
 
 import { getReplayOptions, getReplays } from "@/apis/replays/get-replays";
 import type { ReplayCursor, ReplayListFilters, ReplayPage } from "@/features/replays/replay";
@@ -19,6 +24,7 @@ export const replayQueries = {
     >({
       queryKey: [...replayQueries.all(), "list", filters] as const,
       queryFn: ({ pageParam }) => getReplays(filters, pageParam),
+      placeholderData: keepPreviousData,
       initialPageParam: null,
       getNextPageParam: (page) => page.nextCursor,
     }),

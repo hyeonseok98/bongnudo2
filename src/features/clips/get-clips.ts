@@ -308,7 +308,7 @@ async function resolveParticipantIds(
   const hasGroups = filters.groups.length > 0;
 
   if (!hasQuery && !hasGroups) {
-    return filters.participantId ? [filters.participantId] : null;
+    return filters.participantIds.length > 0 ? filters.participantIds : null;
   }
 
   const { data, error } = await createParticipantCandidatesQuery(client)
@@ -322,7 +322,10 @@ async function resolveParticipantIds(
 
   return data
     .filter((participant) => {
-      if (filters.participantId && participant.id !== filters.participantId) {
+      if (
+        filters.participantIds.length > 0 &&
+        !filters.participantIds.includes(participant.id)
+      ) {
         return false;
       }
 

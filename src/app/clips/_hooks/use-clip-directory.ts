@@ -21,7 +21,7 @@ const clipQueryParsers = {
   q: parseAsString.withDefault(""),
   groups: parseAsArrayOf(parseAsString).withDefault([]),
   jobs: parseAsArrayOf(parseAsString).withDefault([]),
-  participant: parseAsString,
+  participant: parseAsArrayOf(parseAsString).withDefault([]),
   day: parseAsInteger,
   date: parseAsString,
   sort: parseAsStringLiteral(CLIP_SORT_VALUES).withDefault("latest"),
@@ -34,7 +34,7 @@ export interface ClipDirectory {
   filters: ClipListFilters;
   groupSelection: HierarchicalFilterSelection;
   jobSelection: HierarchicalFilterSelection;
-  participantId: string | null;
+  participantIds: string[];
   query: string;
   sort: ClipSort;
   view: ClipView;
@@ -42,7 +42,7 @@ export interface ClipDirectory {
   applyJobs: (selection: HierarchicalFilterSelection) => void;
   changeDate: (date: string | null) => void;
   changeDay: (day: number | null) => void;
-  changeParticipant: (participantId: string | null) => void;
+  changeParticipants: (participantIds: string[]) => void;
   changeQuery: (query: string) => void;
   changeSort: (sort: ClipSort) => void;
   changeView: (view: ClipView) => void;
@@ -71,8 +71,11 @@ export function useClipDirectory(): ClipDirectory {
     );
   }
 
-  function changeParticipant(participantId: string | null) {
-    void setQueryState({ participant: participantId }, { history: "replace" });
+  function changeParticipants(participantIds: string[]) {
+    void setQueryState(
+      { participant: participantIds.length > 0 ? participantIds : null },
+      { history: "replace" },
+    );
   }
 
   function changeDay(nextDay: number | null) {
@@ -99,7 +102,6 @@ export function useClipDirectory(): ClipDirectory {
   function changeView(nextView: ClipView) {
     void setQueryState(
       {
-        sort: nextView === "people" ? null : undefined,
         view: nextView === "timeline" ? null : nextView,
       },
       { history: "replace" },
@@ -128,13 +130,13 @@ export function useClipDirectory(): ClipDirectory {
       day,
       groups,
       jobs,
-      participantId: participant,
+      participantIds: participant,
       query: q,
       sort,
     },
     groupSelection: { ids: groups },
     jobSelection: { ids: jobs },
-    participantId: participant,
+    participantIds: participant,
     query: q,
     sort,
     view,
@@ -142,7 +144,7 @@ export function useClipDirectory(): ClipDirectory {
     applyJobs,
     changeDate,
     changeDay,
-    changeParticipant,
+    changeParticipants,
     changeQuery,
     changeSort,
     changeView,

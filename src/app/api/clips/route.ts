@@ -51,7 +51,7 @@ function parseFilters(searchParams: URLSearchParams): ClipListFilters | null {
   const query = searchParams.get("q")?.trim() ?? "";
   const groups = parseFilterValues(searchParams.get("groups"));
   const jobs = parseFilterValues(searchParams.get("jobs"));
-  const participantId = searchParams.get("participant");
+  const participantIds = parseParticipantIds(searchParams.get("participant"));
   const dayValue = searchParams.get("day");
   const date = searchParams.get("date");
   const sort = searchParams.get("sort") ?? "latest";
@@ -60,7 +60,7 @@ function parseFilters(searchParams: URLSearchParams): ClipListFilters | null {
     query.length > 100 ||
     groups === null ||
     jobs === null ||
-    (participantId !== null && !UUID_PATTERN.test(participantId)) ||
+    participantIds === null ||
     (dayValue !== null &&
       (!/^\d+$/.test(dayValue) ||
         !Number.isSafeInteger(Number(dayValue)) ||
@@ -77,10 +77,22 @@ function parseFilters(searchParams: URLSearchParams): ClipListFilters | null {
     day: dayValue === null ? null : Number(dayValue),
     groups,
     jobs,
-    participantId,
+    participantIds,
     query,
     sort,
   };
+}
+
+function parseParticipantIds(value: string | null): string[] | null {
+  if (value === null || value === "") {
+    return [];
+  }
+
+  const values = Array.from(new Set(value.split(",").map((item) => item.trim()).filter(Boolean)));
+
+  return values.length <= MAX_FILTER_VALUES && values.every((item) => UUID_PATTERN.test(item))
+    ? values
+    : null;
 }
 
 function parseFilterValues(value: string | null): string[] | null {

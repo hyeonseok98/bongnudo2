@@ -147,7 +147,6 @@ export function HierarchicalFilter({
       labelNodes={labelNodes}
       nodes={nodes}
       quickOptions={quickOptions}
-      resultCount={getResultCount(draftSelection)}
       searchQuery={searchQuery}
       isAllSelected={isAllSelected}
       onApply={handleApply}
@@ -256,7 +255,7 @@ function FilterTriggerContent({
 
 function getTriggerClassName(isOpen: boolean) {
   return cn(
-    "inline-flex h-11 min-w-40 cursor-pointer items-center gap-2 rounded-lg border bg-background px-3 text-left transition-[background-color,border-color] duration-default hover:bg-surface-muted focus-visible:border-focus-ring disabled:pointer-events-none disabled:opacity-50",
+    "inline-flex h-10 min-w-36 cursor-pointer items-center gap-2 rounded-lg border bg-background px-3 text-left transition-[background-color,border-color] duration-default hover:bg-surface-muted focus-visible:border-focus-ring disabled:pointer-events-none disabled:opacity-50",
     isOpen ? "border-brand" : "border-default",
   );
 }
@@ -270,7 +269,6 @@ interface FilterContentProps {
   labelNodes: FilterTreeNode[];
   nodes: FilterTreeNode[];
   quickOptions: QuickFilterOption[];
-  resultCount: number;
   searchQuery: string;
   isAllSelected: boolean;
   onApply: () => void;
@@ -292,7 +290,6 @@ function FilterContent({
   labelNodes,
   nodes,
   quickOptions,
-  resultCount,
   searchQuery,
   isAllSelected,
   onApply,
@@ -414,7 +411,7 @@ function FilterContent({
           취소
         </Button>
         <Button className="min-w-32" onClick={onApply}>
-          {applyLabel ?? `${resultCount}명 보기`}
+          {applyLabel ?? "선택 적용"}
         </Button>
       </div>
     </div>

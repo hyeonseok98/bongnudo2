@@ -9,7 +9,7 @@ const replayQueryParsers = {
   q: parseAsString.withDefault(""),
   groups: parseAsArrayOf(parseAsString).withDefault([]),
   jobs: parseAsArrayOf(parseAsString).withDefault([]),
-  participant: parseAsString,
+  participant: parseAsArrayOf(parseAsString).withDefault([]),
   day: parseAsInteger,
   date: parseAsString,
 };
@@ -20,13 +20,13 @@ export interface ReplayDirectory {
   filters: ReplayListFilters;
   groupSelection: HierarchicalFilterSelection;
   jobSelection: HierarchicalFilterSelection;
-  participantId: string | null;
+  participantIds: string[];
   query: string;
   applyGroups: (selection: HierarchicalFilterSelection) => void;
   applyJobs: (selection: HierarchicalFilterSelection) => void;
   changeDate: (date: string | null) => void;
   changeDay: (day: number | null) => void;
-  changeParticipant: (participantId: string | null) => void;
+  changeParticipants: (participantIds: string[]) => void;
   changeQuery: (query: string) => void;
   resetFilters: () => void;
 }
@@ -46,8 +46,11 @@ export function useReplayDirectory(): ReplayDirectory {
     void setQueryState({ jobs: toFilterValues(selection) }, { history: "replace" });
   }
 
-  function changeParticipant(participantId: string | null) {
-    void setQueryState({ participant: participantId }, { history: "replace" });
+  function changeParticipants(participantIds: string[]) {
+    void setQueryState(
+      { participant: participantIds.length > 0 ? participantIds : null },
+      { history: "replace" },
+    );
   }
 
   function changeDay(nextDay: number | null) {
@@ -68,16 +71,16 @@ export function useReplayDirectory(): ReplayDirectory {
   return {
     date,
     day,
-    filters: { date, day, groups, jobs, participantId: participant, query: q },
+    filters: { date, day, groups, jobs, participantIds: participant, query: q },
     groupSelection: { ids: groups },
     jobSelection: { ids: jobs },
-    participantId: participant,
+    participantIds: participant,
     query: q,
     applyGroups,
     applyJobs,
     changeDate,
     changeDay,
-    changeParticipant,
+    changeParticipants,
     changeQuery,
     resetFilters,
   };

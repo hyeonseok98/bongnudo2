@@ -4,6 +4,7 @@ import Link from "next/link";
 
 import { Archive, LogIn, Plus } from "lucide-react";
 
+import { useCharacters } from "@/app/characters/_hooks/use-characters";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { cn } from "@/utils/cn";
 
@@ -18,6 +19,7 @@ interface ArchivesContentProps {
 
 export function ArchivesContent({ isSignedIn }: ArchivesContentProps) {
   const directory = useArchiveDirectory();
+  const charactersQuery = useCharacters();
   const archivesQuery = useArchives(directory.filters);
   const archives = archivesQuery.data?.pages.flatMap((page) => page.items) ?? [];
 
@@ -35,6 +37,7 @@ export function ArchivesContent({ isSignedIn }: ArchivesContentProps) {
 
       <ArchiveFilters
         category={directory.category}
+        characters={charactersQuery.data?.characters ?? []}
         participantId={directory.participantId}
         searchInput={directory.searchInput}
         sort={directory.sort}

@@ -1,5 +1,6 @@
 import {
   infiniteQueryOptions,
+  keepPreviousData,
   queryOptions,
   type InfiniteData,
 } from "@tanstack/react-query";
@@ -28,6 +29,7 @@ export const clipQueries = {
     >({
       queryKey: [...clipQueries.all(), "list", filters] as const,
       queryFn: ({ pageParam }) => getClips(filters, pageParam),
+      placeholderData: keepPreviousData,
       initialPageParam: null,
       getNextPageParam: (page) => page.nextCursor,
     }),

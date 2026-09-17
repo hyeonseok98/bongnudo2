@@ -41,12 +41,12 @@ export function Select<Value extends string>({
         aria-label={label}
         disabled={disabled}
         className={cn(
-          "inline-flex h-10 min-w-28 cursor-pointer items-center justify-between gap-2 rounded-lg border border-default bg-background px-3 text-body-sm font-medium text-primary outline-none transition-[background-color,border-color] duration-default hover:bg-surface-muted focus-visible:border-focus-ring data-popup-open:border-brand disabled:cursor-not-allowed disabled:opacity-50 motion-reduce:transition-none",
+          "inline-flex h-10 min-w-36 cursor-pointer items-center justify-between gap-2 rounded-lg border border-default bg-background px-3 text-body-sm font-medium text-primary outline-none transition-[background-color,border-color] duration-default hover:bg-surface-muted focus-visible:border-focus-ring data-popup-open:border-brand disabled:cursor-not-allowed disabled:opacity-50 motion-reduce:transition-none",
           className,
         )}
       >
-        <span>{options.find((option) => option.value === value)?.label}</span>
-        <ChevronDown aria-hidden="true" className="size-4 text-tertiary" />
+        <span className="min-w-0 flex-1 truncate">{options.find((option) => option.value === value)?.label}</span>
+        <ChevronDown aria-hidden="true" className="size-4 shrink-0 text-tertiary" />
       </Popover.Trigger>
       <Popover.Portal>
         <Popover.Positioner
@@ -57,7 +57,7 @@ export function Select<Value extends string>({
         >
           <Popover.Popup className="min-w-[var(--anchor-width)] overflow-hidden rounded-lg border border-default bg-surface-raised p-1 shadow-xl outline-none transition-[transform,opacity] duration-default data-ending-style:scale-95 data-ending-style:opacity-0 data-starting-style:scale-95 data-starting-style:opacity-0 motion-reduce:transition-none">
             <Popover.Title className="sr-only">{label}</Popover.Title>
-            <div aria-label={label} role="listbox">
+            <div aria-label={label} className="max-h-64 overflow-y-auto" role="listbox">
               {options.map((option) => (
                 <button
                   aria-selected={option.value === value}

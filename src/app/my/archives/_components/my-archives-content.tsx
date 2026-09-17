@@ -53,7 +53,7 @@ export function MyArchivesContent() {
           <button
             aria-selected={tab === tabValue}
             className={cn(
-              "rounded-lg border px-3 py-2 text-body-sm font-medium transition-[background-color,border-color,color] duration-default",
+              "cursor-pointer rounded-lg border px-3 py-2 text-body-sm font-medium transition-[background-color,border-color,color] duration-default",
               tab === tabValue
                 ? "border-brand bg-brand/10 text-brand-text"
                 : "border-default text-secondary hover:bg-surface-muted hover:text-primary",

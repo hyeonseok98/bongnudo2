@@ -48,15 +48,13 @@ export function ClipsContent({ canManageCollectedMedia }: ClipsContentProps) {
         groups={directory.groupSelection}
         jobs={directory.jobSelection}
         options={optionsQuery.data}
-        participantId={directory.participantId}
-        query={directory.query}
+        participantIds={directory.participantIds}
         streamerAffiliations={streamerAffiliations}
         onDateChange={directory.changeDate}
         onDayChange={directory.changeDay}
         onGroupsApply={directory.applyGroups}
         onJobsApply={directory.applyJobs}
-        onParticipantChange={directory.changeParticipant}
-        onQueryChange={directory.changeQuery}
+        onParticipantsChange={directory.changeParticipants}
         onReset={directory.resetFilters}
       />
 
@@ -71,28 +69,31 @@ export function ClipsContent({ canManageCollectedMedia }: ClipsContentProps) {
       ) : (
         <section aria-labelledby="clip-results-heading" className="space-y-4">
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-            <h2 className="text-body-sm text-secondary" id="clip-results-heading">
-              현재 불러온 클립 <strong className="font-semibold text-brand-text">{clips.length}개</strong>
-            </h2>
+            <div>
+              <h2 className="text-body-sm text-secondary" id="clip-results-heading">
+                현재 불러온 클립 <strong className="font-semibold text-brand-text">{clips.length}개</strong>
+              </h2>
+              {clipsQuery.isFetching && !clipsQuery.isFetchingNextPage ? (
+                <p className="mt-1 text-caption text-tertiary" role="status">필터 결과를 업데이트하는 중입니다.</p>
+              ) : null}
+            </div>
             <div className="flex items-center gap-2 self-end sm:self-auto">
               <ClipViewToggle
                 view={directory.view}
                 onViewChange={directory.changeView}
               />
-              {directory.view === "timeline" ? (
-                <>
-                  <span className="text-body-sm text-secondary">정렬</span>
-                  <Select
-                    label="클립 정렬"
-                    onValueChange={directory.changeSort}
-                    options={[
-                      { label: "최신순", value: "latest" },
-                      { label: "오래된순", value: "oldest" },
-                    ]}
-                    value={directory.sort}
-                  />
-                </>
-              ) : null}
+              <>
+                <span className="text-body-sm text-secondary">정렬</span>
+                <Select
+                  label="클립 정렬"
+                  onValueChange={directory.changeSort}
+                  options={[
+                    { label: "최신순", value: "latest" },
+                    { label: "오래된순", value: "oldest" },
+                  ]}
+                  value={directory.sort}
+                />
+              </>
             </div>
           </div>
 
