@@ -1,6 +1,6 @@
 "use client";
 
-import { LogIn, Plus } from "lucide-react";
+import { ArrowLeft, Check, LogIn, Plus } from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
 import { useMutation, useQuery } from "@tanstack/react-query";
@@ -10,8 +10,14 @@ import { Button, buttonVariants } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
-import type { ArchiveCategory, ArchiveStructureMode } from "@/features/archives/archive";
+import type {
+  ArchiveCategory,
+  ArchiveEditPolicy,
+  ArchiveStructureMode,
+  ArchiveVisibility,
+} from "@/features/archives/archive";
 import { archiveMutations, archiveQueries } from "@/queries/archive-queries";
+import { cn } from "@/utils/cn";
 
 import { createNewArchiveContent } from "./archive-editor-draft";
 
@@ -25,7 +31,17 @@ export function ArchiveCreateContent({ isSignedIn }: ArchiveCreateContentProps) 
   const createMutation = useMutation(archiveMutations.create());
   const [structureMode, setStructureMode] = useState<ArchiveStructureMode>("freeform");
   const [category, setCategory] = useState<ArchiveCategory>("other");
+  const [visibility, setVisibility] = useState<ArchiveVisibility>("private");
+  const [editPolicy, setEditPolicy] = useState<ArchiveEditPolicy>("owner_only");
   const [message, setMessage] = useState<string | null>(null);
+
+  function changeVisibility(nextVisibility: ArchiveVisibility) {
+    setVisibility(nextVisibility);
+
+    if (nextVisibility === "private") {
+      setEditPolicy("owner_only");
+    }
+  }
 
   function handleSubmit(formData: FormData) {
     if (!optionsQuery.data) {
@@ -40,16 +56,17 @@ export function ArchiveCreateContent({ isSignedIn }: ArchiveCreateContentProps) 
       return;
     }
 
+    setMessage(null);
     createMutation.mutate({
       content: createNewArchiveContent(structureMode, optionsQuery.data.seasonDays),
       metadata: {
         category,
         description: typeof description === "string" && description.trim() ? description : null,
-        editPolicy: "owner_only",
+        editPolicy,
         status: "ongoing",
         structureMode,
         title,
-        visibility: "private",
+        visibility,
       },
       seasonId: optionsQuery.data.seasonId,
     }, {
@@ -74,33 +91,49 @@ export function ArchiveCreateContent({ isSignedIn }: ArchiveCreateContentProps) 
   }
 
   if (optionsQuery.isPending) {
-    return <p className="py-10 text-body-sm text-secondary">아카이브 생성 정보를 불러오는 중입니다.</p>;
+    return <CreateNotice>아카이브 생성 정보를 불러오는 중입니다.</CreateNotice>;
   }
 
   if (optionsQuery.isError) {
-    return <p className="py-10 text-body-sm text-status-danger">아카이브 생성 정보를 불러오지 못했습니다.</p>;
+    return <CreateNotice isError>아카이브 생성 정보를 불러오지 못했습니다.</CreateNotice>;
   }
 
   return (
-    <div className="mx-auto max-w-2xl py-5 sm:py-6 lg:py-8">
-      <header>
+    <div className="mx-auto max-w-3xl py-5 sm:py-6 lg:py-8">
+      <Link className={buttonVariants({ size: "sm", variant: "ghost" })} href="/archives">
+        <ArrowLeft aria-hidden="true" className="size-4" />
+        아카이브 목록
+      </Link>
+
+      <header className="mt-4">
         <p className="text-body-sm font-medium text-brand-text">사용자 제작 아카이브</p>
         <h1 className="mt-1 text-title font-bold text-primary">새 아카이브 만들기</h1>
         <p className="mt-2 text-body-sm text-secondary">기본 정보를 정한 뒤 클립을 담아 나만의 기록을 만들어보세요.</p>
       </header>
 
-      <form action={handleSubmit} className="mt-6 space-y-5 rounded-xl border border-default bg-surface-raised p-5">
-        <label className="block space-y-1.5 text-body-sm font-medium text-primary">
-          제목
-          <Input maxLength={60} name="title" placeholder="아카이브 제목을 입력해주세요." required />
-        </label>
-        <label className="block space-y-1.5 text-body-sm font-medium text-primary">
-          설명
-          <Textarea maxLength={500} name="description" placeholder="아카이브를 소개해주세요. (선택)" />
-        </label>
-        <div className="grid gap-4 sm:grid-cols-2">
-          <label className="space-y-1.5 text-body-sm font-medium text-primary">
-            분류
+      <ol aria-label="아카이브 제작 단계" className="mt-6 grid grid-cols-2 gap-3">
+        <li className="rounded-lg border border-brand bg-surface-selected px-4 py-3 text-body-sm font-semibold text-primary">
+          <span className="mr-2 text-brand-text">1</span>
+          기본 정보
+        </li>
+        <li className="rounded-lg border border-default px-4 py-3 text-body-sm font-medium text-secondary">
+          <span className="mr-2">2</span>
+          클립 구성
+        </li>
+      </ol>
+
+      <form action={handleSubmit} className="mt-5 rounded-xl border border-default bg-surface-raised p-5 sm:p-6">
+        <fieldset className="space-y-6" disabled={createMutation.isPending}>
+          <label className="block space-y-2 text-body-sm font-medium text-primary">
+            <span>제목</span>
+            <Input maxLength={60} name="title" placeholder="아카이브 제목을 입력해주세요." required />
+          </label>
+          <label className="block space-y-2 text-body-sm font-medium text-primary">
+            <span>설명</span>
+            <Textarea maxLength={500} name="description" placeholder="아카이브를 소개해주세요. (선택)" />
+          </label>
+          <label className="block space-y-2 text-body-sm font-medium text-primary">
+            <span>분류</span>
             <Select
               className="w-full"
               label="아카이브 분류"
@@ -114,33 +147,112 @@ export function ArchiveCreateContent({ isSignedIn }: ArchiveCreateContentProps) 
               value={category}
             />
           </label>
-          <label className="space-y-1.5 text-body-sm font-medium text-primary">
-            구성 방식
-            <Select
-              className="w-full"
-              label="아카이브 구성 방식"
-              onValueChange={setStructureMode}
-              options={[
-                { label: "자유 구성", value: "freeform" },
-                { label: "봉누도 일차별", value: "day_based" },
-              ]}
-              value={structureMode}
-            />
-          </label>
-        </div>
-        <p className="rounded-lg bg-surface-muted px-3 py-2 text-caption text-secondary">
-          {structureMode === "freeform"
-            ? "챕터와 클립 순서를 원하는 대로 구성할 수 있습니다."
-            : "운영 일차별 챕터가 생성되며, 같은 일차의 클립만 담을 수 있습니다."}
-        </p>
-        {message ? <p className="text-body-sm text-status-danger">{message}</p> : null}
-        <div className="flex justify-end">
+
+          <fieldset>
+            <legend className="text-body-sm font-medium text-primary">구성 방법</legend>
+            <div className="mt-2 grid gap-3 sm:grid-cols-2">
+              <StructureModeCard
+                description="원하는 챕터와 순서로 이야기를 구성"
+                isSelected={structureMode === "freeform"}
+                onSelect={() => setStructureMode("freeform")}
+                title="자유롭게 구성"
+              />
+              <StructureModeCard
+                description="봉누도 일차를 기준으로 챕터를 구성"
+                isSelected={structureMode === "day_based"}
+                onSelect={() => setStructureMode("day_based")}
+                title="일차별로 구성"
+              />
+            </div>
+          </fieldset>
+
+          <div className="grid gap-5 sm:grid-cols-2">
+            <label className="space-y-2 text-body-sm font-medium text-primary">
+              <span>공개 범위</span>
+              <Select
+                className="w-full"
+                label="아카이브 공개 범위"
+                onValueChange={changeVisibility}
+                options={[
+                  { label: "비공개", value: "private" },
+                  { label: "공개", value: "public" },
+                ]}
+                value={visibility}
+              />
+            </label>
+            <label className="space-y-2 text-body-sm font-medium text-primary">
+              <span>편집 정책</span>
+              <Select
+                className="w-full"
+                disabled={visibility === "private"}
+                label="아카이브 편집 정책"
+                onValueChange={setEditPolicy}
+                options={[
+                  { label: "소유자만 편집", value: "owner_only" },
+                  { label: "로그인 사용자 편집 허용", value: "public_edit" },
+                ]}
+                value={editPolicy}
+              />
+            </label>
+          </div>
+          <p className="text-caption text-secondary">
+            공개한 아카이브는 다시 비공개로 전환할 수 없습니다.
+          </p>
+        </fieldset>
+
+        {message ? <p className="mt-5 text-body-sm text-status-danger" role="alert">{message}</p> : null}
+        <div className="mt-6 flex items-center justify-between gap-3 border-t border-default pt-5">
+          <Link className={buttonVariants({ variant: "outline" })} href="/archives">
+            취소
+          </Link>
           <Button disabled={createMutation.isPending} type="submit">
-            <Plus aria-hidden="true" className="size-4" />
-            {createMutation.isPending ? "생성 중" : "아카이브 만들기"}
+            {createMutation.isPending ? <span className="size-4 animate-spin rounded-full border-2 border-current border-r-transparent" /> : <Plus aria-hidden="true" className="size-4" />}
+            {createMutation.isPending ? "기본 정보를 저장하는 중" : "다음: 클립 구성"}
           </Button>
         </div>
       </form>
     </div>
+  );
+}
+
+function StructureModeCard({
+  description,
+  isSelected,
+  onSelect,
+  title,
+}: {
+  description: string;
+  isSelected: boolean;
+  onSelect: () => void;
+  title: string;
+}) {
+  return (
+    <button
+      aria-pressed={isSelected}
+      className={cn(
+        "cursor-pointer rounded-xl border p-4 text-left transition-colors",
+        isSelected
+          ? "border-brand bg-surface-selected"
+          : "border-default bg-background hover:border-brand/60",
+      )}
+      onClick={onSelect}
+      type="button"
+    >
+      <span className="flex items-center gap-2 text-body-sm font-semibold text-primary">
+        <span className={cn("grid size-4 place-items-center rounded-full border", isSelected ? "border-brand" : "border-default")}>
+          {isSelected ? <Check aria-hidden="true" className="size-3 text-brand-text" /> : null}
+        </span>
+        {title}
+      </span>
+      <span className="mt-2 block text-caption text-secondary">{description}</span>
+    </button>
+  );
+}
+
+function CreateNotice({ children, isError = false }: { children: string; isError?: boolean }) {
+  return (
+    <p className={cn("py-10 text-body-sm", isError ? "text-status-danger" : "text-secondary")}>
+      {children}
+    </p>
   );
 }

@@ -1,8 +1,8 @@
 "use client";
 
-import { AlertTriangle, Check, LogIn, Settings2 } from "lucide-react";
+import { AlertTriangle, ArrowLeft, Check, ExternalLink, LogIn, Settings2 } from "lucide-react";
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { type MouseEvent, useEffect, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
 import { Button, buttonVariants } from "@/components/ui/button";
@@ -30,7 +30,7 @@ export function ArchiveEditor({ archiveId, isSignedIn }: ArchiveEditorProps) {
   const archiveQuery = useQuery(archiveQueries.detail(archiveId));
 
   if (!isSignedIn) {
-    return <ArchiveLoginRequired />;
+    return <ArchiveLoginRequired archiveId={archiveId} />;
   }
 
   if (archiveQuery.isPending) {
@@ -64,6 +64,7 @@ function ArchiveEditorWorkspace({ archive }: { archive: ArchiveDetail }) {
   const [previewClip, setPreviewClip] = useState<ArchiveClipSummary | null>(null);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [isConflictOpen, setIsConflictOpen] = useState(false);
+  const [isSaveComplete, setIsSaveComplete] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
   const isDirty = !isArchiveDraftEqual(draft, savedDraft, archive.canEditMetadata);
   const selectedClipIds = new Set(
@@ -86,6 +87,7 @@ function ArchiveEditorWorkspace({ archive }: { archive: ArchiveDetail }) {
   }, [isDirty]);
 
   function addClip(clip: ArchiveClipSummary) {
+    setIsSaveComplete(false);
     if (selectedClipIds.has(clip.id)) {
       return;
     }
@@ -136,6 +138,7 @@ function ArchiveEditorWorkspace({ archive }: { archive: ArchiveDetail }) {
 
   function saveDraft() {
     setMessage(null);
+    setIsSaveComplete(false);
     saveMutation.mutate({
       archiveId: archive.id,
       input: {
@@ -156,6 +159,7 @@ function ArchiveEditorWorkspace({ archive }: { archive: ArchiveDetail }) {
         setCurrentRevision(result.currentRevision);
         setSavedDraft(draft);
         setMessage("저장되었습니다.");
+        setIsSaveComplete(true);
         await Promise.all([
           queryClient.invalidateQueries({ queryKey: archiveQueries.detail(archive.id).queryKey }),
           queryClient.invalidateQueries({
@@ -167,6 +171,14 @@ function ArchiveEditorWorkspace({ archive }: { archive: ArchiveDetail }) {
         ]);
       },
     });
+  }
+
+  function confirmLeave(event: MouseEvent<HTMLAnchorElement>) {
+    if (!isDirty || window.confirm("저장하지 않은 변경사항이 있습니다. 이동하시겠습니까?")) {
+      return;
+    }
+
+    event.preventDefault();
   }
 
   if (optionsQuery.isPending) {
@@ -184,10 +196,26 @@ function ArchiveEditorWorkspace({ archive }: { archive: ArchiveDetail }) {
           <p className="text-body-sm font-medium text-brand-text">사용자 제작 아카이브</p>
           <h1 className="mt-1 truncate text-title font-bold text-primary">{draft.metadata.title}</h1>
           <p className="mt-1 text-body-sm text-secondary">
-            {draft.metadata.structureMode === "day_based" ? "일차 기반" : "자유 구성"} · revision {currentRevision}
+            {draft.metadata.structureMode === "day_based" ? "일차별 구성" : "자유롭게 구성"}
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
+          <Link
+            className={buttonVariants({ variant: "ghost" })}
+            href="/archives"
+            onClick={confirmLeave}
+          >
+            <ArrowLeft aria-hidden="true" className="size-4" />
+            목록
+          </Link>
+          <Link
+            className={buttonVariants({ variant: "outline" })}
+            href={`/archives/${archive.id}`}
+            onClick={confirmLeave}
+          >
+            <ExternalLink aria-hidden="true" className="size-4" />
+            상세 보기
+          </Link>
           {archive.canEditMetadata ? (
             <Button onClick={() => setIsSettingsOpen(true)} type="button" variant="outline">
               <Settings2 aria-hidden="true" className="size-4" />
@@ -201,21 +229,50 @@ function ArchiveEditorWorkspace({ archive }: { archive: ArchiveDetail }) {
         </div>
       </header>
 
+      <ol aria-label="아카이브 제작 단계" className="grid grid-cols-2 gap-3">
+        <li className="rounded-lg border border-default px-4 py-3 text-body-sm font-medium text-secondary">
+          <span className="mr-2 text-brand-text">✓</span>
+          기본 정보
+        </li>
+        <li className="rounded-lg border border-brand bg-surface-selected px-4 py-3 text-body-sm font-semibold text-primary">
+          <span className="mr-2 text-brand-text">2</span>
+          클립 구성
+        </li>
+      </ol>
+
       {message ? (
-        <p className="rounded-lg border border-default bg-surface-muted px-3 py-2 text-body-sm text-secondary" role="status">
-          {message}
-        </p>
+        <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-default bg-surface-muted px-3 py-2 text-body-sm text-secondary" role="status">
+          <p>{message}</p>
+          {isSaveComplete ? (
+            <div className="flex items-center gap-2">
+              <Button
+                onClick={() => {
+                  setMessage(null);
+                  setIsSaveComplete(false);
+                }}
+                size="sm"
+                type="button"
+                variant="ghost"
+              >
+                계속 편집
+              </Button>
+              <Link className={buttonVariants({ size: "sm" })} href={`/archives/${archive.id}`}>
+                아카이브 보기
+              </Link>
+            </div>
+          ) : null}
+        </div>
       ) : null}
 
-      <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(22rem,0.8fr)]">
-        <div className="min-w-0 rounded-xl border border-default bg-surface-raised p-4 sm:p-5">
+      <div className="grid gap-6 lg:h-[calc(100dvh-15rem)] lg:grid-cols-[minmax(0,1.25fr)_minmax(24rem,0.9fr)] lg:overflow-hidden">
+        <div className="min-w-0 rounded-xl border border-default bg-surface-raised p-4 sm:p-5 lg:overflow-y-auto">
           <ArchiveClipExplorer
             onAddClip={addClip}
             onPreviewClip={setPreviewClip}
             selectedClipIds={selectedClipIds}
           />
         </div>
-        <div className="min-w-0 rounded-xl border border-default bg-surface-raised p-4 sm:p-5 lg:sticky lg:top-4 lg:max-h-[calc(100dvh-2rem)] lg:overflow-y-auto">
+        <div className="min-w-0 rounded-xl border border-default bg-surface-raised p-4 sm:p-5 lg:overflow-y-auto">
           <ArchiveBuilder
             activeChapterId={activeChapterId}
             draft={draft}
@@ -245,14 +302,14 @@ function ArchiveEditorWorkspace({ archive }: { archive: ArchiveDetail }) {
   );
 }
 
-function ArchiveLoginRequired() {
+function ArchiveLoginRequired({ archiveId }: { archiveId: string }) {
   return (
     <div className="flex min-h-80 flex-col items-center justify-center gap-4 py-10 text-center">
       <div>
         <h1 className="text-heading font-semibold text-primary">로그인이 필요합니다.</h1>
         <p className="mt-2 text-body-sm text-secondary">아카이브를 만들고 편집하려면 로그인해주세요.</p>
       </div>
-      <Link className={buttonVariants()} href="/login?returnTo=%2Farchives%2Fnew">
+      <Link className={buttonVariants()} href={`/login?returnTo=${encodeURIComponent(`/archives/${archiveId}/edit`)}`}>
         <LogIn aria-hidden="true" className="size-4" />
         로그인하기
       </Link>

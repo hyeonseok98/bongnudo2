@@ -96,7 +96,7 @@ export function ArchiveClipExplorer({
       ) : clips.length === 0 ? (
         <ExplorerNotice>조건에 맞는 클립이 없습니다.</ExplorerNotice>
       ) : (
-        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3">
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
           {clips.map((clip) => (
             <ArchiveExplorerClipCard
               clip={clip}
@@ -169,7 +169,7 @@ function ArchiveExplorerClipCard({
         </div>
       </button>
       <div className="space-y-3 p-3">
-        <h3 className="line-clamp-2 min-h-10 text-body-sm font-semibold text-primary">{clip.title}</h3>
+        <h3 className="line-clamp-2 text-body-sm font-semibold text-primary">{clip.title}</h3>
         <div className="flex min-w-0 items-center gap-2">
           {clip.participant?.profileImageUrl ? (
             <span

@@ -8,14 +8,20 @@ import type { ArchiveDetail, ArchiveDetailItem } from "@/features/archives/archi
 import { ArchiveClipCard } from "./archive-clip-card";
 import { ArchiveClipPreviewDialog } from "./archive-clip-preview-dialog";
 
+type StoryFilter = "all" | "main" | "side";
+
 interface ArchiveUserContentProps {
   archive: ArchiveDetail;
 }
 
 export function ArchiveUserContent({ archive }: ArchiveUserContentProps) {
   const [previewItem, setPreviewItem] = useState<ArchiveDetailItem | null>(null);
+  const [storyFilter, setStoryFilter] = useState<StoryFilter>("all");
   const chapters = getOrderedChapters(archive);
-  const orderedItems = chapters.flatMap((chapter) => chapter.items);
+  const visibleChapters = storyFilter === "all"
+    ? chapters
+    : chapters.filter((chapter) => chapter.storyType === storyFilter);
+  const orderedItems = visibleChapters.flatMap((chapter) => chapter.items);
   const previewIndex = previewItem
     ? orderedItems.findIndex((item) => item.id === previewItem.id)
     : -1;
@@ -25,8 +31,13 @@ export function ArchiveUserContent({ archive }: ArchiveUserContentProps) {
       {chapters.length === 0 ? (
         <EmptyArchiveContent />
       ) : (
-        <div className="space-y-10">
-          {chapters.map((chapter) => (
+        <div className="space-y-8">
+          <div aria-label="스토리 구분 필터" className="flex flex-wrap gap-2">
+            <StoryFilterButton active={storyFilter === "all"} onClick={() => setStoryFilter("all")}>전체</StoryFilterButton>
+            <StoryFilterButton active={storyFilter === "main"} onClick={() => setStoryFilter("main")}>메인 스토리</StoryFilterButton>
+            <StoryFilterButton active={storyFilter === "side"} onClick={() => setStoryFilter("side")}>사이드 스토리</StoryFilterButton>
+          </div>
+          {visibleChapters.map((chapter) => (
             <section key={chapter.id}>
               <div className="mb-4 space-y-1">
                 <div className="flex flex-wrap items-center gap-2">
@@ -79,6 +90,29 @@ export function ArchiveUserContent({ archive }: ArchiveUserContentProps) {
         }}
       />
     </section>
+  );
+}
+
+function StoryFilterButton({
+  active,
+  children,
+  onClick,
+}: {
+  active: boolean;
+  children: string;
+  onClick: () => void;
+}) {
+  return (
+    <button
+      aria-pressed={active}
+      className={active
+        ? "cursor-pointer rounded-lg bg-brand px-3 py-1.5 text-caption font-medium text-white"
+        : "cursor-pointer rounded-lg border border-default px-3 py-1.5 text-caption font-medium text-secondary hover:bg-surface-muted"}
+      onClick={onClick}
+      type="button"
+    >
+      {children}
+    </button>
   );
 }
 
