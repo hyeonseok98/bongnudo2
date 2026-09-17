@@ -7,24 +7,33 @@ import {
 
 import {
   createArchive,
+  deleteArchive,
   getArchive,
   getArchiveEditorOptions,
+  getMyArchives,
   getPublicArchives,
   searchArchiveParticipants,
   getSystemArchiveClips,
   getSystemArchiveClipSummary,
   saveArchive,
+  restoreArchive,
 } from "@/apis/archives/get-archives";
 import type {
   ArchiveListCursor,
   ArchiveListFilters,
   ArchivePage,
   ArchiveSaveInput,
+  MyArchiveCursor,
+  MyArchivePage,
+  MyArchiveTab,
 } from "@/features/archives/archive";
 import type { ClipCursor, ClipPage, ClipSort } from "@/features/clips/clip";
 
 export const archiveQueries = {
   all: () => ["archives"] as const,
+  lists: () => [...archiveQueries.all(), "list"] as const,
+  my: () => [...archiveQueries.all(), "my"] as const,
+  myListKey: (tab: MyArchiveTab) => [...archiveQueries.my(), tab] as const,
   detail: (archiveId: string) =>
     queryOptions({
       queryKey: [...archiveQueries.all(), "detail", archiveId] as const,
@@ -43,8 +52,21 @@ export const archiveQueries = {
       readonly ["archives", "list", ArchiveListFilters],
       ArchiveListCursor | null
     >({
-      queryKey: [...archiveQueries.all(), "list", filters] as const,
+      queryKey: [...archiveQueries.lists(), filters] as const,
       queryFn: ({ pageParam }) => getPublicArchives(filters, pageParam),
+      initialPageParam: null,
+      getNextPageParam: (page) => page.nextCursor,
+    }),
+  myList: (tab: MyArchiveTab) =>
+    infiniteQueryOptions<
+      MyArchivePage,
+      Error,
+      InfiniteData<MyArchivePage, MyArchiveCursor | null>,
+      readonly ["archives", "my", MyArchiveTab],
+      MyArchiveCursor | null
+    >({
+      queryKey: archiveQueries.myListKey(tab),
+      queryFn: ({ pageParam }) => getMyArchives(tab, pageParam),
       initialPageParam: null,
       getNextPageParam: (page) => page.nextCursor,
     }),
@@ -90,4 +112,6 @@ export const archiveMutations = {
     mutationFn: ({ archiveId, input }: { archiveId: string; input: ArchiveSaveInput }) =>
       saveArchive(archiveId, input),
   }),
+  softDelete: () => mutationOptions({ mutationFn: deleteArchive }),
+  restore: () => mutationOptions({ mutationFn: restoreArchive }),
 };

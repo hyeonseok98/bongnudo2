@@ -2,6 +2,7 @@ export const ARCHIVE_CATEGORY_VALUES = ["character", "incident", "series", "othe
 export const ARCHIVE_LIST_SORT_VALUES = ["updated", "published"] as const;
 export const ARCHIVE_LIST_TYPE_VALUES = ["all", "system", "user"] as const;
 export const ARCHIVE_STATUS_VALUES = ["ongoing", "completed"] as const;
+export const MY_ARCHIVE_TAB_VALUES = ["owned", "edited", "deleted"] as const;
 
 export type ArchiveCategory = (typeof ARCHIVE_CATEGORY_VALUES)[number];
 export type ArchiveKind = "system_character" | "user";
@@ -11,6 +12,7 @@ export type ArchiveListType = (typeof ARCHIVE_LIST_TYPE_VALUES)[number];
 export type ArchiveStatus = (typeof ARCHIVE_STATUS_VALUES)[number];
 export type ArchiveStructureMode = "day_based" | "freeform";
 export type ArchiveVisibility = "private" | "public";
+export type MyArchiveTab = (typeof MY_ARCHIVE_TAB_VALUES)[number];
 
 export interface ArchiveMetadataInput {
   category: ArchiveCategory;
@@ -189,4 +191,33 @@ export interface ArchiveListItem {
 export interface ArchivePage {
   items: ArchiveListItem[];
   nextCursor: ArchiveListCursor | null;
+}
+
+export interface MyArchiveCursor {
+  id: string;
+  sortAt: string;
+}
+
+export interface MyArchiveListItem {
+  canEditContent: boolean;
+  canRestore: boolean;
+  clipCount: number;
+  currentRevision: number;
+  deletedAt: string | null;
+  editPolicy: ArchiveEditPolicy;
+  id: string;
+  lastEditedByMeAt: string | null;
+  ownerName: string | null;
+  restoreExpiresAt: string | null;
+  sortAt: string;
+  status: ArchiveStatus;
+  structureMode: ArchiveStructureMode;
+  title: string;
+  updatedAt: string;
+  visibility: ArchiveVisibility;
+}
+
+export interface MyArchivePage {
+  items: MyArchiveListItem[];
+  nextCursor: MyArchiveCursor | null;
 }

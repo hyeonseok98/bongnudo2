@@ -26,8 +26,13 @@ import type {
   ArchiveStructureMode,
   ArchiveSystemClipSummary,
   ArchiveVisibility,
+  MyArchiveCursor,
+  MyArchiveListItem,
+  MyArchivePage,
+  MyArchiveTab,
 } from "./archive";
 import { ArchiveRequestError } from "./archive-error";
+import { canEditArchiveContent } from "./archive-permission";
 import {
   createArchiveRequestSchema,
   parseArchiveSnapshot,
@@ -69,8 +74,10 @@ function createArchiveClipSummaryQuery() {
 
 type ArchiveClipSummaryRow = QueryData<ReturnType<typeof createArchiveClipSummaryQuery>>[number];
 type PublicArchivePageRow = Database["public"]["Functions"]["get_public_archive_page"]["Returns"][number];
+type MyArchivePageRow = Database["public"]["Functions"]["get_my_archive_page"]["Returns"][number];
 
 const ARCHIVE_LIST_PAGE_SIZE = 24;
+const MY_ARCHIVE_LIST_PAGE_SIZE = 20;
 
 export async function createArchive(
   user: AuthenticatedUser,
@@ -223,6 +230,40 @@ export async function getPublicArchivePage(
   };
 }
 
+export async function getMyArchivePage(
+  user: AuthenticatedUser,
+  tab: MyArchiveTab,
+  cursor: MyArchiveCursor | null,
+): Promise<MyArchivePage> {
+  const supabase = getSupabaseAdminClient();
+  const result = await supabase.rpc("get_my_archive_page", {
+    p_actor_user_id: user.id,
+    p_cursor_at: cursor?.sortAt,
+    p_cursor_id: cursor?.id,
+    p_limit: MY_ARCHIVE_LIST_PAGE_SIZE + 1,
+    p_tab: tab,
+  });
+
+  if (result.error) {
+    throw new ArchiveRequestError("내 아카이브를 불러오지 못했습니다.", 500, {
+      cause: result.error,
+    });
+  }
+
+  const rows = result.data;
+  const items = rows
+    .slice(0, MY_ARCHIVE_LIST_PAGE_SIZE)
+    .map((row) => toMyArchiveListItem(row, tab, user));
+  const lastItem = items.at(-1);
+
+  return {
+    items,
+    nextCursor: rows.length > MY_ARCHIVE_LIST_PAGE_SIZE && lastItem
+      ? { id: lastItem.id, sortAt: lastItem.sortAt }
+      : null,
+  };
+}
+
 export async function getArchiveDetail(
   archiveId: string,
   viewer: AuthenticatedUser | null,
@@ -344,7 +385,13 @@ export async function getArchiveDetail(
   return {
     category: toArchiveCategory(archive.category),
     archiveKind: toArchiveKind(archive.archive_kind),
-    canEditContent: canEditArchiveContent(archive, viewer),
+    canEditContent: canEditArchiveContent({
+      archiveKind: archive.archive_kind,
+      deletedAt: archive.deleted_at,
+      editPolicy: archive.edit_policy,
+      ownerId: archive.owner_id,
+      visibility: archive.visibility,
+    }, viewer),
     canEditMetadata: archive.archive_kind === "user" && archive.owner_id === viewer?.id && viewer?.status === "active",
     chapters: chaptersResult.data.map((chapter) => ({
       description: chapter.description,
@@ -624,24 +671,6 @@ function throwArchiveRpcError(error: ArchiveRpcError): never {
   }
 }
 
-function canEditArchiveContent(
-  archive: {
-    archive_kind: string;
-    edit_policy: string;
-    owner_id: string | null;
-    visibility: string;
-  },
-  viewer: AuthenticatedUser | null,
-): boolean {
-  if (archive.archive_kind !== "user" || viewer?.status !== "active") {
-    return false;
-  }
-
-  return archive.owner_id === viewer.id || (
-    archive.visibility === "public" && archive.edit_policy === "public_edit"
-  );
-}
-
 function toArchiveClipSummary(row: ArchiveClipSummaryRow) {
   return {
     clipCreatedAt: row.clip_created_at,
@@ -665,6 +694,57 @@ function toArchiveClipSummary(row: ArchiveClipSummaryRow) {
     thumbnailUrl: row.thumbnail_url,
     title: row.title,
   };
+}
+
+function toMyArchiveListItem(
+  row: MyArchivePageRow,
+  tab: MyArchiveTab,
+  user: AuthenticatedUser,
+): MyArchiveListItem {
+  const deletedAt = row.deleted_at;
+  const lastEditedByMeAt = row.last_edited_by_me_at;
+  const sortAt = getMyArchiveSortAt(row, tab);
+
+  return {
+    canEditContent: canEditArchiveContent({
+      archiveKind: "user",
+      deletedAt,
+      editPolicy: row.edit_policy,
+      ownerId: tab === "owned" || tab === "deleted" ? user.id : null,
+      visibility: row.visibility,
+    }, user),
+    canRestore: row.can_restore && user.status === "active",
+    clipCount: Number(row.clip_count),
+    currentRevision: row.current_revision,
+    deletedAt,
+    editPolicy: toArchiveEditPolicy(row.edit_policy),
+    id: row.archive_id,
+    lastEditedByMeAt,
+    ownerName: row.owner_name,
+    restoreExpiresAt: row.restore_expires_at,
+    sortAt,
+    status: toArchiveStatus(row.status),
+    structureMode: toMyArchiveStructureMode(row.structure_mode),
+    title: row.title,
+    updatedAt: row.updated_at,
+    visibility: toArchiveVisibility(row.visibility),
+  };
+}
+
+function getMyArchiveSortAt(row: MyArchivePageRow, tab: MyArchiveTab): string {
+  if (tab === "owned") {
+    return row.updated_at;
+  }
+
+  if (tab === "edited" && row.last_edited_by_me_at) {
+    return row.last_edited_by_me_at;
+  }
+
+  if (tab === "deleted" && row.deleted_at) {
+    return row.deleted_at;
+  }
+
+  throw new ArchiveRequestError("내 아카이브 정렬 정보가 올바르지 않습니다.", 500);
 }
 
 function toArchiveListItem(row: PublicArchivePageRow): ArchiveListItem {
@@ -738,6 +818,16 @@ function toArchiveStructureMode(value: string | null): ArchiveStructureMode | nu
   }
 
   throw new ArchiveRequestError("아카이브 정보가 올바르지 않습니다.", 500);
+}
+
+function toMyArchiveStructureMode(value: string | null): ArchiveStructureMode {
+  const structureMode = toArchiveStructureMode(value);
+
+  if (structureMode === null) {
+    throw new ArchiveRequestError("내 아카이브 구성 정보가 올바르지 않습니다.", 500);
+  }
+
+  return structureMode;
 }
 
 function toArchiveVisibility(value: string): ArchiveVisibility {

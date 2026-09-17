@@ -5,6 +5,9 @@ import type {
   ArchiveEditorOptions,
   ArchiveListCursor,
   ArchiveListFilters,
+  MyArchiveCursor,
+  MyArchivePage,
+  MyArchiveTab,
   ArchivePage,
   ArchiveSaveInput,
   ArchiveSaveResult,
@@ -177,6 +180,31 @@ const archivePageSchema = z.object({
   }).nullable(),
 });
 
+const myArchivePageSchema = z.object({
+  items: z.array(z.object({
+    canEditContent: z.boolean(),
+    canRestore: z.boolean(),
+    clipCount: z.number().int().nonnegative(),
+    currentRevision: z.number().int().positive(),
+    deletedAt: z.string().datetime({ offset: true }).nullable(),
+    editPolicy: z.enum(["owner_only", "public_edit"]),
+    id: z.uuid(),
+    lastEditedByMeAt: z.string().datetime({ offset: true }).nullable(),
+    ownerName: z.string().nullable(),
+    restoreExpiresAt: z.string().datetime({ offset: true }).nullable(),
+    sortAt: z.string().datetime({ offset: true }),
+    status: z.enum(["ongoing", "completed"]),
+    structureMode: z.enum(["day_based", "freeform"]),
+    title: z.string(),
+    updatedAt: z.string().datetime({ offset: true }),
+    visibility: z.enum(["private", "public"]),
+  })),
+  nextCursor: z.object({
+    id: z.uuid(),
+    sortAt: z.string().datetime({ offset: true }),
+  }).nullable(),
+});
+
 const archiveParticipantSearchSchema = z.object({
   participants: z.array(z.object({
     rpName: z.string().nullable(),
@@ -245,6 +273,25 @@ export async function getPublicArchives(
   }
 
   return archivePageSchema.parse(await response.json());
+}
+
+export async function getMyArchives(
+  tab: MyArchiveTab,
+  cursor: MyArchiveCursor | null,
+): Promise<MyArchivePage> {
+  const searchParams = new URLSearchParams({ tab });
+
+  if (cursor) searchParams.set("cursor", serializeArchiveCursor(cursor));
+
+  const response = await fetch(`/api/me/archives?${searchParams.toString()}`, {
+    cache: "no-store",
+  });
+
+  if (!response.ok) {
+    throw new Error(await getArchiveErrorMessage(response, "내 아카이브를 불러오지 못했습니다."));
+  }
+
+  return myArchivePageSchema.parse(await response.json());
 }
 
 export interface ArchiveParticipantSearchResult {
@@ -361,6 +408,22 @@ export async function saveArchive(
   }
 
   return archiveSaveResultSchema.parse(await response.json());
+}
+
+export async function deleteArchive(archiveId: string): Promise<void> {
+  const response = await fetch(`/api/archives/${archiveId}/delete`, { method: "POST" });
+
+  if (!response.ok) {
+    throw new Error(await getArchiveErrorMessage(response, "아카이브를 삭제하지 못했습니다."));
+  }
+}
+
+export async function restoreArchive(archiveId: string): Promise<void> {
+  const response = await fetch(`/api/archives/${archiveId}/restore`, { method: "POST" });
+
+  if (!response.ok) {
+    throw new Error(await getArchiveErrorMessage(response, "아카이브를 복구하지 못했습니다."));
+  }
 }
 
 async function getArchiveErrorMessage(response: Response, fallback: string): Promise<string> {

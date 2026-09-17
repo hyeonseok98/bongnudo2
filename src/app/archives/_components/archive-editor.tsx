@@ -3,7 +3,7 @@
 import { AlertTriangle, Check, LogIn, Settings2 } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useState } from "react";
-import { useMutation, useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
 import { Button, buttonVariants } from "@/components/ui/button";
 import type { ArchiveClipSummary, ArchiveDetail } from "@/features/archives/archive";
@@ -55,6 +55,7 @@ export function ArchiveEditor({ archiveId, isSignedIn }: ArchiveEditorProps) {
 function ArchiveEditorWorkspace({ archive }: { archive: ArchiveDetail }) {
   const optionsQuery = useQuery(archiveQueries.editorOptions());
   const saveMutation = useMutation(archiveMutations.save());
+  const queryClient = useQueryClient();
   const initialDraft = createArchiveDraft(archive);
   const [draft, setDraft] = useState<ArchiveEditorDraft>(initialDraft);
   const [savedDraft, setSavedDraft] = useState<ArchiveEditorDraft>(initialDraft);
@@ -145,10 +146,19 @@ function ArchiveEditorWorkspace({ archive }: { archive: ArchiveDetail }) {
 
         setMessage(error.message);
       },
-      onSuccess: (result) => {
+      onSuccess: async (result) => {
         setCurrentRevision(result.currentRevision);
         setSavedDraft(draft);
         setMessage("저장되었습니다.");
+        await Promise.all([
+          queryClient.invalidateQueries({ queryKey: archiveQueries.detail(archive.id).queryKey }),
+          queryClient.invalidateQueries({
+            queryKey: archiveQueries.myListKey(archive.isOwner ? "owned" : "edited"),
+          }),
+          ...((archive.canEditMetadata ? draft.metadata.visibility : archive.visibility) === "public"
+            ? [queryClient.invalidateQueries({ queryKey: archiveQueries.lists() })]
+            : []),
+        ]);
       },
     });
   }

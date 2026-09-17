@@ -1928,6 +1928,31 @@ export type Database = {
               created_timeline_event_id: string
             }[]
           }
+      get_my_archive_page: {
+        Args: {
+          p_actor_user_id: string
+          p_cursor_at?: string
+          p_cursor_id?: string
+          p_limit?: number
+          p_tab: string
+        }
+        Returns: {
+          archive_id: string
+          can_restore: boolean
+          clip_count: number
+          current_revision: number
+          deleted_at: string
+          edit_policy: string
+          last_edited_by_me_at: string
+          owner_name: string
+          restore_expires_at: string
+          status: string
+          structure_mode: string
+          title: string
+          updated_at: string
+          visibility: string
+        }[]
+      }
       get_public_archive_page: {
         Args: {
           p_category?: string

@@ -3,6 +3,7 @@
 import { Popover } from "@base-ui/react/popover";
 import {
   ChevronDown,
+  FolderArchive,
   LogOut,
   Menu,
   Moon,
@@ -234,8 +235,15 @@ export function Header({
                 side="bottom"
                 sideOffset={8}
               >
-                <Popover.Popup className="w-40 rounded-lg border border-default bg-surface-raised p-1 shadow-lg outline-none">
+                <Popover.Popup className="w-44 rounded-lg border border-default bg-surface-raised p-1 shadow-lg outline-none">
                   <Popover.Title className="sr-only">계정 메뉴</Popover.Title>
+                  <Link
+                    className="flex w-full items-center gap-2 rounded-md px-2 py-2 text-body-sm font-medium text-primary transition-colors hover:bg-surface-muted"
+                    href="/my/archives"
+                  >
+                    <FolderArchive aria-hidden="true" className="size-4" />
+                    내 아카이브
+                  </Link>
                   <Button
                     className="w-full justify-start text-status-danger hover:text-status-danger"
                     disabled={isLoggingOut}

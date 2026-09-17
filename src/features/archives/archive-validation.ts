@@ -2,8 +2,10 @@ import { z } from "zod";
 
 import type {
   ArchiveContentInput,
+  ArchiveListCursor,
   ArchiveListFilters,
   ArchiveMetadataInput,
+  MyArchiveTab,
   ArchiveSaveInput,
   ArchiveSnapshot,
 } from "./archive";
@@ -67,6 +69,11 @@ const archiveListQuerySchema = z.object({
   sort: z.enum(["updated", "published"]).optional(),
   status: z.enum(["ongoing", "completed"]).optional(),
   type: z.enum(["all", "system", "user"]).optional(),
+});
+
+const myArchiveListQuerySchema = z.object({
+  cursor: z.string().optional(),
+  tab: z.enum(["owned", "edited", "deleted"]).optional(),
 });
 
 export const createArchiveRequestSchema = z.strictObject({
@@ -206,4 +213,29 @@ export function parseArchiveListRequest(searchParams: URLSearchParams): {
       type,
     },
   };
+}
+
+export function parseMyArchiveListRequest(searchParams: URLSearchParams): {
+  cursor: ArchiveListCursor | null;
+  tab: MyArchiveTab;
+} {
+  const result = myArchiveListQuerySchema.safeParse({
+    cursor: searchParams.get("cursor") ?? undefined,
+    tab: searchParams.get("tab") ?? undefined,
+  });
+
+  if (!result.success) {
+    throw new ArchiveRequestError(
+      result.error.issues[0]?.message ?? "내 아카이브 목록 조회 정보가 올바르지 않습니다.",
+      400,
+    );
+  }
+
+  const cursor = parseArchiveCursor(result.data.cursor ?? null);
+
+  if (result.data.cursor && cursor === null) {
+    throw new ArchiveRequestError("내 아카이브 목록 조회 정보가 올바르지 않습니다.", 400);
+  }
+
+  return { cursor, tab: result.data.tab ?? "owned" };
 }
