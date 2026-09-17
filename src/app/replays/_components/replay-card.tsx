@@ -3,12 +3,15 @@
 import { Eye, Play, UserRound } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
+import { CollectedMediaExclusionButton } from "@/components/collected-media-exclusion-button";
 import type { ReplayItem } from "@/features/replays/replay";
 import { getDisplayName } from "@/features/rp-mode/rp-mode";
 import { useRpModeSettings } from "@/providers/rp-mode-provider";
 
 interface ReplayCardProps {
+  canManageCollectedMedia?: boolean;
   replay: ReplayItem;
+  onExcluded?: () => void;
 }
 
 const dateFormatter = new Intl.DateTimeFormat("ko-KR", {
@@ -21,7 +24,7 @@ const dateFormatter = new Intl.DateTimeFormat("ko-KR", {
 
 const viewCountFormatter = new Intl.NumberFormat("ko-KR");
 
-export function ReplayCard({ replay }: ReplayCardProps) {
+export function ReplayCard({ canManageCollectedMedia = false, onExcluded, replay }: ReplayCardProps) {
   const { isRpMode } = useRpModeSettings();
   const displayName = replay.participant
     ? getDisplayName(replay.participant, "replay-card", isRpMode)
@@ -99,14 +102,34 @@ export function ReplayCard({ replay }: ReplayCardProps) {
           </div>
         </div>
       </a>
+      {canManageCollectedMedia && onExcluded ? (
+        <CollectedMediaExclusionButton mediaId={replay.id} mediaType="replay" onExcluded={onExcluded} />
+      ) : null}
     </article>
   );
 }
 
-export function ReplayCardGrid({ replays }: { replays: ReplayItem[] }) {
+interface ReplayCardGridProps {
+  canManageCollectedMedia?: boolean;
+  onExcluded?: () => void;
+  replays: ReplayItem[];
+}
+
+export function ReplayCardGrid({
+  canManageCollectedMedia = false,
+  onExcluded,
+  replays,
+}: ReplayCardGridProps) {
   return (
     <div className="grid grid-cols-1 items-stretch gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5">
-      {replays.map((replay) => <ReplayCard key={replay.id} replay={replay} />)}
+      {replays.map((replay) => (
+        <ReplayCard
+          canManageCollectedMedia={canManageCollectedMedia}
+          key={replay.id}
+          onExcluded={onExcluded}
+          replay={replay}
+        />
+      ))}
     </div>
   );
 }

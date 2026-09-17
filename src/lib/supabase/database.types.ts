@@ -331,6 +331,8 @@ export type Database = {
           collected_at: string
           created_at: string
           duration_seconds: number | null
+          excluded_at: string | null
+          excluded_by: string | null
           id: string
           provider: string
           provider_clip_id: string
@@ -350,6 +352,8 @@ export type Database = {
           collected_at: string
           created_at?: string
           duration_seconds?: number | null
+          excluded_at?: string | null
+          excluded_by?: string | null
           id?: string
           provider?: string
           provider_clip_id: string
@@ -369,6 +373,8 @@ export type Database = {
           collected_at?: string
           created_at?: string
           duration_seconds?: number | null
+          excluded_at?: string | null
+          excluded_by?: string | null
           id?: string
           provider?: string
           provider_clip_id?: string
@@ -383,6 +389,13 @@ export type Database = {
           view_count?: number | null
         }
         Relationships: [
+          {
+            foreignKeyName: "clips_excluded_by_fkey"
+            columns: ["excluded_by"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "clips_participant_same_season_fkey"
             columns: ["season_participant_id", "season_id"]
@@ -893,6 +906,8 @@ export type Database = {
           collected_at: string
           created_at: string
           duration_seconds: number | null
+          excluded_at: string | null
+          excluded_by: string | null
           id: string
           live_started_at: string | null
           provider: string
@@ -914,6 +929,8 @@ export type Database = {
           collected_at: string
           created_at?: string
           duration_seconds?: number | null
+          excluded_at?: string | null
+          excluded_by?: string | null
           id?: string
           live_started_at?: string | null
           provider?: string
@@ -935,6 +952,8 @@ export type Database = {
           collected_at?: string
           created_at?: string
           duration_seconds?: number | null
+          excluded_at?: string | null
+          excluded_by?: string | null
           id?: string
           live_started_at?: string | null
           provider?: string
@@ -953,6 +972,13 @@ export type Database = {
           view_count?: number | null
         }
         Relationships: [
+          {
+            foreignKeyName: "replays_excluded_by_fkey"
+            columns: ["excluded_by"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "replays_participant_same_season_fkey"
             columns: ["season_participant_id", "season_id"]

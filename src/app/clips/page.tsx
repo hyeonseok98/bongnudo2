@@ -1,5 +1,7 @@
 import type { Metadata } from "next";
 
+import { getCurrentUser } from "@/features/auth/session";
+
 import { ClipsContent } from "./_components/clips-content";
 
 export const metadata: Metadata = {
@@ -10,10 +12,13 @@ export const metadata: Metadata = {
   },
 };
 
-export default function ClipsPage() {
+export default async function ClipsPage() {
+  const currentUser = await getCurrentUser();
+  const canManageCollectedMedia = currentUser?.role === "admin" && currentUser.status === "active";
+
   return (
     <main className="space-y-6 py-5 sm:py-6 lg:py-8">
-      <ClipsContent />
+      <ClipsContent canManageCollectedMedia={canManageCollectedMedia} />
     </main>
   );
 }

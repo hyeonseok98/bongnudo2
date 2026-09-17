@@ -1,14 +1,22 @@
 "use client";
 
+import { useQueryClient } from "@tanstack/react-query";
+
 import { useCharacters } from "@/app/characters/_hooks/use-characters";
 import { Button } from "@/components/ui/button";
+import { replayQueries } from "@/queries/replay-queries";
 
 import { useReplayDirectory } from "../_hooks/use-replay-directory";
 import { useReplayOptions, useReplays } from "../_hooks/use-replays";
 import { ReplayCardGrid } from "./replay-card";
 import { ReplayFilters } from "./replay-filters";
 
-export function ReplaysContent() {
+interface ReplaysContentProps {
+  canManageCollectedMedia: boolean;
+}
+
+export function ReplaysContent({ canManageCollectedMedia }: ReplaysContentProps) {
+  const queryClient = useQueryClient();
   const directory = useReplayDirectory();
   const charactersQuery = useCharacters();
   const optionsQuery = useReplayOptions();
@@ -51,7 +59,13 @@ export function ReplaysContent() {
           <h2 className="text-body-sm text-secondary" id="replay-results-heading">
             현재 불러온 다시보기 <strong className="font-semibold text-brand-text">{replays.length}개</strong>
           </h2>
-          {replays.length > 0 ? <ReplayCardGrid replays={replays} /> : <ReplayEmptyState />}
+          {replays.length > 0 ? (
+            <ReplayCardGrid
+              canManageCollectedMedia={canManageCollectedMedia}
+              onExcluded={() => void queryClient.invalidateQueries({ queryKey: replayQueries.all() })}
+              replays={replays}
+            />
+          ) : <ReplayEmptyState />}
           {replaysQuery.hasNextPage ? (
             <div className="flex justify-center pt-2">
               <Button disabled={replaysQuery.isFetchingNextPage} onClick={() => void replaysQuery.fetchNextPage()} type="button" variant="outline">

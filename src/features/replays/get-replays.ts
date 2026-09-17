@@ -159,6 +159,7 @@ export async function getReplayPage(
   for (let scanBatch = 0; scanBatch < MAX_SCAN_BATCHES; scanBatch += 1) {
     let query = createReplayRowsQuery(client)
       .eq("season_id", seasonId)
+      .not("season_day_id", "is", null)
       .order("sort_at", { ascending: false, nullsFirst: false })
       .order("id", { ascending: false })
       .limit(sourceBatchSize);

@@ -2,10 +2,13 @@
 
 import { List, UsersRound } from "lucide-react";
 
+import { useQueryClient } from "@tanstack/react-query";
+
 import { useCharacters } from "@/app/characters/_hooks/use-characters";
 import { Button } from "@/components/ui/button";
 import { Select } from "@/components/ui/select";
 import type { ClipItem } from "@/features/clips/clip";
+import { clipQueries } from "@/queries/clip-queries";
 import { cn } from "@/utils/cn";
 
 import { useClipDirectory } from "../_hooks/use-clip-directory";
@@ -13,7 +16,12 @@ import { useClipOptions, useClips } from "../_hooks/use-clips";
 import { ClipCardGrid } from "./clip-card";
 import { ClipFilters } from "./clip-filters";
 
-export function ClipsContent() {
+interface ClipsContentProps {
+  canManageCollectedMedia: boolean;
+}
+
+export function ClipsContent({ canManageCollectedMedia }: ClipsContentProps) {
+  const queryClient = useQueryClient();
   const directory = useClipDirectory();
   const charactersQuery = useCharacters();
   const optionsQuery = useClipOptions();
@@ -90,9 +98,17 @@ export function ClipsContent() {
 
           {clips.length > 0 ? (
             directory.view === "people" ? (
-              <ClipPeopleView clips={clips} />
+              <ClipPeopleView
+                canManageCollectedMedia={canManageCollectedMedia}
+                clips={clips}
+                onExcluded={() => void queryClient.invalidateQueries({ queryKey: clipQueries.all() })}
+              />
             ) : (
-              <ClipCardGrid clips={clips} />
+              <ClipCardGrid
+                canManageCollectedMedia={canManageCollectedMedia}
+                clips={clips}
+                onExcluded={() => void queryClient.invalidateQueries({ queryKey: clipQueries.all() })}
+              />
             )
           ) : (
             <ClipEmptyState />
@@ -199,7 +215,17 @@ function ClipViewToggle({
   );
 }
 
-function ClipPeopleView({ clips }: { clips: ClipItem[] }) {
+interface ClipPeopleViewProps {
+  canManageCollectedMedia: boolean;
+  clips: ClipItem[];
+  onExcluded: () => void;
+}
+
+function ClipPeopleView({
+  canManageCollectedMedia,
+  clips,
+  onExcluded,
+}: ClipPeopleViewProps) {
   const clipsByParticipant = new Map<string, { clips: ClipItem[]; label: string }>();
 
   for (const clip of clips) {
@@ -227,7 +253,11 @@ function ClipPeopleView({ clips }: { clips: ClipItem[] }) {
               {group.clips.length}개
             </span>
           </h3>
-          <ClipCardGrid clips={group.clips} />
+          <ClipCardGrid
+            canManageCollectedMedia={canManageCollectedMedia}
+            clips={group.clips}
+            onExcluded={onExcluded}
+          />
         </section>
       ))}
     </div>

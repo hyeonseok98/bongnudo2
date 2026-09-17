@@ -3,12 +3,15 @@
 import { Eye, Play, UserRound } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
+import { CollectedMediaExclusionButton } from "@/components/collected-media-exclusion-button";
 import type { ClipItem } from "@/features/clips/clip";
 import { getDisplayName } from "@/features/rp-mode/rp-mode";
 import { useRpModeSettings } from "@/providers/rp-mode-provider";
 
 interface ClipCardProps {
+  canManageCollectedMedia?: boolean;
   clip: ClipItem;
+  onExcluded?: () => void;
 }
 
 const dateFormatter = new Intl.DateTimeFormat("ko-KR", {
@@ -21,7 +24,7 @@ const dateFormatter = new Intl.DateTimeFormat("ko-KR", {
 
 const viewCountFormatter = new Intl.NumberFormat("ko-KR");
 
-export function ClipCard({ clip }: ClipCardProps) {
+export function ClipCard({ canManageCollectedMedia = false, clip, onExcluded }: ClipCardProps) {
   const { isRpMode } = useRpModeSettings();
   const displayName = clip.participant
     ? getDisplayName(clip.participant, "clip-card", isRpMode)
@@ -106,15 +109,33 @@ export function ClipCard({ clip }: ClipCardProps) {
           </div>
         </div>
       </a>
+      {canManageCollectedMedia && onExcluded ? (
+        <CollectedMediaExclusionButton mediaId={clip.id} mediaType="clip" onExcluded={onExcluded} />
+      ) : null}
     </article>
   );
 }
 
-export function ClipCardGrid({ clips }: { clips: ClipItem[] }) {
+interface ClipCardGridProps {
+  canManageCollectedMedia?: boolean;
+  clips: ClipItem[];
+  onExcluded?: () => void;
+}
+
+export function ClipCardGrid({
+  canManageCollectedMedia = false,
+  clips,
+  onExcluded,
+}: ClipCardGridProps) {
   return (
     <div className="grid grid-cols-1 items-stretch gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5">
       {clips.map((clip) => (
-        <ClipCard clip={clip} key={clip.id} />
+        <ClipCard
+          canManageCollectedMedia={canManageCollectedMedia}
+          clip={clip}
+          key={clip.id}
+          onExcluded={onExcluded}
+        />
       ))}
     </div>
   );
