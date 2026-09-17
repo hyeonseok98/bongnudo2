@@ -53,12 +53,13 @@ export function ArchiveSettingsDialog({
           <div className="mt-5 space-y-4">
             <label className="block space-y-1.5 text-body-sm font-medium text-primary">
               제목
-              <Input onChange={(event) => updateMetadata({ title: event.target.value })} value={metadata.title} />
+              <Input maxLength={60} onChange={(event) => updateMetadata({ title: event.target.value })} value={metadata.title} />
             </label>
             <label className="block space-y-1.5 text-body-sm font-medium text-primary">
               설명
               <Textarea
                 className="min-h-28"
+                maxLength={500}
                 onChange={(event) => updateMetadata({ description: event.target.value })}
                 value={metadata.description ?? ""}
               />

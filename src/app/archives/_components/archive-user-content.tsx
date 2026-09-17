@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 
+import { Badge } from "@/components/ui/badge";
 import type { ArchiveDetail, ArchiveDetailItem } from "@/features/archives/archive";
 
 import { ArchiveClipCard } from "./archive-clip-card";
@@ -28,11 +29,16 @@ export function ArchiveUserContent({ archive }: ArchiveUserContentProps) {
           {chapters.map((chapter) => (
             <section key={chapter.id}>
               <div className="mb-4 space-y-1">
-                <h2 className="text-heading font-semibold text-primary">
-                  {archive.structureMode === "day_based" && chapter.seasonDay
-                    ? `봉누도 ${chapter.seasonDay.dayNumber}일차`
-                    : chapter.title}
-                </h2>
+                <div className="flex flex-wrap items-center gap-2">
+                  <h2 className="text-heading font-semibold text-primary">
+                    {archive.structureMode === "day_based" && chapter.seasonDay
+                      ? `봉누도 ${chapter.seasonDay.dayNumber}일차 · ${chapter.title}`
+                      : chapter.title}
+                  </h2>
+                  <Badge variant="outline">
+                    {chapter.storyType === "main" ? "메인 스토리" : "사이드 스토리"}
+                  </Badge>
+                </div>
                 {chapter.description ? <p className="text-body-sm text-secondary">{chapter.description}</p> : null}
               </div>
               {chapter.items.length === 0 ? (
@@ -86,7 +92,8 @@ function getOrderedChapters(archive: ArchiveDetail) {
     return chapters.sort(
       (left, right) =>
         (left.seasonDay?.dayNumber ?? Number.MAX_SAFE_INTEGER) -
-        (right.seasonDay?.dayNumber ?? Number.MAX_SAFE_INTEGER),
+          (right.seasonDay?.dayNumber ?? Number.MAX_SAFE_INTEGER) ||
+        left.sortOrder - right.sortOrder,
     );
   }
 

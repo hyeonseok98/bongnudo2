@@ -18,7 +18,10 @@ export default async function ClipsPage() {
 
   return (
     <main className="space-y-6 py-5 sm:py-6 lg:py-8">
-      <ClipsContent canManageCollectedMedia={canManageCollectedMedia} />
+      <ClipsContent
+        canAddTags={currentUser?.status === "active"}
+        canManageCollectedMedia={canManageCollectedMedia}
+      />
     </main>
   );
 }

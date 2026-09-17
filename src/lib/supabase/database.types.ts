@@ -22,6 +22,7 @@ export type Database = {
           id: string
           season_day_id: string | null
           sort_order: number
+          story_type: string
           title: string
           updated_at: string
         }
@@ -32,6 +33,7 @@ export type Database = {
           id?: string
           season_day_id?: string | null
           sort_order: number
+          story_type?: string
           title: string
           updated_at?: string
         }
@@ -42,6 +44,7 @@ export type Database = {
           id?: string
           season_day_id?: string | null
           sort_order?: number
+          story_type?: string
           title?: string
           updated_at?: string
         }
@@ -321,6 +324,49 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "organizations"
             referencedColumns: ["id", "season_id"]
+          },
+        ]
+      }
+      clip_tags: {
+        Row: {
+          clip_id: string
+          created_at: string
+          created_by: string
+          tag_id: string
+        }
+        Insert: {
+          clip_id: string
+          created_at?: string
+          created_by: string
+          tag_id: string
+        }
+        Update: {
+          clip_id?: string
+          created_at?: string
+          created_by?: string
+          tag_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "clip_tags_clip_id_fkey"
+            columns: ["clip_id"]
+            isOneToOne: false
+            referencedRelation: "clips"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "clip_tags_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "clip_tags_tag_id_fkey"
+            columns: ["tag_id"]
+            isOneToOne: false
+            referencedRelation: "tags"
+            referencedColumns: ["id"]
           },
         ]
       }
@@ -1568,6 +1614,27 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      tags: {
+        Row: {
+          created_at: string
+          id: string
+          name: string
+          normalized_name: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          name: string
+          normalized_name: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          name?: string
+          normalized_name?: string
+        }
+        Relationships: []
       }
       timeline_event_media: {
         Row: {

@@ -3,6 +3,7 @@ import type {
   ArchiveContentInput,
   ArchiveDetail,
   ArchiveMetadataInput,
+  ArchiveStoryType,
   ArchiveStructureMode,
 } from "@/features/archives/archive";
 
@@ -17,6 +18,7 @@ export interface ArchiveDraftChapter {
   id: string;
   items: ArchiveDraftItem[];
   seasonDayId: string | null;
+  storyType: ArchiveStoryType;
   title: string;
 }
 
@@ -46,6 +48,7 @@ export function createArchiveDraft(detail: ArchiveDetail): ArchiveEditorDraft {
         note: item.note,
       })),
       seasonDayId: chapter.seasonDayId,
+      storyType: chapter.storyType,
       title: chapter.title,
     })),
     metadata: {
@@ -70,6 +73,7 @@ export function createNewArchiveContent(
         description: null,
         items: [],
         seasonDayId: null,
+        storyType: "main",
         title: "새 챕터",
       }],
     };
@@ -80,6 +84,7 @@ export function createNewArchiveContent(
       description: null,
       items: [],
       seasonDayId: seasonDay.id,
+      storyType: "main",
       title: `${seasonDay.dayNumber}일차 · ${seasonDay.sessionDate}`,
     })),
   };
@@ -94,6 +99,7 @@ export function toArchiveContentInput(draft: ArchiveEditorDraft): ArchiveContent
         note: normalizeOptionalText(item.note),
       })),
       seasonDayId: chapter.seasonDayId,
+      storyType: chapter.storyType,
       title: chapter.title.trim(),
     })),
   };

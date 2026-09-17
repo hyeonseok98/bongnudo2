@@ -77,6 +77,7 @@ export function ArchiveClipExplorer({
         jobs={directory.jobSelection}
         options={optionsQuery.data}
         participantIds={directory.participantIds}
+        tagIds={directory.tagIds}
         searchLabel="인물 검색"
         streamerAffiliations={streamerAffiliations}
         onDateChange={directory.changeDate}
@@ -84,6 +85,7 @@ export function ArchiveClipExplorer({
         onGroupsApply={directory.applyGroups}
         onJobsApply={directory.applyJobs}
         onParticipantsChange={directory.changeParticipants}
+        onTagsChange={directory.changeTags}
         onReset={directory.resetFilters}
       />
 

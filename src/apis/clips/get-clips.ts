@@ -41,6 +41,13 @@ const clipPageSchema = z.object({
           sessionDate: z.string().date(),
         })
         .nullable(),
+      tags: z.array(
+        z.object({
+          canDelete: z.boolean(),
+          id: z.uuid(),
+          name: z.string(),
+        }),
+      ),
       thumbnailUrl: z.string().url().nullable(),
       title: z.string(),
       viewCount: z.number().int().nonnegative().nullable(),
@@ -69,6 +76,7 @@ export async function getClips(
   if (filters.groups.length > 0) searchParams.set("groups", filters.groups.join(","));
   if (filters.jobs.length > 0) searchParams.set("jobs", filters.jobs.join(","));
   if (filters.participantIds.length > 0) searchParams.set("participant", filters.participantIds.join(","));
+  if (filters.tagIds.length > 0) searchParams.set("tags", filters.tagIds.join(","));
   if (filters.day !== null) searchParams.set("day", String(filters.day));
   if (filters.date !== null) searchParams.set("date", filters.date);
   if (filters.sort !== "latest") searchParams.set("sort", filters.sort);

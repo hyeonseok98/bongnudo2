@@ -92,11 +92,11 @@ export function ArchiveCreateContent({ isSignedIn }: ArchiveCreateContentProps) 
       <form action={handleSubmit} className="mt-6 space-y-5 rounded-xl border border-default bg-surface-raised p-5">
         <label className="block space-y-1.5 text-body-sm font-medium text-primary">
           제목
-          <Input name="title" placeholder="아카이브 제목을 입력해주세요." required />
+          <Input maxLength={60} name="title" placeholder="아카이브 제목을 입력해주세요." required />
         </label>
         <label className="block space-y-1.5 text-body-sm font-medium text-primary">
           설명
-          <Textarea name="description" placeholder="아카이브를 소개해주세요. (선택)" />
+          <Textarea maxLength={500} name="description" placeholder="아카이브를 소개해주세요. (선택)" />
         </label>
         <div className="grid gap-4 sm:grid-cols-2">
           <label className="space-y-1.5 text-body-sm font-medium text-primary">

@@ -11,6 +11,7 @@ export type ArchiveListSort = (typeof ARCHIVE_LIST_SORT_VALUES)[number];
 export type ArchiveListType = (typeof ARCHIVE_LIST_TYPE_VALUES)[number];
 export type ArchiveStatus = (typeof ARCHIVE_STATUS_VALUES)[number];
 export type ArchiveStructureMode = "day_based" | "freeform";
+export type ArchiveStoryType = "main" | "side";
 export type ArchiveVisibility = "private" | "public";
 export type MyArchiveTab = (typeof MY_ARCHIVE_TAB_VALUES)[number];
 
@@ -32,6 +33,7 @@ export interface ArchiveChapterInput {
   description: string | null;
   items: ArchiveItemInput[];
   seasonDayId: string | null;
+  storyType: ArchiveStoryType;
   title: string;
 }
 
@@ -96,6 +98,7 @@ export interface ArchiveDetailChapter {
   seasonDayId: string | null;
   seasonDay: ArchiveSeasonDay | null;
   sortOrder: number;
+  storyType: ArchiveStoryType;
   title: string;
 }
 

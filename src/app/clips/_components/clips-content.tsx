@@ -17,10 +17,11 @@ import { ClipCardGrid } from "./clip-card";
 import { ClipFilters } from "./clip-filters";
 
 interface ClipsContentProps {
+  canAddTags: boolean;
   canManageCollectedMedia: boolean;
 }
 
-export function ClipsContent({ canManageCollectedMedia }: ClipsContentProps) {
+export function ClipsContent({ canAddTags, canManageCollectedMedia }: ClipsContentProps) {
   const queryClient = useQueryClient();
   const directory = useClipDirectory();
   const charactersQuery = useCharacters();
@@ -49,12 +50,14 @@ export function ClipsContent({ canManageCollectedMedia }: ClipsContentProps) {
         jobs={directory.jobSelection}
         options={optionsQuery.data}
         participantIds={directory.participantIds}
+        tagIds={directory.tagIds}
         streamerAffiliations={streamerAffiliations}
         onDateChange={directory.changeDate}
         onDayChange={directory.changeDay}
         onGroupsApply={directory.applyGroups}
         onJobsApply={directory.applyJobs}
         onParticipantsChange={directory.changeParticipants}
+        onTagsChange={directory.changeTags}
         onReset={directory.resetFilters}
       />
 
@@ -100,12 +103,14 @@ export function ClipsContent({ canManageCollectedMedia }: ClipsContentProps) {
           {clips.length > 0 ? (
             directory.view === "people" ? (
               <ClipPeopleView
+                canAddTags={canAddTags}
                 canManageCollectedMedia={canManageCollectedMedia}
                 clips={clips}
                 onExcluded={() => void queryClient.invalidateQueries({ queryKey: clipQueries.all() })}
               />
             ) : (
               <ClipCardGrid
+                canAddTags={canAddTags}
                 canManageCollectedMedia={canManageCollectedMedia}
                 clips={clips}
                 onExcluded={() => void queryClient.invalidateQueries({ queryKey: clipQueries.all() })}
@@ -217,12 +222,14 @@ function ClipViewToggle({
 }
 
 interface ClipPeopleViewProps {
+  canAddTags: boolean;
   canManageCollectedMedia: boolean;
   clips: ClipItem[];
   onExcluded: () => void;
 }
 
 function ClipPeopleView({
+  canAddTags,
   canManageCollectedMedia,
   clips,
   onExcluded,
@@ -255,6 +262,7 @@ function ClipPeopleView({
             </span>
           </h3>
           <ClipCardGrid
+            canAddTags={canAddTags}
             canManageCollectedMedia={canManageCollectedMedia}
             clips={group.clips}
             onExcluded={onExcluded}

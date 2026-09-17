@@ -12,6 +12,7 @@ export interface ClipListFilters {
   participantIds: string[];
   query: string;
   sort: ClipSort;
+  tagIds: string[];
 }
 
 export interface ClipCursor {
@@ -44,6 +45,11 @@ export interface ClipItem {
     id: string;
     sessionDate: string;
   } | null;
+  tags: Array<{
+    canDelete: boolean;
+    id: string;
+    name: string;
+  }>;
   thumbnailUrl: string | null;
   title: string;
   viewCount: number | null;

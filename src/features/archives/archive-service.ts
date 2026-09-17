@@ -23,6 +23,7 @@ import type {
   ArchivePage,
   ArchiveSaveResult,
   ArchiveStatus,
+  ArchiveStoryType,
   ArchiveStructureMode,
   ArchiveSystemClipSummary,
   ArchiveVisibility,
@@ -326,6 +327,7 @@ export async function getArchiveDetail(
         description,
         sort_order,
         season_day_id,
+        story_type,
         season_day:season_days!archive_chapters_season_day_id_fkey (
           id,
           day_number,
@@ -406,6 +408,7 @@ export async function getArchiveDetail(
           }
         : null,
       sortOrder: chapter.sort_order,
+      storyType: toArchiveStoryType(chapter.story_type),
       title: chapter.title,
     })),
     currentRevision: archive.current_revision,
@@ -608,6 +611,7 @@ function toArchiveContentJson(content: ReturnType<typeof toArchiveContentInput>)
         note: item.note,
       })),
       seasonDayId: chapter.seasonDayId,
+      storyType: chapter.storyType,
       title: chapter.title,
     })),
   };
@@ -818,6 +822,14 @@ function toArchiveStructureMode(value: string | null): ArchiveStructureMode | nu
   }
 
   throw new ArchiveRequestError("아카이브 정보가 올바르지 않습니다.", 500);
+}
+
+function toArchiveStoryType(value: string): ArchiveStoryType {
+  if (value === "main" || value === "side") {
+    return value;
+  }
+
+  throw new ArchiveRequestError("아카이브 챕터 정보가 올바르지 않습니다.", 500);
 }
 
 function toMyArchiveStructureMode(value: string | null): ArchiveStructureMode {

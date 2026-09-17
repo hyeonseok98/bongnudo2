@@ -6,8 +6,11 @@ import { GripVertical, Plus, Trash2, UserRound } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Select } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
-import type { ArchiveClipSummary, ArchiveStructureMode } from "@/features/archives/archive";
+import type {
+  ArchiveStoryType,
+} from "@/features/archives/archive";
 import { getDisplayName } from "@/features/rp-mode/rp-mode";
 import { useRpModeSettings } from "@/providers/rp-mode-provider";
 import { cn } from "@/utils/cn";
@@ -31,6 +34,11 @@ interface ArchiveDragData {
   kind: "chapter" | "item";
 }
 
+const storyTypeOptions = [
+  { label: "메인 스토리", value: "main" },
+  { label: "사이드 스토리", value: "side" },
+] as const;
+
 export function ArchiveBuilder({
   activeChapterId,
   draft,
@@ -39,7 +47,6 @@ export function ArchiveBuilder({
   seasonDays,
 }: ArchiveBuilderProps) {
   const isFreeform = draft.metadata.structureMode === "freeform";
-  const seasonDaysById = new Map(seasonDays.map((seasonDay) => [seasonDay.id, seasonDay]));
 
   function updateChapter(chapterId: string, update: (chapter: ArchiveDraftChapter) => ArchiveDraftChapter) {
     onDraftChange({
@@ -65,7 +72,8 @@ export function ArchiveBuilder({
         description: null,
         id: chapterId,
         items: [],
-        seasonDayId: null,
+        seasonDayId: isFreeform ? null : seasonDays[0]?.id ?? null,
+        storyType: "main",
         title: "새 챕터",
       }],
     });
@@ -127,12 +135,10 @@ export function ArchiveBuilder({
               : "봉누도 일차별로 클립을 정리합니다."}
           </p>
         </div>
-        {isFreeform ? (
-          <Button onClick={addChapter} size="sm" type="button" variant="outline">
-            <Plus aria-hidden="true" className="size-4" />
-            챕터 추가
-          </Button>
-        ) : null}
+        <Button onClick={addChapter} size="sm" type="button" variant="outline">
+          <Plus aria-hidden="true" className="size-4" />
+          챕터 추가
+        </Button>
       </div>
 
       <DragDropProvider<ArchiveDragData> onDragEnd={handleDragEnd}>
@@ -141,7 +147,6 @@ export function ArchiveBuilder({
             <ArchiveChapterCard
               active={chapter.id === activeChapterId}
               chapter={chapter}
-              day={chapter.seasonDayId ? seasonDaysById.get(chapter.seasonDayId) ?? null : null}
               index={index}
               key={chapter.id}
               onActivate={() => onActiveChapterChange(chapter.id)}
@@ -152,8 +157,11 @@ export function ArchiveBuilder({
               }))}
               onRemove={() => removeChapter(chapter.id)}
               onRemoveItem={(itemId) => removeItem(chapter.id, itemId)}
+              onSeasonDayChange={(seasonDayId) => updateChapter(chapter.id, (current) => ({ ...current, seasonDayId }))}
+              onStoryTypeChange={(storyType) => updateChapter(chapter.id, (current) => ({ ...current, storyType }))}
               onTitleChange={(title) => updateChapter(chapter.id, (current) => ({ ...current, title }))}
               isFreeform={isFreeform}
+              seasonDays={seasonDays}
             />
           ))}
         </div>
@@ -171,7 +179,6 @@ export function ArchiveBuilder({
 function ArchiveChapterCard({
   active,
   chapter,
-  day,
   index,
   isFreeform,
   onActivate,
@@ -179,11 +186,13 @@ function ArchiveChapterCard({
   onNoteChange,
   onRemove,
   onRemoveItem,
+  onSeasonDayChange,
+  onStoryTypeChange,
   onTitleChange,
+  seasonDays,
 }: {
   active: boolean;
   chapter: ArchiveDraftChapter;
-  day: ArchiveSeasonDay | null;
   index: number;
   isFreeform: boolean;
   onActivate: () => void;
@@ -191,7 +200,10 @@ function ArchiveChapterCard({
   onNoteChange: (itemId: string, note: string) => void;
   onRemove: () => void;
   onRemoveItem: (itemId: string) => void;
+  onSeasonDayChange: (seasonDayId: string) => void;
+  onStoryTypeChange: (storyType: ArchiveStoryType) => void;
   onTitleChange: (value: string) => void;
+  seasonDays: ArchiveSeasonDay[];
 }) {
   const { handleRef, isDragging, ref } = useSortable<ArchiveDragData>({
     data: { chapterId: null, kind: "chapter" },
@@ -221,29 +233,45 @@ function ArchiveChapterCard({
             <GripVertical aria-hidden="true" className="size-5" />
           </button>
         ) : null}
-        <div className="min-w-0 flex-1">
-          {isFreeform ? (
-            <Input
-              aria-label="챕터 제목"
-              onChange={(event) => onTitleChange(event.target.value)}
-              value={chapter.title}
+        <div className="grid min-w-0 flex-1 gap-2 sm:grid-cols-2">
+          {isFreeform ? null : (
+            <Select
+              className="w-full"
+              label="봉누도 일차"
+              onValueChange={onSeasonDayChange}
+              options={seasonDays.map((seasonDay) => ({
+                label: `${seasonDay.dayNumber}일차 · ${seasonDay.sessionDate}`,
+                value: seasonDay.id,
+              }))}
+              value={chapter.seasonDayId ?? ""}
             />
-          ) : (
-            <h3 className="pt-2 text-body font-semibold text-primary">
-              {day ? `${day.dayNumber}일차 · ${day.sessionDate}` : chapter.title}
-            </h3>
           )}
+          <Input
+            aria-label="챕터 제목"
+            maxLength={50}
+            onChange={(event) => onTitleChange(event.target.value)}
+            value={chapter.title}
+          />
         </div>
-        {isFreeform ? (
-          <Button aria-label="챕터 삭제" onClick={onRemove} size="icon-sm" type="button" variant="ghost">
-            <Trash2 aria-hidden="true" className="size-4" />
-          </Button>
-        ) : null}
+        <Button aria-label="챕터 삭제" onClick={onRemove} size="icon-sm" type="button" variant="ghost">
+          <Trash2 aria-hidden="true" className="size-4" />
+        </Button>
+      </div>
+
+      <div className="mt-3 max-w-48">
+        <Select
+          className="w-full"
+          label="스토리 구분"
+          onValueChange={onStoryTypeChange}
+          options={storyTypeOptions}
+          value={chapter.storyType}
+        />
       </div>
 
       <Textarea
         aria-label="챕터 설명"
         className="mt-3 min-h-20"
+        maxLength={300}
         onChange={(event) => onDescriptionChange(event.target.value)}
         placeholder="챕터 설명을 입력해주세요."
         value={chapter.description ?? ""}
@@ -340,6 +368,7 @@ function ArchiveBuilderItem({
         <Textarea
           aria-label="클립 메모"
           className="mt-2 min-h-20"
+          maxLength={300}
           onChange={(event) => onNoteChange(event.target.value)}
           placeholder="클립에 대한 메모를 남겨주세요."
           value={item.note ?? ""}

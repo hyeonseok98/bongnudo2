@@ -15,6 +15,7 @@ import {
   type HierarchicalFilterSelection,
 } from "@/components/filters/hierarchical-filter";
 import { ParticipantFilter } from "@/components/filters/participant-filter";
+import { TagFilter } from "@/components/filters/tag-filter";
 import { Button } from "@/components/ui/button";
 import { DatePicker } from "@/components/ui/date-picker";
 import { Select } from "@/components/ui/select";
@@ -24,6 +25,8 @@ import type {
   StreamerAffiliation,
 } from "@/features/characters/character";
 import { getCurrentKstDate } from "@/features/seasons/season-date";
+import { clipTagQueries } from "@/queries/clip-tag-queries";
+import { useQuery } from "@tanstack/react-query";
 
 interface ClipFiltersProps {
   characters: CharacterListItem[];
@@ -33,6 +36,7 @@ interface ClipFiltersProps {
   jobs: HierarchicalFilterSelection;
   options: ClipOptions;
   participantIds: string[];
+  tagIds?: string[];
   searchLabel?: string;
   streamerAffiliations: StreamerAffiliation[];
   onDateChange: (date: string | null) => void;
@@ -40,6 +44,7 @@ interface ClipFiltersProps {
   onGroupsApply: (selection: HierarchicalFilterSelection) => void;
   onJobsApply: (selection: HierarchicalFilterSelection) => void;
   onParticipantsChange: (participantIds: string[]) => void;
+  onTagsChange?: (tagIds: string[]) => void;
   onReset: () => void;
 }
 
@@ -51,6 +56,7 @@ export function ClipFilters({
   jobs,
   options,
   participantIds,
+  tagIds,
   searchLabel = "인물 검색",
   streamerAffiliations,
   onDateChange,
@@ -58,8 +64,12 @@ export function ClipFilters({
   onGroupsApply,
   onJobsApply,
   onParticipantsChange,
+  onTagsChange,
   onReset,
 }: ClipFiltersProps) {
+  const selectedTagsQuery = useQuery(
+    clipTagQueries.search("", tagIds ?? []),
+  );
   const jobNodes = buildJobAffiliationFilterNodes(characters);
   const groupFilterData = buildStreamerAffiliationFilterData(
     characters,
@@ -92,6 +102,11 @@ export function ClipFilters({
         onParticipantsChange(
           participantIds.filter((id) => id !== character.id),
         ),
+    })),
+    ...(selectedTagsQuery.data ?? []).map((tag) => ({
+      id: `tag:${tag.id}`,
+      label: `#${tag.name}`,
+      onRemove: () => onTagsChange?.((tagIds ?? []).filter((id) => id !== tag.id)),
     })),
   ];
 
@@ -146,6 +161,13 @@ export function ClipFilters({
           onValueChange={onParticipantsChange}
           value={participantIds}
         />
+        {tagIds && onTagsChange ? (
+          <TagFilter
+            className="w-52"
+            onValueChange={onTagsChange}
+            value={tagIds}
+          />
+        ) : null}
         <Button onClick={onReset} size="sm" type="button" variant="ghost">
           필터 초기화
         </Button>

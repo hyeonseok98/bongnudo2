@@ -22,6 +22,7 @@ const clipQueryParsers = {
   groups: parseAsArrayOf(parseAsString).withDefault([]),
   jobs: parseAsArrayOf(parseAsString).withDefault([]),
   participant: parseAsArrayOf(parseAsString).withDefault([]),
+  tags: parseAsArrayOf(parseAsString).withDefault([]),
   day: parseAsInteger,
   date: parseAsString,
   sort: parseAsStringLiteral(CLIP_SORT_VALUES).withDefault("latest"),
@@ -35,6 +36,7 @@ export interface ClipDirectory {
   groupSelection: HierarchicalFilterSelection;
   jobSelection: HierarchicalFilterSelection;
   participantIds: string[];
+  tagIds: string[];
   query: string;
   sort: ClipSort;
   view: ClipView;
@@ -43,6 +45,7 @@ export interface ClipDirectory {
   changeDate: (date: string | null) => void;
   changeDay: (day: number | null) => void;
   changeParticipants: (participantIds: string[]) => void;
+  changeTags: (tagIds: string[]) => void;
   changeQuery: (query: string) => void;
   changeSort: (sort: ClipSort) => void;
   changeView: (view: ClipView) => void;
@@ -50,7 +53,7 @@ export interface ClipDirectory {
 }
 
 export function useClipDirectory(): ClipDirectory {
-  const [{ q, groups, jobs, participant, day, date, sort, view }, setQueryState] =
+  const [{ q, groups, jobs, participant, tags, day, date, sort, view }, setQueryState] =
     useQueryStates(clipQueryParsers);
 
   function changeQuery(query: string) {
@@ -74,6 +77,13 @@ export function useClipDirectory(): ClipDirectory {
   function changeParticipants(participantIds: string[]) {
     void setQueryState(
       { participant: participantIds.length > 0 ? participantIds : null },
+      { history: "replace" },
+    );
+  }
+
+  function changeTags(tagIds: string[]) {
+    void setQueryState(
+      { tags: tagIds.length > 0 ? tagIds : null },
       { history: "replace" },
     );
   }
@@ -115,6 +125,7 @@ export function useClipDirectory(): ClipDirectory {
         groups: null,
         jobs: null,
         participant: null,
+        tags: null,
         day: null,
         date: null,
       },
@@ -131,12 +142,14 @@ export function useClipDirectory(): ClipDirectory {
       groups,
       jobs,
       participantIds: participant,
+      tagIds: tags,
       query: q,
       sort,
     },
     groupSelection: { ids: groups },
     jobSelection: { ids: jobs },
     participantIds: participant,
+    tagIds: tags,
     query: q,
     sort,
     view,
@@ -145,6 +158,7 @@ export function useClipDirectory(): ClipDirectory {
     changeDate,
     changeDay,
     changeParticipants,
+    changeTags,
     changeQuery,
     changeSort,
     changeView,

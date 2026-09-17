@@ -7,6 +7,7 @@ import {
   type CharacterCareerEvent,
   type CharacterCareerEventType,
 } from "@/features/characters/character-career";
+import { getCurrentUser, type AuthenticatedUser } from "@/features/auth/session";
 import {
   type ClipCursor,
   type ClipItem,
@@ -45,7 +46,10 @@ function createParticipantCandidatesQuery(client: SupabaseClient<Database>) {
   `);
 }
 
-function createClipRowsQuery(client: SupabaseClient<Database>) {
+function createClipRowsQuery(
+  client: SupabaseClient<Database>,
+  shouldFilterByTags = false,
+) {
   return client.from("clips").select(`
     id,
     title,
@@ -67,6 +71,13 @@ function createClipRowsQuery(client: SupabaseClient<Database>) {
       id,
       day_number,
       session_date
+    ),
+    clip_tags${shouldFilterByTags ? "!inner" : ""} (
+      created_by,
+      tag:tags!inner (
+        id,
+        name
+      )
     )
   `);
 }
@@ -135,7 +146,10 @@ export async function getClipPage(
   cursor: ClipCursor | null,
 ): Promise<ClipPage> {
   const client = getSupabaseServerClient();
-  const seasonId = await getActiveSeasonId(client);
+  const [seasonId, viewer] = await Promise.all([
+    getActiveSeasonId(client),
+    getCurrentUser(),
+  ]);
   const participantIds = await resolveParticipantIds(client, seasonId, filters);
 
   if (participantIds?.length === 0) {
@@ -153,7 +167,7 @@ export async function getClipPage(
   let sourceCursor = cursor;
 
   for (let scanBatch = 0; scanBatch < MAX_SCAN_BATCHES; scanBatch += 1) {
-    let query = createClipRowsQuery(client)
+    let query = createClipRowsQuery(client, filters.tagIds.length > 0)
       .eq("season_id", seasonId)
       .order("clip_created_at", { ascending: filters.sort === "oldest" })
       .order("id", { ascending: filters.sort === "oldest" })
@@ -171,6 +185,10 @@ export async function getClipPage(
       query = query
         .gte("clip_created_at", dateRange.start)
         .lt("clip_created_at", dateRange.end);
+    }
+
+    if (filters.tagIds.length > 0) {
+      query = query.in("clip_tags.tag_id", filters.tagIds);
     }
 
     if (sourceCursor !== null) {
@@ -196,7 +214,7 @@ export async function getClipPage(
     for (let index = 0; index < data.length; index += 1) {
       const row = data[index];
       sourceCursor = { clipCreatedAt: row.clip_created_at, id: row.id };
-      const clip = toClipItem(row, careerEventsByParticipant);
+      const clip = toClipItem(row, careerEventsByParticipant, viewer);
 
       if (!matchesJobFilters(clip, filters.jobs, careerEventsByParticipant)) {
         continue;
@@ -231,6 +249,7 @@ export async function getClipPageForArchiveParticipant(
   sort: ClipListFilters["sort"],
 ): Promise<ClipPage> {
   const client = getSupabaseServerClient();
+  const viewer = await getCurrentUser();
   let query = createClipRowsQuery(client)
     .eq("season_id", seasonId)
     .eq("season_participant_id", participantId)
@@ -255,7 +274,7 @@ export async function getClipPageForArchiveParticipant(
   const hasNextPage = data.length > PAGE_SIZE;
   const rows = hasNextPage ? data.slice(0, PAGE_SIZE) : data;
   const careerEventsByParticipant = await getCareerEventsByParticipant(client, seasonId, rows);
-  const items = rows.map((row) => toClipItem(row, careerEventsByParticipant));
+  const items = rows.map((row) => toClipItem(row, careerEventsByParticipant, viewer));
   const last = items.at(-1);
 
   return {
@@ -523,6 +542,7 @@ function toOrganizationCategory(type: string): string | null {
 function toClipItem(
   row: ClipSourceRow,
   careerEventsByParticipant: Map<string, CareerEventsByParticipant>,
+  viewer: AuthenticatedUser | null,
 ): ClipItem {
   const career = row.season_participant_id
     ? careerEventsByParticipant.get(row.season_participant_id)
@@ -559,6 +579,13 @@ function toClipItem(
           sessionDate: row.season_day.session_date,
         }
       : null,
+    tags: row.clip_tags.map((clipTag) => ({
+      canDelete: viewer !== null && viewer.status === "active" && (
+        viewer.id === clipTag.created_by || viewer.role === "admin"
+      ),
+      id: clipTag.tag.id,
+      name: clipTag.tag.name,
+    })),
     thumbnailUrl: row.thumbnail_url,
     title: row.title,
     viewCount: row.view_count,

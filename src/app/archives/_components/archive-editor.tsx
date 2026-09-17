@@ -103,7 +103,13 @@ function ArchiveEditorWorkspace({ archive }: { archive: ArchiveDetail }) {
         return;
       }
 
-      chapterId = draft.chapters.find((chapter) => chapter.seasonDayId === clip.seasonDay?.id)?.id ?? null;
+      chapterId = draft.chapters.find(
+        (chapter) =>
+          chapter.id === activeChapterId &&
+          chapter.seasonDayId === clip.seasonDay?.id,
+      )?.id ?? draft.chapters.find(
+        (chapter) => chapter.seasonDayId === clip.seasonDay?.id,
+      )?.id ?? null;
     }
 
     if (!chapterId) {

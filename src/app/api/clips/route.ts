@@ -52,6 +52,7 @@ function parseFilters(searchParams: URLSearchParams): ClipListFilters | null {
   const groups = parseFilterValues(searchParams.get("groups"));
   const jobs = parseFilterValues(searchParams.get("jobs"));
   const participantIds = parseParticipantIds(searchParams.get("participant"));
+  const tagIds = parseParticipantIds(searchParams.get("tags"));
   const dayValue = searchParams.get("day");
   const date = searchParams.get("date");
   const sort = searchParams.get("sort") ?? "latest";
@@ -61,6 +62,7 @@ function parseFilters(searchParams: URLSearchParams): ClipListFilters | null {
     groups === null ||
     jobs === null ||
     participantIds === null ||
+    tagIds === null ||
     (dayValue !== null &&
       (!/^\d+$/.test(dayValue) ||
         !Number.isSafeInteger(Number(dayValue)) ||
@@ -78,6 +80,7 @@ function parseFilters(searchParams: URLSearchParams): ClipListFilters | null {
     groups,
     jobs,
     participantIds,
+    tagIds,
     query,
     sort,
   };
