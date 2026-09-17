@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 
 import { getPublicOrganization } from "@/apis/organizations/get-public-organizations";
+import { getSupabaseServerClient } from "@/lib/supabase/server";
 
 export async function GET(
   _request: Request,
@@ -17,8 +18,23 @@ export async function GET(
       );
     }
 
+    const participantIds = organization.members.map(
+      (member) => member.seasonParticipantId,
+    );
+    const chzzkChannelIds = await getChzzkChannelIds(participantIds);
+
     return NextResponse.json(
-      { data: organization },
+      {
+        data: {
+          ...organization,
+          members: organization.members.map((member) => ({
+            ...member,
+            chzzkLiveUrl: createChzzkLiveUrl(
+              chzzkChannelIds.get(member.seasonParticipantId),
+            ),
+          })),
+        },
+      },
       { headers: { "Cache-Control": "no-store" } },
     );
   } catch (error) {
@@ -29,4 +45,40 @@ export async function GET(
       { status: 500 },
     );
   }
+}
+
+async function getChzzkChannelIds(
+  participantIds: string[],
+): Promise<Map<string, string | null>> {
+  if (participantIds.length === 0) {
+    return new Map();
+  }
+
+  const result = await getSupabaseServerClient()
+    .from("season_participants")
+    .select(`
+      id,
+      streamer:streamers!inner (
+        chzzk_channel_id
+      )
+    `)
+    .in("id", participantIds);
+
+  if (result.error) {
+    throw new Error("조직 정보를 불러오지 못함.", {
+      cause: result.error,
+    });
+  }
+
+  return new Map(
+    result.data.map((row) => [row.id, row.streamer.chzzk_channel_id]),
+  );
+}
+
+function createChzzkLiveUrl(channelId: string | null | undefined): string | null {
+  const normalizedChannelId = channelId?.trim();
+
+  return normalizedChannelId
+    ? `https://chzzk.naver.com/live/${encodeURIComponent(normalizedChannelId)}`
+    : null;
 }
