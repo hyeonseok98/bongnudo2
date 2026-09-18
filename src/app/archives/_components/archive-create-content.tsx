@@ -2,13 +2,14 @@
 
 import { ArrowLeft, Check, LogIn, Plus } from "lucide-react";
 import Link from "next/link";
-import { useState } from "react";
+import { useState, type ReactNode } from "react";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
 
 import { Button, buttonVariants } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select } from "@/components/ui/select";
+import { RetryButton } from "@/components/ui/retry-button";
 import { Textarea } from "@/components/ui/textarea";
 import type {
   ArchiveCategory,
@@ -95,7 +96,12 @@ export function ArchiveCreateContent({ isSignedIn }: ArchiveCreateContentProps) 
   }
 
   if (optionsQuery.isError) {
-    return <CreateNotice isError>아카이브 생성 정보를 불러오지 못했습니다.</CreateNotice>;
+    return (
+      <CreateNotice isError>
+        아카이브 생성 정보를 불러오지 못했습니다.
+        <RetryButton isPending={optionsQuery.isFetching} onRetry={() => void optionsQuery.refetch()} />
+      </CreateNotice>
+    );
   }
 
   return (
@@ -249,10 +255,10 @@ function StructureModeCard({
   );
 }
 
-function CreateNotice({ children, isError = false }: { children: string; isError?: boolean }) {
+function CreateNotice({ children, isError = false }: { children: ReactNode; isError?: boolean }) {
   return (
-    <p className={cn("py-10 text-body-sm", isError ? "text-status-danger" : "text-secondary")}>
+    <div className={cn("flex flex-col items-center gap-3 py-10 text-body-sm", isError ? "text-status-danger" : "text-secondary")}>
       {children}
-    </p>
+    </div>
   );
 }

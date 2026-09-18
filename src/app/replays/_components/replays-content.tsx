@@ -4,6 +4,7 @@ import { useQueryClient } from "@tanstack/react-query";
 
 import { useCharacters } from "@/app/characters/_hooks/use-characters";
 import { Button } from "@/components/ui/button";
+import { RetryButton } from "@/components/ui/retry-button";
 import { replayQueries } from "@/queries/replay-queries";
 
 import { useReplayDirectory } from "../_hooks/use-replay-directory";
@@ -26,7 +27,12 @@ export function ReplaysContent({ canManageCollectedMedia }: ReplaysContentProps)
   const replays = replaysQuery.data?.pages.flatMap((page) => page.items) ?? [];
 
   if (charactersQuery.isPending || optionsQuery.isPending) return <ReplaysLoadingState />;
-  if (charactersQuery.isError || optionsQuery.isError) return <ReplaysErrorState />;
+  if (charactersQuery.isError || optionsQuery.isError) {
+    return <ReplaysErrorState isRetrying={charactersQuery.isFetching || optionsQuery.isFetching} onRetry={() => {
+      void charactersQuery.refetch();
+      void optionsQuery.refetch();
+    }} />;
+  }
 
   return (
     <div className="space-y-6">
@@ -50,8 +56,6 @@ export function ReplaysContent({ canManageCollectedMedia }: ReplaysContentProps)
 
       {replaysQuery.isPending ? (
         <p className="text-body-sm text-secondary" role="status">다시보기를 불러오는 중입니다.</p>
-      ) : replaysQuery.isError ? (
-        <p className="text-body-sm text-status-danger" role="alert">다시보기를 불러오지 못함.</p>
       ) : (
         <section aria-labelledby="replay-results-heading" className="space-y-4">
           <div>
@@ -62,6 +66,12 @@ export function ReplaysContent({ canManageCollectedMedia }: ReplaysContentProps)
               <p className="mt-1 text-caption text-tertiary" role="status">필터 결과를 업데이트하는 중입니다.</p>
             ) : null}
           </div>
+          {replaysQuery.isError ? (
+            <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-status-danger/40 px-4 py-3" role="alert">
+              <p className="text-body-sm text-status-danger">다시보기를 불러오지 못했습니다.</p>
+              <RetryButton onRetry={() => void replaysQuery.refetch()} />
+            </div>
+          ) : null}
           {replays.length > 0 ? (
             <ReplayCardGrid
               canManageCollectedMedia={canManageCollectedMedia}
@@ -100,11 +110,12 @@ function ReplaysLoadingState() {
   );
 }
 
-function ReplaysErrorState() {
+function ReplaysErrorState({ isRetrying, onRetry }: { isRetrying: boolean; onRetry: () => void }) {
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
       <ReplaysHeading />
-      <p className="text-body-sm text-status-danger" role="alert">다시보기 탐색 정보를 불러오지 못함.</p>
+      <p className="text-body-sm text-status-danger" role="alert">다시보기 탐색 정보를 불러오지 못했습니다.</p>
+      <RetryButton isPending={isRetrying} onRetry={onRetry} />
     </div>
   );
 }

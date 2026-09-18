@@ -8,6 +8,7 @@ import { Archive, Building2, Clapperboard, UserRound, X } from "lucide-react";
 import { ParticipantFilter } from "@/components/filters/participant-filter";
 import { Badge } from "@/components/ui/badge";
 import { Button, buttonVariants } from "@/components/ui/button";
+import { RetryButton } from "@/components/ui/retry-button";
 import type { ArchivePersonDetail } from "@/features/archives/archive";
 import { archiveQueries } from "@/queries/archive-queries";
 import { cn } from "@/utils/cn";
@@ -39,7 +40,7 @@ export function ArchivePeopleView() {
       {directory.participantId !== null && personQuery.isPending ? (
         <ArchivePeopleMessage>인물별 아카이브를 불러오는 중입니다.</ArchivePeopleMessage>
       ) : null}
-      {personQuery.isError ? <ArchivePeopleError /> : null}
+      {personQuery.isError ? <ArchivePeopleError isRetrying={personQuery.isFetching} onRetry={() => void personQuery.refetch()} /> : null}
       {personQuery.data ? (
         <ArchivePersonResult
           detail={personQuery.data}
@@ -137,11 +138,12 @@ function ArchivePeopleMessage({ children }: { children: string }) {
   );
 }
 
-function ArchivePeopleError() {
+function ArchivePeopleError({ isRetrying, onRetry }: { isRetrying: boolean; onRetry: () => void }) {
   return (
-    <div className="flex flex-col items-center rounded-xl border border-dashed border-default px-4 py-12 text-center">
+    <div className="flex flex-col items-center gap-3 rounded-xl border border-dashed border-default px-4 py-12 text-center">
       <Archive aria-hidden="true" className="size-7 text-status-danger" />
       <p className="mt-3 text-body-sm text-status-danger" role="alert">인물별 아카이브를 불러오지 못했습니다.</p>
+      <RetryButton isPending={isRetrying} onRetry={onRetry} />
     </div>
   );
 }

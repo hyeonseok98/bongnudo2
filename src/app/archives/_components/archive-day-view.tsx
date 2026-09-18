@@ -1,11 +1,12 @@
 "use client";
 
-import { useState } from "react";
+import { useState, type ReactNode } from "react";
 
 import { useInfiniteQuery, useQuery } from "@tanstack/react-query";
 import { parseAsInteger, useQueryState } from "nuqs";
 
 import { Button } from "@/components/ui/button";
+import { RetryButton } from "@/components/ui/retry-button";
 import type { ArchiveListItem } from "@/features/archives/archive";
 import type { ClipItem, ClipListFilters } from "@/features/clips/clip";
 import { archiveQueries } from "@/queries/archive-queries";
@@ -57,7 +58,7 @@ export function ArchiveDayView() {
   }
 
   if (optionsQuery.isError || !optionsQuery.data) {
-    return <ArchiveDayMessage>봉누도 일차를 불러오지 못했습니다.</ArchiveDayMessage>;
+    return <ArchiveDayMessage>봉누도 일차를 불러오지 못했습니다.<RetryButton isPending={optionsQuery.isFetching} onRetry={() => void optionsQuery.refetch()} /></ArchiveDayMessage>;
   }
 
   return (
@@ -84,7 +85,7 @@ export function ArchiveDayView() {
       </div>
 
       {clipsQuery.isPending ? <ArchiveDayMessage>클립을 불러오는 중입니다.</ArchiveDayMessage> : null}
-      {clipsQuery.isError ? <ArchiveDayMessage>해당 일차의 클립을 불러오지 못했습니다.</ArchiveDayMessage> : null}
+      {clipsQuery.isError ? <ArchiveDayMessage>해당 일차의 클립을 불러오지 못했습니다.<RetryButton isPending={clipsQuery.isFetching} onRetry={() => void clipsQuery.refetch()} /></ArchiveDayMessage> : null}
       {!clipsQuery.isPending && !clipsQuery.isError ? (
         <>
           <div className="flex items-center justify-between gap-3">
@@ -115,6 +116,7 @@ export function ArchiveDayView() {
             archives={relatedArchivesQuery.data ?? []}
             isError={relatedArchivesQuery.isError}
             isPending={relatedArchivesQuery.isPending}
+            onRetry={() => void relatedArchivesQuery.refetch()}
           />
         </>
       ) : null}
@@ -151,10 +153,12 @@ function RelatedArchives({
   archives,
   isError,
   isPending,
+  onRetry,
 }: {
   archives: ArchiveListItem[];
   isError: boolean;
   isPending: boolean;
+  onRetry: () => void;
 }) {
   return (
     <section aria-labelledby="day-related-archives-heading" className="space-y-3 pt-3">
@@ -163,7 +167,7 @@ function RelatedArchives({
         <p className="mt-1 text-body-sm text-secondary">이 일차의 클립을 포함한 공개 사용자 제작 아카이브입니다.</p>
       </div>
       {isPending ? <ArchiveDayMessage>관련 아카이브를 불러오는 중입니다.</ArchiveDayMessage> : null}
-      {isError ? <ArchiveDayMessage>관련 아카이브를 불러오지 못했습니다.</ArchiveDayMessage> : null}
+      {isError ? <ArchiveDayMessage>관련 아카이브를 불러오지 못했습니다.<RetryButton onRetry={onRetry} /></ArchiveDayMessage> : null}
       {!isPending && !isError && archives.length === 0 ? (
         <ArchiveDayMessage>관련 공개 아카이브가 없습니다.</ArchiveDayMessage>
       ) : null}
@@ -176,10 +180,10 @@ function RelatedArchives({
   );
 }
 
-function ArchiveDayMessage({ children }: { children: string }) {
+function ArchiveDayMessage({ children }: { children: ReactNode }) {
   return (
-    <p className="rounded-xl border border-dashed border-default px-4 py-12 text-center text-body-sm text-secondary">
+    <div className="flex flex-col items-center gap-3 rounded-xl border border-dashed border-default px-4 py-12 text-center text-body-sm text-secondary">
       {children}
-    </p>
+    </div>
   );
 }

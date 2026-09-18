@@ -61,7 +61,7 @@ export function ArchiveDetailHeader({ archive, systemSummary }: ArchiveDetailHea
             <Badge variant="outline">{categoryLabels[archive.category]}</Badge>
             <Badge variant="outline">{statusLabels[archive.status]}</Badge>
             <Badge variant="outline">
-              {archive.archiveKind === "system_character" ? "시스템 인물" : "사용자 제작"}
+              {archive.archiveKind === "system_character" ? "인물 기록" : "사용자 제작"}
             </Badge>
             <Badge variant="outline">{archive.visibility === "public" ? "공개" : "비공개"}</Badge>
           </div>

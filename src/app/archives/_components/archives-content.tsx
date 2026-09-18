@@ -8,6 +8,7 @@ import { Archive, CalendarDays, LogIn, Plus, UsersRound } from "lucide-react";
 
 import { useCharacters } from "@/app/characters/_hooks/use-characters";
 import { Button, buttonVariants } from "@/components/ui/button";
+import { RetryButton } from "@/components/ui/retry-button";
 import { cn } from "@/utils/cn";
 
 import { useArchiveDirectory } from "../_hooks/use-archive-directory";
@@ -115,7 +116,9 @@ function ArchivePublicList() {
   const archives = archivesQuery.data?.pages.flatMap((page) => page.items) ?? [];
 
   if (charactersQuery.isPending) return <ArchiveLoadingState />;
-  if (charactersQuery.isError) return <ArchiveErrorState />;
+  if (charactersQuery.isError) {
+    return <ArchiveErrorState isRetrying={charactersQuery.isFetching} onRetry={() => void charactersQuery.refetch()} />;
+  }
 
   return (
     <div className="space-y-6">
@@ -133,7 +136,7 @@ function ArchivePublicList() {
       />
 
       {archivesQuery.isPending ? <ArchiveLoadingState /> : null}
-      {archivesQuery.isError ? <ArchiveErrorState /> : null}
+      {archivesQuery.isError ? <ArchiveErrorState onRetry={() => void archivesQuery.refetch()} /> : null}
       {!archivesQuery.isPending && !archivesQuery.isError ? (
         <section aria-labelledby="archive-results-heading" className="space-y-4">
           <h2 className="text-body-sm text-secondary" id="archive-results-heading">
@@ -194,11 +197,18 @@ function ArchiveLoadingState() {
   );
 }
 
-function ArchiveErrorState() {
+function ArchiveErrorState({
+  isRetrying = false,
+  onRetry,
+}: {
+  isRetrying?: boolean;
+  onRetry: () => void;
+}) {
   return (
-    <p className="rounded-xl border border-dashed border-default px-4 py-14 text-center text-body-sm text-status-danger" role="alert">
-      공개 아카이브를 불러오지 못했습니다.
-    </p>
+    <div className="flex flex-col items-center gap-3 rounded-xl border border-dashed border-default px-4 py-10 text-center" role="alert">
+      <p className="text-body-sm text-status-danger">공개 아카이브를 불러오지 못했습니다.</p>
+      <RetryButton isPending={isRetrying} onRetry={onRetry} />
+    </div>
   );
 }
 

@@ -35,8 +35,8 @@ const statusLabels = {
 } as const;
 
 const structureModeLabels = {
-  day_based: "일차 기반",
-  freeform: "자유 구성",
+  day_based: "일차별로 구성",
+  freeform: "자유롭게 구성",
 } as const;
 
 export function MyArchiveRow({ archive, tab }: MyArchiveRowProps) {
@@ -144,8 +144,6 @@ function ActiveArchiveMetadata({
         <>
           <span>·</span>
           <span>최종 수정 {formatDate(archive.updatedAt)}</span>
-          <span>·</span>
-          <span>revision {archive.currentRevision}</span>
           <span>·</span>
           <span>{editPolicyLabels[archive.editPolicy]}</span>
         </>

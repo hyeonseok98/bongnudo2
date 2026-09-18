@@ -3,6 +3,7 @@
 import { useQuery } from "@tanstack/react-query";
 
 import { archiveQueries } from "@/queries/archive-queries";
+import { RetryButton } from "@/components/ui/retry-button";
 
 import { ArchiveDetailHeader } from "./archive-detail-header";
 import { ArchiveUserContent } from "./archive-user-content";
@@ -21,9 +22,10 @@ export function ArchiveDetailContent({ archiveId }: ArchiveDetailContentProps) {
 
   if (archiveQuery.isError) {
     return (
-      <p className="py-20 text-center text-body-sm text-secondary">
-        아카이브를 찾을 수 없거나 접근할 수 없습니다.
-      </p>
+      <div className="flex flex-col items-center gap-3 py-20 text-center">
+        <p className="text-body-sm text-secondary">아카이브를 찾을 수 없거나 접근할 수 없습니다.</p>
+        <RetryButton isPending={archiveQuery.isFetching} onRetry={() => void archiveQuery.refetch()} />
+      </div>
     );
   }
 

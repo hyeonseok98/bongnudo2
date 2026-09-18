@@ -79,10 +79,10 @@ export function SystemCharacterArchiveContent({ archive }: SystemCharacterArchiv
         </div>
 
         {summaryQuery.isError ? (
-          <MessageBox>시스템 아카이브 정보를 불러오지 못했습니다.</MessageBox>
+          <MessageBox>인물별 클립 정보를 불러오지 못했습니다.</MessageBox>
         ) : null}
         {clipsQuery.isPending ? <LoadingBox /> : null}
-        {clipsQuery.isError ? <MessageBox>시스템 아카이브 클립을 불러오지 못했습니다.</MessageBox> : null}
+        {clipsQuery.isError ? <MessageBox>인물별 클립을 불러오지 못했습니다.</MessageBox> : null}
         {!clipsQuery.isPending && !clipsQuery.isError && clips.length === 0 ? (
           <MessageBox>선택한 조건에 등록된 클립이 없습니다.</MessageBox>
         ) : null}

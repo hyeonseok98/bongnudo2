@@ -6,6 +6,7 @@ import { type MouseEvent, useEffect, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
 import { Button, buttonVariants } from "@/components/ui/button";
+import { RetryButton } from "@/components/ui/retry-button";
 import type { ArchiveClipSummary, ArchiveDetail } from "@/features/archives/archive";
 import { archiveMutations, archiveQueries } from "@/queries/archive-queries";
 
@@ -38,7 +39,7 @@ export function ArchiveEditor({ archiveId, isSignedIn }: ArchiveEditorProps) {
   }
 
   if (archiveQuery.isError || !archiveQuery.data) {
-    return <ArchiveEditorNotice>아카이브를 불러오지 못했습니다.</ArchiveEditorNotice>;
+    return <ArchiveEditorNotice onRetry={() => void archiveQuery.refetch()}>아카이브를 불러오지 못했습니다.</ArchiveEditorNotice>;
   }
 
   if (!archiveQuery.data.canEditContent) {
@@ -46,7 +47,7 @@ export function ArchiveEditor({ archiveId, isSignedIn }: ArchiveEditorProps) {
   }
 
   if (archiveQuery.data.archiveKind !== "user" || archiveQuery.data.structureMode === null) {
-    return <ArchiveEditorNotice>시스템 아카이브는 편집할 수 없습니다.</ArchiveEditorNotice>;
+    return <ArchiveEditorNotice>인물별 전체 클립은 편집할 수 없습니다.</ArchiveEditorNotice>;
   }
 
   return <ArchiveEditorWorkspace archive={archiveQuery.data} />;
@@ -186,7 +187,7 @@ function ArchiveEditorWorkspace({ archive }: { archive: ArchiveDetail }) {
   }
 
   if (optionsQuery.isError) {
-    return <ArchiveEditorNotice>아카이브 편집 정보를 불러오지 못했습니다.</ArchiveEditorNotice>;
+    return <ArchiveEditorNotice onRetry={() => void optionsQuery.refetch()}>아카이브 편집 정보를 불러오지 못했습니다.</ArchiveEditorNotice>;
   }
 
   return (
@@ -317,10 +318,11 @@ function ArchiveLoginRequired({ archiveId }: { archiveId: string }) {
   );
 }
 
-function ArchiveEditorNotice({ children }: { children: string }) {
+function ArchiveEditorNotice({ children, onRetry }: { children: string; onRetry?: () => void }) {
   return (
-    <div className="flex min-h-80 items-center justify-center py-10 text-center text-body-sm text-secondary">
-      {children}
+    <div className="flex min-h-80 flex-col items-center justify-center gap-3 py-10 text-center text-body-sm text-secondary">
+      <p>{children}</p>
+      {onRetry ? <RetryButton onRetry={onRetry} /> : null}
     </div>
   );
 }

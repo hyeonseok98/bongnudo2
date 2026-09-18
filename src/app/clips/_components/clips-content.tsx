@@ -6,6 +6,7 @@ import { useQueryClient } from "@tanstack/react-query";
 
 import { useCharacters } from "@/app/characters/_hooks/use-characters";
 import { Select } from "@/components/ui/select";
+import { RetryButton } from "@/components/ui/retry-button";
 import type { ClipItem } from "@/features/clips/clip";
 import { clipQueries } from "@/queries/clip-queries";
 import { cn } from "@/utils/cn";
@@ -44,7 +45,10 @@ export function ClipsContent({ canAddTags, canManageCollectedMedia }: ClipsConte
   }
 
   if (charactersQuery.isError || optionsQuery.isError) {
-    return <ClipsErrorState />;
+    return <ClipsErrorState isRetrying={charactersQuery.isFetching || optionsQuery.isFetching} onRetry={() => {
+      void charactersQuery.refetch();
+      void optionsQuery.refetch();
+    }} />;
   }
 
   return (
@@ -72,10 +76,6 @@ export function ClipsContent({ canAddTags, canManageCollectedMedia }: ClipsConte
       {clipsQuery.isPending ? (
         <p className="text-body-sm text-secondary" role="status">
           클립을 불러오는 중입니다.
-        </p>
-      ) : clipsQuery.isError ? (
-        <p className="text-body-sm text-status-danger" role="alert">
-          클립을 불러오지 못함.
         </p>
       ) : (
         <section aria-labelledby="clip-results-heading" className="space-y-4">
@@ -107,6 +107,10 @@ export function ClipsContent({ canAddTags, canManageCollectedMedia }: ClipsConte
               </>
             </div>
           </div>
+
+          {clipsQuery.isError ? (
+            <QueryError onRetry={() => void clipsQuery.refetch()} />
+          ) : null}
 
           {clips.length > 0 ? (
             directory.view === "people" ? (
@@ -161,13 +165,23 @@ function ClipsLoadingState() {
   );
 }
 
-function ClipsErrorState() {
+function ClipsErrorState({ isRetrying, onRetry }: { isRetrying: boolean; onRetry: () => void }) {
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
       <ClipsHeading />
       <p className="text-body-sm text-status-danger" role="alert">
-        클립 탐색 정보를 불러오지 못함.
+        클립 탐색 정보를 불러오지 못했습니다.
       </p>
+      <RetryButton isPending={isRetrying} onRetry={onRetry} />
+    </div>
+  );
+}
+
+function QueryError({ onRetry }: { onRetry: () => void }) {
+  return (
+    <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-status-danger/40 px-4 py-3" role="alert">
+      <p className="text-body-sm text-status-danger">클립을 불러오지 못했습니다.</p>
+      <RetryButton onRetry={onRetry} />
     </div>
   );
 }
