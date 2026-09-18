@@ -59,8 +59,8 @@ export function ReplayCard({ canManageCollectedMedia = false, onExcluded, replay
           ) : null}
         </div>
 
-        <div className="space-y-2 p-3">
-          <h2 className="line-clamp-2 min-h-10 text-body-sm font-semibold text-primary">{replay.title}</h2>
+        <div className="space-y-2.5 p-3">
+          <h2 className="line-clamp-2 text-body-sm font-semibold text-primary">{replay.title}</h2>
 
           <div className="flex min-w-0 items-center gap-2">
             {replay.participant?.profileImageUrl ? (

@@ -65,7 +65,7 @@ export function ClipCard({
         </div>
 
         <div className="space-y-2 p-3">
-          <h2 className="line-clamp-2 min-h-10 text-body-sm font-semibold text-primary">
+          <h2 className="line-clamp-2 text-body-sm font-semibold text-primary">
             {clip.title}
           </h2>
 
@@ -139,7 +139,7 @@ export function ClipCardGrid({
   onExcluded,
 }: ClipCardGridProps) {
   return (
-    <div className="grid grid-cols-1 items-stretch gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5">
+    <div className="grid grid-cols-1 items-stretch gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-6">
       {clips.map((clip) => (
         <ClipCard
           canAddTags={canAddTags}

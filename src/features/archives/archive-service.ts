@@ -79,6 +79,7 @@ type MyArchivePageRow = Database["public"]["Functions"]["get_my_archive_page"]["
 
 const ARCHIVE_LIST_PAGE_SIZE = 24;
 const MY_ARCHIVE_LIST_PAGE_SIZE = 20;
+const DAY_RELATED_ARCHIVE_LIMIT = 12;
 
 export async function createArchive(
   user: AuthenticatedUser,
@@ -229,6 +230,134 @@ export async function getPublicArchivePage(
       ? { id: lastItem.id, sortAt: lastItem.sortAt }
       : null,
   };
+}
+
+export async function getPublicUserArchivesForSeasonDay(
+  seasonDayId: string,
+): Promise<ArchiveListItem[]> {
+  const supabase = getSupabaseAdminClient();
+  const matchingItemsResult = await supabase
+    .from("archive_items")
+    .select(`
+      archive_id,
+      clip:clips!inner (
+        id
+      )
+    `)
+    .eq("clips.season_day_id", seasonDayId);
+
+  if (matchingItemsResult.error) {
+    throw new ArchiveRequestError("관련 아카이브를 불러오지 못했습니다.", 500, {
+      cause: matchingItemsResult.error,
+    });
+  }
+
+  const archiveIds = Array.from(new Set(
+    (matchingItemsResult.data ?? []).map((item) => item.archive_id),
+  ));
+
+  if (archiveIds.length === 0) {
+    return [];
+  }
+
+  const archivesResult = await supabase
+    .from("archives")
+    .select("id, category, description, published_at, status, title, updated_at")
+    .in("id", archiveIds)
+    .eq("archive_kind", "user")
+    .eq("visibility", "public")
+    .is("deleted_at", null)
+    .order("updated_at", { ascending: false })
+    .limit(DAY_RELATED_ARCHIVE_LIMIT);
+
+  if (archivesResult.error) {
+    throw new ArchiveRequestError("관련 아카이브를 불러오지 못했습니다.", 500, {
+      cause: archivesResult.error,
+    });
+  }
+
+  const publicArchiveIds = (archivesResult.data ?? []).map((archive) => archive.id);
+
+  if (publicArchiveIds.length === 0) {
+    return [];
+  }
+
+  const archiveItemsResult = await supabase
+    .from("archive_items")
+    .select(`
+      archive_id,
+      clip:clips!inner (
+        clip_created_at,
+        thumbnail_url
+      )
+    `)
+    .in("archive_id", publicArchiveIds);
+
+  if (archiveItemsResult.error) {
+    throw new ArchiveRequestError("관련 아카이브를 불러오지 못했습니다.", 500, {
+      cause: archiveItemsResult.error,
+    });
+  }
+
+  const statsByArchiveId = new Map<string, {
+    clipCount: number;
+    firstClipCreatedAt: string;
+    lastClipCreatedAt: string;
+    representativeImageUrl: string | null;
+  }>();
+
+  for (const item of archiveItemsResult.data ?? []) {
+    if (!item.clip) {
+      continue;
+    }
+
+    const existing = statsByArchiveId.get(item.archive_id);
+
+    if (!existing) {
+      statsByArchiveId.set(item.archive_id, {
+        clipCount: 1,
+        firstClipCreatedAt: item.clip.clip_created_at,
+        lastClipCreatedAt: item.clip.clip_created_at,
+        representativeImageUrl: item.clip.thumbnail_url,
+      });
+      continue;
+    }
+
+    existing.clipCount += 1;
+    existing.firstClipCreatedAt = existing.firstClipCreatedAt < item.clip.clip_created_at
+      ? existing.firstClipCreatedAt
+      : item.clip.clip_created_at;
+    existing.lastClipCreatedAt = existing.lastClipCreatedAt > item.clip.clip_created_at
+      ? existing.lastClipCreatedAt
+      : item.clip.clip_created_at;
+    existing.representativeImageUrl ??= item.clip.thumbnail_url;
+  }
+
+  return (archivesResult.data ?? []).flatMap((archive) => {
+    const stats = statsByArchiveId.get(archive.id);
+
+    if (!stats) {
+      return [];
+    }
+
+    return [{
+      archiveKind: "user" as const,
+      category: toArchiveCategory(archive.category),
+      clipCount: stats.clipCount,
+      description: archive.description,
+      firstClipCreatedAt: stats.firstClipCreatedAt,
+      id: archive.id,
+      lastClipCreatedAt: stats.lastClipCreatedAt,
+      ownerName: null,
+      publishedAt: archive.published_at,
+      representativeImageUrl: stats.representativeImageUrl,
+      sortAt: archive.updated_at,
+      status: toArchiveStatus(archive.status),
+      systemParticipant: null,
+      title: archive.title,
+      updatedAt: archive.updated_at,
+    }];
+  });
 }
 
 export async function getMyArchivePage(

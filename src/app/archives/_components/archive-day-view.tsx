@@ -2,15 +2,19 @@
 
 import { useState } from "react";
 
-import { useInfiniteQuery } from "@tanstack/react-query";
+import { useInfiniteQuery, useQuery } from "@tanstack/react-query";
+import { parseAsInteger, useQueryState } from "nuqs";
 
 import { Button } from "@/components/ui/button";
+import type { ArchiveListItem } from "@/features/archives/archive";
 import type { ClipItem, ClipListFilters } from "@/features/clips/clip";
+import { archiveQueries } from "@/queries/archive-queries";
 import { clipQueries } from "@/queries/clip-queries";
 
 import { useClipOptions } from "../../clips/_hooks/use-clips";
 import { ArchiveClipCard } from "./archive-clip-card";
 import { ArchiveClipPreviewDialog } from "./archive-clip-preview-dialog";
+import { ArchiveCard } from "./archive-card";
 
 const archiveDayFilters: Omit<ClipListFilters, "day"> = {
   date: null,
@@ -23,14 +27,18 @@ const archiveDayFilters: Omit<ClipListFilters, "day"> = {
 };
 
 export function ArchiveDayView() {
-  const [selectedDay, setSelectedDay] = useState<number | null>(null);
+  const [selectedDay, setSelectedDay] = useQueryState("day", parseAsInteger);
   const [previewClip, setPreviewClip] = useState<ClipItem | null>(null);
   const optionsQuery = useClipOptions();
-  const day = selectedDay ?? optionsQuery.data?.seasonDays[0]?.dayNumber ?? null;
+  const day = selectedDay ?? optionsQuery.data?.seasonDays.at(-1)?.dayNumber ?? null;
+  const seasonDayId = optionsQuery.data?.seasonDays.find(
+    (seasonDay) => seasonDay.dayNumber === day,
+  )?.id ?? null;
   const clipsQuery = useInfiniteQuery({
     ...clipQueries.list({ ...archiveDayFilters, day }),
     enabled: day !== null,
   });
+  const relatedArchivesQuery = useQuery(archiveQueries.dayRelatedArchives(seasonDayId));
   const clips = clipsQuery.data?.pages.flatMap((page) => page.items) ?? [];
 
   if (optionsQuery.isPending) {
@@ -54,7 +62,7 @@ export function ArchiveDayView() {
             aria-selected={day === seasonDay.dayNumber}
             className="shrink-0"
             key={seasonDay.id}
-            onClick={() => setSelectedDay(seasonDay.dayNumber)}
+            onClick={() => void setSelectedDay(seasonDay.dayNumber, { history: "replace" })}
             size="sm"
             type="button"
             variant={day === seasonDay.dayNumber ? "default" : "outline"}
@@ -91,10 +99,45 @@ export function ArchiveDayView() {
               </Button>
             </div>
           ) : null}
+
+          <RelatedArchives
+            archives={relatedArchivesQuery.data ?? []}
+            isError={relatedArchivesQuery.isError}
+            isPending={relatedArchivesQuery.isPending}
+          />
         </>
       ) : null}
 
       <ArchiveClipPreviewDialog clip={previewClip} onClose={() => setPreviewClip(null)} />
+    </section>
+  );
+}
+
+function RelatedArchives({
+  archives,
+  isError,
+  isPending,
+}: {
+  archives: ArchiveListItem[];
+  isError: boolean;
+  isPending: boolean;
+}) {
+  return (
+    <section aria-labelledby="day-related-archives-heading" className="space-y-3 pt-3">
+      <div>
+        <h3 className="text-body font-semibold text-primary" id="day-related-archives-heading">관련 아카이브</h3>
+        <p className="mt-1 text-body-sm text-secondary">이 일차의 클립을 포함한 공개 사용자 제작 아카이브입니다.</p>
+      </div>
+      {isPending ? <ArchiveDayMessage>관련 아카이브를 불러오는 중입니다.</ArchiveDayMessage> : null}
+      {isError ? <ArchiveDayMessage>관련 아카이브를 불러오지 못했습니다.</ArchiveDayMessage> : null}
+      {!isPending && !isError && archives.length === 0 ? (
+        <ArchiveDayMessage>관련 공개 아카이브가 없습니다.</ArchiveDayMessage>
+      ) : null}
+      {archives.length > 0 ? (
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5">
+          {archives.map((archive) => <ArchiveCard archive={archive} key={archive.id} />)}
+        </div>
+      ) : null}
     </section>
   );
 }

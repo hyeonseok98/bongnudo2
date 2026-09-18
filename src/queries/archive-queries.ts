@@ -12,6 +12,7 @@ import {
   getArchive,
   getArchiveEditorOptions,
   getMyArchives,
+  getPublicArchivesForSeasonDay,
   getPublicArchives,
   searchArchiveParticipants,
   getSystemArchiveClips,
@@ -58,6 +59,18 @@ export const archiveQueries = {
       placeholderData: keepPreviousData,
       initialPageParam: null,
       getNextPageParam: (page) => page.nextCursor,
+    }),
+  dayRelatedArchives: (seasonDayId: string | null) =>
+    queryOptions({
+      enabled: seasonDayId !== null,
+      queryKey: [...archiveQueries.all(), "day-related", seasonDayId] as const,
+      queryFn: () => {
+        if (!seasonDayId) {
+          throw new Error("봉누도 일차 정보가 올바르지 않습니다.");
+        }
+
+        return getPublicArchivesForSeasonDay(seasonDayId);
+      },
     }),
   myList: (tab: MyArchiveTab) =>
     infiniteQueryOptions<

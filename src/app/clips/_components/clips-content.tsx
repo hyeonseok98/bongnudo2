@@ -31,6 +31,14 @@ export function ClipsContent({ canAddTags, canManageCollectedMedia }: ClipsConte
   const streamerAffiliations = charactersQuery.data?.streamerAffiliations ?? [];
   const clips = clipsQuery.data?.pages.flatMap((page) => page.items) ?? [];
 
+  function handleLoadMore() {
+    if (!clipsQuery.hasNextPage || clipsQuery.isFetchingNextPage) {
+      return;
+    }
+
+    void clipsQuery.fetchNextPage();
+  }
+
   if (charactersQuery.isPending || optionsQuery.isPending) {
     return <ClipsLoadingState />;
   }
@@ -123,7 +131,7 @@ export function ClipsContent({ canAddTags, canManageCollectedMedia }: ClipsConte
           <ClipInfiniteScrollTrigger
             hasNextPage={clipsQuery.hasNextPage}
             isFetchingNextPage={clipsQuery.isFetchingNextPage}
-            onLoadMore={() => void clipsQuery.fetchNextPage()}
+            onLoadMore={handleLoadMore}
           />
         </section>
       )}

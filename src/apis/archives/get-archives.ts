@@ -5,6 +5,7 @@ import type {
   ArchiveEditorOptions,
   ArchiveListCursor,
   ArchiveListFilters,
+  ArchiveListItem,
   MyArchiveCursor,
   MyArchivePage,
   MyArchiveTab,
@@ -187,6 +188,8 @@ const archivePageSchema = z.object({
   }).nullable(),
 });
 
+const archiveDayArchivesSchema = archivePageSchema.shape.items;
+
 const myArchivePageSchema = z.object({
   items: z.array(z.object({
     canEditContent: z.boolean(),
@@ -281,6 +284,21 @@ export async function getPublicArchives(
   }
 
   return archivePageSchema.parse(await response.json());
+}
+
+export async function getPublicArchivesForSeasonDay(
+  seasonDayId: string,
+): Promise<ArchiveListItem[]> {
+  const searchParams = new URLSearchParams({ seasonDay: seasonDayId });
+  const response = await fetch(`/api/archives/day?${searchParams.toString()}`, {
+    cache: "no-store",
+  });
+
+  if (!response.ok) {
+    throw new Error(await getArchiveErrorMessage(response, "관련 아카이브를 불러오지 못했습니다."));
+  }
+
+  return archiveDayArchivesSchema.parse(await response.json());
 }
 
 export async function getMyArchives(
