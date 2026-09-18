@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { CalendarDays, Clapperboard, FolderArchive, UserRound } from "lucide-react";
+import { CalendarDays, Clapperboard, FolderArchive } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
 import type { ArchiveListItem } from "@/features/archives/archive";
@@ -57,9 +57,6 @@ export function ArchiveCard({ archive }: ArchiveCardProps) {
             </div>
           )}
           <div className="absolute inset-x-0 bottom-0 h-16 bg-linear-to-t from-black/55 to-transparent" />
-          <Badge className="absolute top-2 left-2 bg-black/65 text-white">
-            {archive.archiveKind === "system_character" ? "자동 인물" : "사용자 제작"}
-          </Badge>
           <span className="absolute right-2 bottom-2 inline-flex items-center gap-1 text-caption font-medium text-white">
             <Clapperboard aria-hidden="true" className="size-3.5" />
             클립 {archive.clipCount}개
@@ -95,7 +92,7 @@ function SystemArchiveCardContent({
           <p className="mt-0.5 truncate text-caption text-secondary">{displayName.secondaryName}</p>
         ) : null}
       </div>
-      <p className="text-body-sm text-secondary">전체 클립 아카이브</p>
+      <p className="text-body-sm text-secondary">인물의 전체 클립</p>
       <p className="inline-flex items-center gap-1.5 text-caption text-tertiary">
         <CalendarDays aria-hidden="true" className="size-3.5" />
         {formatClipRange(archive.firstClipCreatedAt, archive.lastClipCreatedAt)}
@@ -116,13 +113,6 @@ function UserArchiveCardContent({ archive }: { archive: ArchiveListItem }) {
       <div className="flex flex-wrap gap-1.5">
         <Badge variant="outline">{categoryLabels[archive.category]}</Badge>
         <Badge variant="outline">{statusLabels[archive.status]}</Badge>
-      </div>
-      <div className="flex items-center justify-between gap-2 text-caption text-tertiary">
-        <span className="inline-flex min-w-0 items-center gap-1.5 truncate">
-          <UserRound aria-hidden="true" className="size-3.5 shrink-0" />
-          {archive.ownerName ?? "작성자 정보 없음"}
-        </span>
-        <time dateTime={archive.updatedAt}>수정 {dateFormatter.format(new Date(archive.updatedAt))}</time>
       </div>
     </>
   );

@@ -121,7 +121,7 @@ export function ReplayCardGrid({
   replays,
 }: ReplayCardGridProps) {
   return (
-    <div className="grid grid-cols-1 items-stretch gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5">
+    <div className="grid grid-cols-1 items-stretch gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-6">
       {replays.map((replay) => (
         <ReplayCard
           canManageCollectedMedia={canManageCollectedMedia}

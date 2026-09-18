@@ -19,8 +19,6 @@ interface ClipCardProps {
 
 const dateFormatter = new Intl.DateTimeFormat("ko-KR", {
   day: "numeric",
-  hour: "2-digit",
-  minute: "2-digit",
   month: "long",
   timeZone: "Asia/Seoul",
 });

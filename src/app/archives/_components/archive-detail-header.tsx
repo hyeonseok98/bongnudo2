@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { CalendarDays, FolderOpen, Pencil, UserRound } from "lucide-react";
+import { CalendarDays, ChevronLeft, FolderOpen, Pencil, UserRound } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
 import { buttonVariants } from "@/components/ui/button";
@@ -49,6 +49,12 @@ export function ArchiveDetailHeader({ archive, systemSummary }: ArchiveDetailHea
 
   return (
     <header className="flex flex-col gap-5 border-b border-default py-8 sm:py-10">
+      <nav aria-label="아카이브 경로">
+        <Link className="inline-flex items-center gap-1 text-body-sm text-secondary hover:text-primary" href="/archives">
+          <ChevronLeft aria-hidden="true" className="size-4" />
+          아카이브 목록으로 돌아가기
+        </Link>
+      </nav>
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div className="min-w-0 space-y-3">
           <div className="flex flex-wrap gap-2">

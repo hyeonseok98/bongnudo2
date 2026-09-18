@@ -5,7 +5,6 @@ import { List, UsersRound } from "lucide-react";
 import { useQueryClient } from "@tanstack/react-query";
 
 import { useCharacters } from "@/app/characters/_hooks/use-characters";
-import { Button } from "@/components/ui/button";
 import { Select } from "@/components/ui/select";
 import type { ClipItem } from "@/features/clips/clip";
 import { clipQueries } from "@/queries/clip-queries";
@@ -15,6 +14,7 @@ import { useClipDirectory } from "../_hooks/use-clip-directory";
 import { useClipOptions, useClips } from "../_hooks/use-clips";
 import { ClipCardGrid } from "./clip-card";
 import { ClipFilters } from "./clip-filters";
+import { ClipInfiniteScrollTrigger } from "./clip-infinite-scroll-trigger";
 
 interface ClipsContentProps {
   canAddTags: boolean;
@@ -120,18 +120,11 @@ export function ClipsContent({ canAddTags, canManageCollectedMedia }: ClipsConte
             <ClipEmptyState />
           )}
 
-          {clipsQuery.hasNextPage ? (
-            <div className="flex justify-center pt-2">
-              <Button
-                disabled={clipsQuery.isFetchingNextPage}
-                onClick={() => void clipsQuery.fetchNextPage()}
-                type="button"
-                variant="outline"
-              >
-                {clipsQuery.isFetchingNextPage ? "클립을 더 불러오는 중입니다." : "클립 더 보기"}
-              </Button>
-            </div>
-          ) : null}
+          <ClipInfiniteScrollTrigger
+            hasNextPage={clipsQuery.hasNextPage}
+            isFetchingNextPage={clipsQuery.isFetchingNextPage}
+            onLoadMore={() => void clipsQuery.fetchNextPage()}
+          />
         </section>
       )}
     </div>

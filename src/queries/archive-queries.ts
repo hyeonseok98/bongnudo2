@@ -1,5 +1,6 @@
 import {
   infiniteQueryOptions,
+  keepPreviousData,
   mutationOptions,
   queryOptions,
   type InfiniteData,
@@ -54,6 +55,7 @@ export const archiveQueries = {
     >({
       queryKey: [...archiveQueries.lists(), filters] as const,
       queryFn: ({ pageParam }) => getPublicArchives(filters, pageParam),
+      placeholderData: keepPreviousData,
       initialPageParam: null,
       getNextPageParam: (page) => page.nextCursor,
     }),

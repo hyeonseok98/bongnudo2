@@ -12,8 +12,6 @@ import { Select } from "@/components/ui/select";
 import type { CharacterListItem } from "@/features/characters/character";
 import type {
   ArchiveCategory,
-  ArchiveListSort,
-  ArchiveListType,
   ArchiveStatus,
 } from "@/features/archives/archive";
 
@@ -22,39 +20,25 @@ interface ArchiveFiltersProps {
   characters: CharacterListItem[];
   participantId: string | null;
   searchInput: string;
-  sort: ArchiveListSort;
   status: ArchiveStatus | null;
-  type: ArchiveListType;
   onCategoryChange: (category: ArchiveCategory | null) => void;
   onParticipantChange: (participantId: string | null) => void;
   onReset: () => void;
   onSearchInputChange: (query: string) => void;
-  onSortChange: (sort: ArchiveListSort) => void;
   onStatusChange: (status: ArchiveStatus | null) => void;
-  onTypeChange: (type: ArchiveListType) => void;
 }
-
-const archiveTypes: Array<{ label: string; value: ArchiveListType }> = [
-  { label: "전체", value: "all" },
-  { label: "자동 인물", value: "system" },
-  { label: "사용자 제작", value: "user" },
-];
 
 export function ArchiveFilters({
   category,
   characters,
   participantId,
   searchInput,
-  sort,
   status,
-  type,
   onCategoryChange,
   onParticipantChange,
   onReset,
   onSearchInputChange,
-  onSortChange,
   onStatusChange,
-  onTypeChange,
 }: ArchiveFiltersProps) {
   const selectedParticipant = characters.find(
     (character) => character.id === participantId,
@@ -77,21 +61,6 @@ export function ArchiveFilters({
 
   return (
     <section aria-label="아카이브 검색 및 필터" className="space-y-3">
-      <div className="flex flex-wrap gap-2" role="tablist" aria-label="아카이브 종류">
-        {archiveTypes.map((archiveType) => (
-          <Button
-            aria-selected={type === archiveType.value}
-            key={archiveType.value}
-            onClick={() => onTypeChange(archiveType.value)}
-            size="sm"
-            type="button"
-            variant={type === archiveType.value ? "default" : "outline"}
-          >
-            {archiveType.label}
-          </Button>
-        ))}
-      </div>
-
       <SearchField
         label="아카이브 검색"
         onChange={(event) => onSearchInputChange(event.target.value)}
@@ -110,41 +79,27 @@ export function ArchiveFilters({
           value={participantId ? [participantId] : []}
         />
 
-        {type === "user" ? (
-          <>
-            <Select
-              label="아카이브 분류"
-              onValueChange={(value) => onCategoryChange(value === "all" ? null : value)}
-              options={[
-                { label: "분류 전체", value: "all" },
-                { label: "인물", value: "character" },
-                { label: "사건", value: "incident" },
-                { label: "시리즈", value: "series" },
-                { label: "기타", value: "other" },
-              ]}
-              value={category ?? "all"}
-            />
-            <Select
-              label="진행 상태"
-              onValueChange={(value) => onStatusChange(value === "all" ? null : value)}
-              options={[
-                { label: "상태 전체", value: "all" },
-                { label: "진행 중", value: "ongoing" },
-                { label: "완료", value: "completed" },
-              ]}
-              value={status ?? "all"}
-            />
-          </>
-        ) : null}
-
         <Select
-          label="정렬"
-          onValueChange={onSortChange}
+          label="아카이브 분류"
+          onValueChange={(value) => onCategoryChange(value === "all" ? null : value)}
           options={[
-            { label: "최신 업데이트순", value: "updated" },
-            { label: "최근 공개순", value: "published" },
+            { label: "분류 전체", value: "all" },
+            { label: "인물", value: "character" },
+            { label: "사건", value: "incident" },
+            { label: "시리즈", value: "series" },
+            { label: "기타", value: "other" },
           ]}
-          value={sort}
+          value={category ?? "all"}
+        />
+        <Select
+          label="진행 상태"
+          onValueChange={(value) => onStatusChange(value === "all" ? null : value)}
+          options={[
+            { label: "상태 전체", value: "all" },
+            { label: "진행 중", value: "ongoing" },
+            { label: "완료", value: "completed" },
+          ]}
+          value={status ?? "all"}
         />
         <Button onClick={onReset} size="sm" type="button" variant="ghost">
           필터 초기화

@@ -9,13 +9,9 @@ import {
 
 import {
   ARCHIVE_CATEGORY_VALUES,
-  ARCHIVE_LIST_SORT_VALUES,
-  ARCHIVE_LIST_TYPE_VALUES,
   ARCHIVE_STATUS_VALUES,
   type ArchiveCategory,
   type ArchiveListFilters,
-  type ArchiveListSort,
-  type ArchiveListType,
   type ArchiveStatus,
 } from "@/features/archives/archive";
 import { useDebouncedValue } from "@/hooks/use-debounced-value";
@@ -24,9 +20,7 @@ const archiveQueryParsers = {
   category: parseAsStringLiteral(ARCHIVE_CATEGORY_VALUES),
   participant: parseAsString,
   q: parseAsString.withDefault(""),
-  sort: parseAsStringLiteral(ARCHIVE_LIST_SORT_VALUES).withDefault("updated"),
   status: parseAsStringLiteral(ARCHIVE_STATUS_VALUES),
-  type: parseAsStringLiteral(ARCHIVE_LIST_TYPE_VALUES).withDefault("all"),
 };
 
 export interface ArchiveDirectory {
@@ -35,20 +29,16 @@ export interface ArchiveDirectory {
   participantId: string | null;
   query: string;
   searchInput: string;
-  sort: ArchiveListSort;
   status: ArchiveStatus | null;
-  type: ArchiveListType;
   changeCategory: (category: ArchiveCategory | null) => void;
   changeParticipant: (participantId: string | null) => void;
   changeSearchInput: (query: string) => void;
-  changeSort: (sort: ArchiveListSort) => void;
   changeStatus: (status: ArchiveStatus | null) => void;
-  changeType: (type: ArchiveListType) => void;
   resetFilters: () => void;
 }
 
 export function useArchiveDirectory(): ArchiveDirectory {
-  const [{ category, participant, q, sort, status, type }, setQueryState] = useQueryStates(
+  const [{ category, participant, q, status }, setQueryState] = useQueryStates(
     archiveQueryParsers,
   );
   const [searchInput, setSearchInput] = useState(q);
@@ -73,17 +63,6 @@ export function useArchiveDirectory(): ArchiveDirectory {
     setSearchInput(q);
   }, [q]);
 
-  function changeType(nextType: ArchiveListType) {
-    void setQueryState(
-      {
-        category: nextType === "user" ? undefined : null,
-        status: nextType === "user" ? undefined : null,
-        type: nextType === "all" ? null : nextType,
-      },
-      { history: "replace" },
-    );
-  }
-
   function changeSearchInput(nextQuery: string) {
     setSearchInput(nextQuery);
   }
@@ -100,13 +79,6 @@ export function useArchiveDirectory(): ArchiveDirectory {
     void setQueryState({ status: nextStatus }, { history: "replace" });
   }
 
-  function changeSort(nextSort: ArchiveListSort) {
-    void setQueryState(
-      { sort: nextSort === "updated" ? null : nextSort },
-      { history: "replace" },
-    );
-  }
-
   function resetFilters() {
     lastSubmittedQuery.current = "";
     setSearchInput("");
@@ -116,34 +88,29 @@ export function useArchiveDirectory(): ArchiveDirectory {
         participant: null,
         q: null,
         status: null,
-        type: null,
       },
       { history: "replace" },
     );
   }
 
   return {
-    category: type === "user" ? category : null,
+    category,
     filters: {
-      category: type === "user" ? category : null,
+      category,
       participantId: participant,
       query: q,
-      sort,
-      status: type === "user" ? status : null,
-      type,
+      sort: "updated",
+      status,
+      type: "user",
     },
     participantId: participant,
     query: q,
     searchInput,
-    sort,
-    status: type === "user" ? status : null,
-    type,
+    status,
     changeCategory,
     changeParticipant,
     changeSearchInput,
-    changeSort,
     changeStatus,
-    changeType,
     resetFilters,
   };
 }

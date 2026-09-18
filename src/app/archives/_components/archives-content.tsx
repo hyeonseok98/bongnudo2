@@ -1,8 +1,9 @@
 "use client";
 
 import Link from "next/link";
+import { useState } from "react";
 
-import { Archive, LogIn, Plus } from "lucide-react";
+import { Archive, CalendarDays, LogIn, Plus, UsersRound } from "lucide-react";
 
 import { useCharacters } from "@/app/characters/_hooks/use-characters";
 import { Button, buttonVariants } from "@/components/ui/button";
@@ -11,17 +12,18 @@ import { cn } from "@/utils/cn";
 import { useArchiveDirectory } from "../_hooks/use-archive-directory";
 import { useArchives } from "../_hooks/use-archives";
 import { ArchiveCard } from "./archive-card";
+import { ArchiveDayView } from "./archive-day-view";
 import { ArchiveFilters } from "./archive-filters";
+import { ArchivePeopleView } from "./archive-people-view";
 
 interface ArchivesContentProps {
   isSignedIn: boolean;
 }
 
+type ArchiveExploreView = "all" | "day" | "people";
+
 export function ArchivesContent({ isSignedIn }: ArchivesContentProps) {
-  const directory = useArchiveDirectory();
-  const charactersQuery = useCharacters();
-  const archivesQuery = useArchives(directory.filters);
-  const archives = archivesQuery.data?.pages.flatMap((page) => page.items) ?? [];
+  const [view, setView] = useState<ArchiveExploreView>("all");
 
   return (
     <div className="space-y-6">
@@ -35,41 +37,115 @@ export function ArchivesContent({ isSignedIn }: ArchivesContentProps) {
         <ArchiveCreateCta isSignedIn={isSignedIn} />
       </header>
 
+      <ArchiveScopeTabs isSignedIn={isSignedIn} />
+      <ArchiveViewTabs onViewChange={setView} view={view} />
+
+      {view === "all" ? <ArchivePublicList /> : null}
+      {view === "day" ? <ArchiveDayView /> : null}
+      {view === "people" ? <ArchivePeopleView /> : null}
+    </div>
+  );
+}
+
+function ArchiveScopeTabs({ isSignedIn }: { isSignedIn: boolean }) {
+  return (
+    <div aria-label="아카이브 범위" className="flex flex-wrap gap-2 border-b border-default pb-4" role="tablist">
+      <Button aria-selected size="sm" type="button">
+        전체 공개
+      </Button>
+      {isSignedIn ? (
+        <Link className={buttonVariants({ size: "sm", variant: "outline" })} href="/my/archives">
+          내 아카이브
+        </Link>
+      ) : (
+        <Link className={buttonVariants({ size: "sm", variant: "outline" })} href="/login?returnTo=%2Fmy%2Farchives">
+          <LogIn aria-hidden="true" />
+          내 아카이브
+        </Link>
+      )}
+    </div>
+  );
+}
+
+function ArchiveViewTabs({
+  onViewChange,
+  view,
+}: {
+  onViewChange: (view: ArchiveExploreView) => void;
+  view: ArchiveExploreView;
+}) {
+  const tabs: Array<{ icon: typeof Archive; label: string; value: ArchiveExploreView }> = [
+    { icon: Archive, label: "전체", value: "all" },
+    { icon: CalendarDays, label: "일자별", value: "day" },
+    { icon: UsersRound, label: "인물별", value: "people" },
+  ];
+
+  return (
+    <div aria-label="공개 아카이브 보기 방식" className="flex w-fit rounded-lg border border-default bg-background p-1" role="tablist">
+      {tabs.map((tab) => {
+        const Icon = tab.icon;
+        const isSelected = view === tab.value;
+
+        return (
+          <button
+            aria-selected={isSelected}
+            className={cn(
+              "inline-flex h-8 cursor-pointer items-center gap-1.5 rounded-md px-2.5 text-body-sm font-medium text-secondary",
+              isSelected && "bg-surface-muted text-primary",
+            )}
+            key={tab.value}
+            onClick={() => onViewChange(tab.value)}
+            role="tab"
+            type="button"
+          >
+            <Icon aria-hidden="true" className="size-4" />
+            {tab.label}
+          </button>
+        );
+      })}
+    </div>
+  );
+}
+
+function ArchivePublicList() {
+  const directory = useArchiveDirectory();
+  const charactersQuery = useCharacters();
+  const archivesQuery = useArchives(directory.filters);
+  const archives = archivesQuery.data?.pages.flatMap((page) => page.items) ?? [];
+
+  if (charactersQuery.isPending) return <ArchiveLoadingState />;
+  if (charactersQuery.isError) return <ArchiveErrorState />;
+
+  return (
+    <div className="space-y-6">
       <ArchiveFilters
         category={directory.category}
-        characters={charactersQuery.data?.characters ?? []}
+        characters={charactersQuery.data.characters}
         participantId={directory.participantId}
         searchInput={directory.searchInput}
-        sort={directory.sort}
         status={directory.status}
-        type={directory.type}
         onCategoryChange={directory.changeCategory}
         onParticipantChange={directory.changeParticipant}
         onReset={directory.resetFilters}
         onSearchInputChange={directory.changeSearchInput}
-        onSortChange={directory.changeSort}
         onStatusChange={directory.changeStatus}
-        onTypeChange={directory.changeType}
       />
 
       {archivesQuery.isPending ? <ArchiveLoadingState /> : null}
       {archivesQuery.isError ? <ArchiveErrorState /> : null}
       {!archivesQuery.isPending && !archivesQuery.isError ? (
         <section aria-labelledby="archive-results-heading" className="space-y-4">
-          <div className="flex items-center justify-between gap-3">
-            <h2 className="text-body-sm text-secondary" id="archive-results-heading">
-              현재 불러온 아카이브 <strong className="font-semibold text-brand-text">{archives.length}개</strong>
-            </h2>
-          </div>
+          <h2 className="text-body-sm text-secondary" id="archive-results-heading">
+            현재 불러온 아카이브 <strong className="font-semibold text-brand-text">{archives.length}개</strong>
+          </h2>
 
           {archives.length > 0 ? (
-            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5">
               {archives.map((archive) => <ArchiveCard archive={archive} key={archive.id} />)}
             </div>
           ) : (
             <ArchiveEmptyState
               hasFilters={
-                directory.type !== "all" ||
                 directory.participantId !== null ||
                 directory.category !== null ||
                 directory.status !== null
@@ -109,7 +185,7 @@ function ArchiveCreateCta({ isSignedIn }: { isSignedIn: boolean }) {
 
 function ArchiveLoadingState() {
   return (
-    <div aria-label="아카이브를 불러오는 중입니다." className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+    <div aria-label="아카이브를 불러오는 중입니다." className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5">
       {Array.from({ length: 8 }, (_, index) => (
         <div className="aspect-[4/3] animate-pulse rounded-xl bg-surface-muted" key={index} />
       ))}
