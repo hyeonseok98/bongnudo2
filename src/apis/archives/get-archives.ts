@@ -10,6 +10,7 @@ import type {
   MyArchivePage,
   MyArchiveTab,
   ArchivePage,
+  ArchivePersonDetail,
   ArchiveSaveInput,
   ArchiveSaveResult,
   ArchiveSystemClipSummary,
@@ -190,6 +191,23 @@ const archivePageSchema = z.object({
 
 const archiveDayArchivesSchema = archivePageSchema.shape.items;
 
+const archivePersonDetailSchema = z.object({
+  participant: z.object({
+    affiliations: z.array(z.object({
+      displayOrder: z.number().int().nonnegative(),
+      isPrimary: z.boolean(),
+      organizationName: z.string(),
+      organizationSlug: z.string(),
+      role: z.string().nullable(),
+    })),
+    id: z.uuid(),
+    rpName: z.string().nullable(),
+    streamerName: z.string(),
+  }),
+  relatedArchives: archiveDayArchivesSchema,
+  systemArchiveId: z.uuid().nullable(),
+});
+
 const myArchivePageSchema = z.object({
   items: z.array(z.object({
     canEditContent: z.boolean(),
@@ -299,6 +317,21 @@ export async function getPublicArchivesForSeasonDay(
   }
 
   return archiveDayArchivesSchema.parse(await response.json());
+}
+
+export async function getArchivePersonDetail(
+  participantId: string,
+): Promise<ArchivePersonDetail> {
+  const searchParams = new URLSearchParams({ participant: participantId });
+  const response = await fetch(`/api/archives/person?${searchParams.toString()}`, {
+    cache: "no-store",
+  });
+
+  if (!response.ok) {
+    throw new Error(await getArchiveErrorMessage(response, "인물별 아카이브를 불러오지 못했습니다."));
+  }
+
+  return archivePersonDetailSchema.parse(await response.json());
 }
 
 export async function getMyArchives(

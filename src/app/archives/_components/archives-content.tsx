@@ -1,7 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
+
+import { parseAsStringLiteral, useQueryState } from "nuqs";
 
 import { Archive, CalendarDays, LogIn, Plus, UsersRound } from "lucide-react";
 
@@ -22,8 +23,11 @@ interface ArchivesContentProps {
 
 type ArchiveExploreView = "all" | "day" | "people";
 
+const archiveExploreViewParser = parseAsStringLiteral(["all", "day", "people"] as const)
+  .withDefault("all");
+
 export function ArchivesContent({ isSignedIn }: ArchivesContentProps) {
-  const [view, setView] = useState<ArchiveExploreView>("all");
+  const [view, setView] = useQueryState("view", archiveExploreViewParser);
 
   return (
     <div className="space-y-6">
@@ -38,7 +42,7 @@ export function ArchivesContent({ isSignedIn }: ArchivesContentProps) {
       </header>
 
       <ArchiveScopeTabs isSignedIn={isSignedIn} />
-      <ArchiveViewTabs onViewChange={setView} view={view} />
+      <ArchiveViewTabs onViewChange={(nextView) => void setView(nextView, { history: "replace" })} view={view} />
 
       {view === "all" ? <ArchivePublicList /> : null}
       {view === "day" ? <ArchiveDayView /> : null}

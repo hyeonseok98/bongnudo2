@@ -11,6 +11,7 @@ import {
   deleteArchive,
   getArchive,
   getArchiveEditorOptions,
+  getArchivePersonDetail,
   getMyArchives,
   getPublicArchivesForSeasonDay,
   getPublicArchives,
@@ -90,6 +91,18 @@ export const archiveQueries = {
       enabled: query.length > 0,
       queryKey: [...archiveQueries.all(), "participant-search", query] as const,
       queryFn: () => searchArchiveParticipants(query),
+    }),
+  person: (participantId: string | null) =>
+    queryOptions({
+      enabled: participantId !== null,
+      queryKey: [...archiveQueries.all(), "person", participantId] as const,
+      queryFn: () => {
+        if (!participantId) {
+          throw new Error("인물 정보가 올바르지 않습니다.");
+        }
+
+        return getArchivePersonDetail(participantId);
+      },
     }),
   systemClipSummary: (archiveId: string) =>
     queryOptions({

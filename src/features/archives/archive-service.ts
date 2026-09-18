@@ -21,6 +21,7 @@ import type {
   ArchiveListFilters,
   ArchiveListItem,
   ArchivePage,
+  ArchivePersonDetail,
   ArchiveSaveResult,
   ArchiveStatus,
   ArchiveStoryType,
@@ -358,6 +359,97 @@ export async function getPublicUserArchivesForSeasonDay(
       updatedAt: archive.updated_at,
     }];
   });
+}
+
+export async function getArchivePersonDetail(
+  participantId: string,
+): Promise<ArchivePersonDetail | null> {
+  const supabase = getSupabaseAdminClient();
+  const [participantResult, systemArchiveResult, relatedArchivesResult] = await Promise.all([
+    supabase
+      .from("season_participants")
+      .select(`
+        id,
+        rp_name,
+        streamer:streamers!inner (
+          name
+        ),
+        memberships:organization_memberships (
+          display_order,
+          is_primary,
+          left_at,
+          role,
+          organization:organizations!inner (
+            name,
+            slug
+          )
+        )
+      `)
+      .eq("id", participantId)
+      .maybeSingle(),
+    supabase
+      .from("archives")
+      .select("id")
+      .eq("archive_kind", "system_character")
+      .eq("system_participant_id", participantId)
+      .eq("visibility", "public")
+      .is("deleted_at", null)
+      .maybeSingle(),
+    getPublicArchivePage({
+      category: null,
+      participantId,
+      query: "",
+      sort: "updated",
+      status: null,
+      type: "user",
+    }, null),
+  ]);
+
+  if (participantResult.error) {
+    throw new ArchiveRequestError("인물 정보를 불러오지 못했습니다.", 500, {
+      cause: participantResult.error,
+    });
+  }
+
+  if (systemArchiveResult.error) {
+    throw new ArchiveRequestError("전체 클립 아카이브를 불러오지 못했습니다.", 500, {
+      cause: systemArchiveResult.error,
+    });
+  }
+
+  const participant = participantResult.data;
+
+  if (!participant) {
+    return null;
+  }
+
+  const affiliations = participant.memberships
+    .filter((membership) => membership.left_at === null)
+    .map((membership) => ({
+      displayOrder: membership.display_order,
+      isPrimary: membership.is_primary,
+      organizationName: membership.organization.name,
+      organizationSlug: membership.organization.slug,
+      role: membership.role,
+    }))
+    .sort((left, right) => {
+      if (left.isPrimary !== right.isPrimary) {
+        return left.isPrimary ? -1 : 1;
+      }
+
+      return left.displayOrder - right.displayOrder;
+    });
+
+  return {
+    participant: {
+      affiliations,
+      id: participant.id,
+      rpName: participant.rp_name,
+      streamerName: participant.streamer.name,
+    },
+    relatedArchives: relatedArchivesResult.items,
+    systemArchiveId: systemArchiveResult.data?.id ?? null,
+  };
 }
 
 export async function getMyArchivePage(

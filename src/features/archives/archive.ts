@@ -150,6 +150,25 @@ export interface ArchiveSystemParticipant {
   streamerName: string;
 }
 
+export interface ArchivePersonAffiliation {
+  displayOrder: number;
+  isPrimary: boolean;
+  organizationName: string;
+  organizationSlug: string;
+  role: string | null;
+}
+
+export interface ArchivePersonDetail {
+  participant: {
+    affiliations: ArchivePersonAffiliation[];
+    id: string;
+    rpName: string | null;
+    streamerName: string;
+  };
+  relatedArchives: ArchiveListItem[];
+  systemArchiveId: string | null;
+}
+
 export interface ArchiveSystemClipSummary {
   clipCount: number;
   firstClipCreatedAt: string | null;
