@@ -17,6 +17,7 @@ import {
   getPublicArchives,
   searchArchiveParticipants,
   getSystemArchiveClips,
+  getSystemArchiveClipNeighbors,
   getSystemArchiveClipSummary,
   saveArchive,
   restoreArchive,
@@ -131,6 +132,29 @@ export const archiveQueries = {
         getSystemArchiveClips(archiveId, { cursor: pageParam, day, sort }),
       initialPageParam: null,
       getNextPageParam: (page) => page.nextCursor,
+    }),
+  systemClipNeighbors: (
+    archiveId: string,
+    clipId: string | null,
+    { day, sort }: { day: number | null; sort: ClipSort },
+  ) =>
+    queryOptions({
+      enabled: clipId !== null,
+      queryKey: [
+        ...archiveQueries.all(),
+        "system-clip-neighbors",
+        archiveId,
+        clipId,
+        day,
+        sort,
+      ] as const,
+      queryFn: () => {
+        if (clipId === null) {
+          throw new Error("클립 정보가 올바르지 않습니다.");
+        }
+
+        return getSystemArchiveClipNeighbors(archiveId, clipId, { day, sort });
+      },
     }),
 };
 

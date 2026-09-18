@@ -13,7 +13,10 @@ import { clipQueries } from "@/queries/clip-queries";
 
 import { useClipOptions } from "../../clips/_hooks/use-clips";
 import { ArchiveClipCard } from "./archive-clip-card";
-import { ArchiveClipPreviewDialog } from "./archive-clip-preview-dialog";
+import {
+  ArchiveClipPreviewDialog,
+  type ArchiveClipPreviewItem,
+} from "./archive-clip-preview-dialog";
 import { ArchiveCard } from "./archive-card";
 
 const archiveDayFilters: Omit<ClipListFilters, "day"> = {
@@ -40,6 +43,14 @@ export function ArchiveDayView() {
   });
   const relatedArchivesQuery = useQuery(archiveQueries.dayRelatedArchives(seasonDayId));
   const clips = clipsQuery.data?.pages.flatMap((page) => page.items) ?? [];
+  const previewIndex = previewClip ? clips.findIndex((clip) => clip.id === previewClip.id) : -1;
+  const nearbyItems: ArchiveClipPreviewItem[] = previewIndex < 0
+    ? []
+    : clips.slice(Math.max(0, previewIndex - 2), previewIndex + 3).map((clip) => ({
+      clip,
+      id: clip.id,
+      note: null,
+    }));
 
   if (optionsQuery.isPending) {
     return <ArchiveDayMessage>봉누도 일차를 불러오는 중입니다.</ArchiveDayMessage>;
@@ -108,7 +119,30 @@ export function ArchiveDayView() {
         </>
       ) : null}
 
-      <ArchiveClipPreviewDialog clip={previewClip} onClose={() => setPreviewClip(null)} />
+      <ArchiveClipPreviewDialog
+        clip={previewClip}
+        hasNext={previewIndex >= 0 && previewIndex < clips.length - 1}
+        hasPrevious={previewIndex > 0}
+        nearbyItems={nearbyItems}
+        onClose={() => setPreviewClip(null)}
+        onNext={() => {
+          if (previewIndex >= 0 && previewIndex < clips.length - 1) {
+            setPreviewClip(clips[previewIndex + 1]);
+          }
+        }}
+        onPrevious={() => {
+          if (previewIndex > 0) {
+            setPreviewClip(clips[previewIndex - 1]);
+          }
+        }}
+        onSelect={(item) => {
+          const nextClip = clips.find((clip) => clip.id === item.id);
+
+          if (nextClip) {
+            setPreviewClip(nextClip);
+          }
+        }}
+      />
     </section>
   );
 }

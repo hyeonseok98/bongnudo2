@@ -7,7 +7,7 @@ import { SIDEBAR_COOKIE_NAME } from "@/constants/sidebar";
 import { getCurrentUser } from "@/features/auth/session";
 import {
   getRpModeSettings,
-  LIVE_THUMBNAIL_BLUR_COOKIE_NAME,
+  MEDIA_PREVIEW_BLUR_COOKIE_NAME,
   RP_MODE_COOKIE_NAME,
 } from "@/features/rp-mode/rp-mode";
 import { QueryProvider } from "@/providers/query-provider";
@@ -48,7 +48,7 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
   const initialIsOpen = cookieStore.get(SIDEBAR_COOKIE_NAME)?.value !== "false";
   const initialRpModeSettings = getRpModeSettings(
     cookieStore.get(RP_MODE_COOKIE_NAME)?.value,
-    cookieStore.get(LIVE_THUMBNAIL_BLUR_COOKIE_NAME)?.value,
+    cookieStore.get(MEDIA_PREVIEW_BLUR_COOKIE_NAME)?.value,
   );
 
   return (

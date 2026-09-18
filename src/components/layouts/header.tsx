@@ -35,9 +35,9 @@ export function Header({
 }) {
   const { isOpen, isMobileOpen, isMobile, toggleSidebar } = useSidebar();
   const {
-    isLiveThumbnailBlurEnabled,
+    isMediaPreviewBlurEnabled,
     isRpMode,
-    setIsLiveThumbnailBlurEnabled,
+    setIsMediaPreviewBlurEnabled,
     setIsRpMode,
   } = useRpModeSettings();
   const { resolvedTheme, setTheme } = useTheme();
@@ -166,7 +166,7 @@ export function Header({
                   RP 모드 설정
                 </Popover.Title>
                 <p className="mt-1 text-caption text-secondary">
-                  표시 이름과 LIVE 썸네일을 설정합니다.
+                  표시 이름과 영상 미리보기를 설정합니다.
                 </p>
                 <div className="mt-3 space-y-2">
                   <RpModeSettingButton
@@ -178,14 +178,14 @@ export function Header({
                   <RpModeSettingButton
                     description={
                       isRpMode
-                        ? "LIVE 썸네일을 흐리게 표시합니다."
+                        ? "영상 미리보기를 흐리게 표시합니다."
                         : "RP 모드가 켜져 있을 때 적용됩니다."
                     }
-                    isEnabled={isLiveThumbnailBlurEnabled}
-                    label="LIVE 썸네일 흐리기"
+                    isEnabled={isMediaPreviewBlurEnabled}
+                    label="영상 미리보기 흐리기"
                     onClick={() =>
-                      setIsLiveThumbnailBlurEnabled(
-                        !isLiveThumbnailBlurEnabled,
+                      setIsMediaPreviewBlurEnabled(
+                        !isMediaPreviewBlurEnabled,
                       )
                     }
                   />

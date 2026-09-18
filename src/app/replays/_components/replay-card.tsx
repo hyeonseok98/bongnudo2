@@ -5,8 +5,13 @@ import { Eye, Play, UserRound } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { CollectedMediaExclusionButton } from "@/components/collected-media-exclusion-button";
 import type { ReplayItem } from "@/features/replays/replay";
-import { getDisplayName } from "@/features/rp-mode/rp-mode";
+import {
+  getDisplayName,
+  MEDIA_PREVIEW_BLUR_CLASS,
+  shouldBlurMediaPreview,
+} from "@/features/rp-mode/rp-mode";
 import { useRpModeSettings } from "@/providers/rp-mode-provider";
+import { cn } from "@/utils/cn";
 
 interface ReplayCardProps {
   canManageCollectedMedia?: boolean;
@@ -25,11 +30,12 @@ const dateFormatter = new Intl.DateTimeFormat("ko-KR", {
 const viewCountFormatter = new Intl.NumberFormat("ko-KR");
 
 export function ReplayCard({ canManageCollectedMedia = false, onExcluded, replay }: ReplayCardProps) {
-  const { isRpMode } = useRpModeSettings();
+  const { isMediaPreviewBlurEnabled, isRpMode } = useRpModeSettings();
   const displayName = replay.participant
     ? getDisplayName(replay.participant, "replay-card", isRpMode)
     : { primaryName: "인물 정보 없음", secondaryName: null };
   const replayTime = replay.liveStartedAt ?? replay.publishedAt;
+  const shouldBlurThumbnail = shouldBlurMediaPreview(isRpMode, isMediaPreviewBlurEnabled);
 
   return (
     <article className="group min-w-0 overflow-hidden rounded-xl border border-default bg-surface-raised transition-[background-color,border-color] duration-fast hover:border-brand dark:hover:bg-surface-selected">
@@ -44,7 +50,10 @@ export function ReplayCard({ canManageCollectedMedia = false, onExcluded, replay
           {replay.thumbnailUrl ? (
             <div
               aria-hidden="true"
-              className="absolute inset-0 bg-cover bg-center transition-transform duration-default group-hover:scale-[1.02]"
+              className={cn(
+                "absolute inset-0 bg-cover bg-center transition-transform duration-default group-hover:scale-[1.02]",
+                shouldBlurThumbnail && MEDIA_PREVIEW_BLUR_CLASS,
+              )}
               style={{ backgroundImage: `url(${JSON.stringify(replay.thumbnailUrl)})` }}
             />
           ) : (

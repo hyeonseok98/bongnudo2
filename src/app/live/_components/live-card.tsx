@@ -7,7 +7,11 @@ import {
 } from "@/constants/rp-affiliation-badge-styles";
 import { getOrderedAffiliations } from "@/features/characters/character";
 import type { LiveStream } from "@/features/live/live-stream";
-import { getDisplayName } from "@/features/rp-mode/rp-mode";
+import {
+  getDisplayName,
+  MEDIA_PREVIEW_BLUR_CLASS,
+  shouldBlurMediaPreview,
+} from "@/features/rp-mode/rp-mode";
 import { useRpModeSettings } from "@/providers/rp-mode-provider";
 import { cn } from "@/utils/cn";
 
@@ -19,9 +23,9 @@ const viewerCountFormatter = new Intl.NumberFormat("ko-KR");
 
 export function LiveCard({ stream }: LiveCardProps) {
   const { broadcast, character } = stream;
-  const { isLiveThumbnailBlurEnabled, isRpMode } = useRpModeSettings();
+  const { isMediaPreviewBlurEnabled, isRpMode } = useRpModeSettings();
   const displayName = getDisplayName(character, "live", isRpMode);
-  const shouldBlurThumbnail = isRpMode && isLiveThumbnailBlurEnabled;
+  const shouldBlurThumbnail = shouldBlurMediaPreview(isRpMode, isMediaPreviewBlurEnabled);
   const primaryAffiliation = getOrderedAffiliations(
     character.affiliations,
   )[0];
@@ -46,7 +50,7 @@ export function LiveCard({ stream }: LiveCardProps) {
             aria-hidden="true"
             className={cn(
               "absolute inset-0 bg-cover bg-center transition-[filter] duration-fast dark:group-hover:brightness-105",
-              shouldBlurThumbnail && "scale-105 blur-md",
+              shouldBlurThumbnail && MEDIA_PREVIEW_BLUR_CLASS,
             )}
             style={{ backgroundImage: `url(${JSON.stringify(thumbnailUrl)})` }}
           />

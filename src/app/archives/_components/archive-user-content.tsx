@@ -6,7 +6,10 @@ import { Badge } from "@/components/ui/badge";
 import type { ArchiveDetail, ArchiveDetailItem } from "@/features/archives/archive";
 
 import { ArchiveClipCard } from "./archive-clip-card";
-import { ArchiveClipPreviewDialog } from "./archive-clip-preview-dialog";
+import {
+  ArchiveClipPreviewDialog,
+  type ArchiveClipPreviewItem,
+} from "./archive-clip-preview-dialog";
 
 type StoryFilter = "all" | "main" | "side";
 
@@ -25,6 +28,9 @@ export function ArchiveUserContent({ archive }: ArchiveUserContentProps) {
   const previewIndex = previewItem
     ? orderedItems.findIndex((item) => item.id === previewItem.id)
     : -1;
+  const nearbyItems = previewIndex < 0
+    ? []
+    : orderedItems.slice(Math.max(0, previewIndex - 2), previewIndex + 3).map(toPreviewItem);
 
   return (
     <section className="py-8 sm:py-10">
@@ -77,6 +83,7 @@ export function ArchiveUserContent({ archive }: ArchiveUserContentProps) {
         hasNext={previewIndex >= 0 && previewIndex < orderedItems.length - 1}
         hasPrevious={previewIndex > 0}
         note={previewItem?.note}
+        nearbyItems={nearbyItems}
         onClose={() => setPreviewItem(null)}
         onNext={() => {
           if (previewIndex >= 0 && previewIndex < orderedItems.length - 1) {
@@ -88,9 +95,20 @@ export function ArchiveUserContent({ archive }: ArchiveUserContentProps) {
             setPreviewItem(orderedItems[previewIndex - 1]);
           }
         }}
+        onSelect={(item) => {
+          const nextItem = orderedItems.find((candidate) => candidate.id === item.id);
+
+          if (nextItem) {
+            setPreviewItem(nextItem);
+          }
+        }}
       />
     </section>
   );
+}
+
+function toPreviewItem(item: ArchiveDetailItem): ArchiveClipPreviewItem {
+  return { clip: item.clip, id: item.id, note: item.note };
 }
 
 function StoryFilterButton({

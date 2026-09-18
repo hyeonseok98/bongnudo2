@@ -285,6 +285,78 @@ export async function getClipPageForArchiveParticipant(
   };
 }
 
+export async function getClipNeighborsForArchiveParticipant(
+  seasonId: number,
+  participantId: string,
+  seasonDayId: string | null,
+  clipId: string,
+  sort: ClipListFilters["sort"],
+): Promise<ClipItem[]> {
+  const client = getSupabaseServerClient();
+  const viewer = await getCurrentUser();
+  let currentQuery = createClipRowsQuery(client)
+    .eq("season_id", seasonId)
+    .eq("season_participant_id", participantId)
+    .eq("id", clipId)
+    .limit(1);
+
+  if (seasonDayId !== null) {
+    currentQuery = currentQuery.eq("season_day_id", seasonDayId);
+  }
+
+  const currentResult = await currentQuery;
+
+  if (currentResult.error) {
+    throw new Error("클립 미리보기를 불러오지 못함.", { cause: currentResult.error });
+  }
+
+  const current = currentResult.data[0];
+
+  if (!current) {
+    return [];
+  }
+
+  const previousOperator = sort === "oldest" ? "lt" : "gt";
+  const nextOperator = sort === "oldest" ? "gt" : "lt";
+  const previousAscending = sort === "latest";
+  const nextAscending = sort === "oldest";
+  const cursor = { clipCreatedAt: current.clip_created_at, id: current.id };
+  const createNeighborQuery = () => {
+    let query = createClipRowsQuery(client)
+      .eq("season_id", seasonId)
+      .eq("season_participant_id", participantId);
+
+    if (seasonDayId !== null) {
+      query = query.eq("season_day_id", seasonDayId);
+    }
+
+    return query;
+  };
+  const [previousResult, nextResult] = await Promise.all([
+    createNeighborQuery()
+      .or(getRelativeCursorFilter(cursor, previousOperator))
+      .order("clip_created_at", { ascending: previousAscending })
+      .order("id", { ascending: previousAscending })
+      .limit(2),
+    createNeighborQuery()
+      .or(getRelativeCursorFilter(cursor, nextOperator))
+      .order("clip_created_at", { ascending: nextAscending })
+      .order("id", { ascending: nextAscending })
+      .limit(2),
+  ]);
+
+  if (previousResult.error || nextResult.error) {
+    throw new Error("주변 클립을 불러오지 못함.", {
+      cause: previousResult.error ?? nextResult.error,
+    });
+  }
+
+  const rows = [...previousResult.data.reverse(), current, ...nextResult.data];
+  const careerEventsByParticipant = await getCareerEventsByParticipant(client, seasonId, rows);
+
+  return rows.map((row) => toClipItem(row, careerEventsByParticipant, viewer));
+}
+
 async function getActiveSeasonId(client: SupabaseClient<Database>): Promise<number> {
   const { data, error } = await createActiveSeasonQuery(client);
 
@@ -628,5 +700,9 @@ function matchesJobFilters(
 function getCursorFilter(cursor: ClipCursor, sort: ClipListFilters["sort"]): string {
   const operator = sort === "oldest" ? "gt" : "lt";
 
+  return getRelativeCursorFilter(cursor, operator);
+}
+
+function getRelativeCursorFilter(cursor: ClipCursor, operator: "gt" | "lt"): string {
   return `clip_created_at.${operator}.${cursor.clipCreatedAt},and(clip_created_at.eq.${cursor.clipCreatedAt},id.${operator}.${cursor.id})`;
 }

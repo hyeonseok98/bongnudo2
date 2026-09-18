@@ -17,7 +17,7 @@ import type {
 } from "@/features/archives/archive";
 import { serializeArchiveCursor } from "@/features/archives/archive-cursor";
 import { serializeClipCursor } from "@/features/clips/clip-cursor";
-import type { ClipCursor, ClipPage, ClipSort } from "@/features/clips/clip";
+import type { ClipCursor, ClipItem, ClipPage, ClipSort } from "@/features/clips/clip";
 
 const archiveMetadataSchema = z.object({
   category: z.enum(["character", "incident", "series", "other"]),
@@ -149,6 +149,10 @@ const archiveClipPageSchema = z.object({
     clipCreatedAt: z.string().datetime({ offset: true }),
     id: z.uuid(),
   }).nullable(),
+});
+
+const archiveClipNeighborsSchema = z.object({
+  items: archiveClipPageSchema.shape.items,
 });
 
 const archiveEditorOptionsSchema = z.object({
@@ -425,6 +429,27 @@ export async function getSystemArchiveClips(
   }
 
   return archiveClipPageSchema.parse(await response.json());
+}
+
+export async function getSystemArchiveClipNeighbors(
+  archiveId: string,
+  clipId: string,
+  { day, sort }: { day: number | null; sort: ClipSort },
+): Promise<ClipItem[]> {
+  const searchParams = new URLSearchParams({ sort });
+
+  if (day !== null) searchParams.set("day", String(day));
+
+  const response = await fetch(
+    `/api/archives/${archiveId}/clips/${clipId}/neighbors?${searchParams.toString()}`,
+    { cache: "no-store" },
+  );
+
+  if (!response.ok) {
+    throw new Error(await getArchiveErrorMessage(response, "주변 클립을 불러오지 못했습니다."));
+  }
+
+  return archiveClipNeighborsSchema.parse(await response.json()).items;
 }
 
 export async function createArchive(input: {

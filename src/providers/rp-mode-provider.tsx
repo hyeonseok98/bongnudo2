@@ -3,7 +3,7 @@
 import { createContext, useContext, useState, type ReactNode } from "react";
 
 import {
-  LIVE_THUMBNAIL_BLUR_COOKIE_NAME,
+  MEDIA_PREVIEW_BLUR_COOKIE_NAME,
   RP_MODE_COOKIE_MAX_AGE,
   RP_MODE_COOKIE_NAME,
   type RpModeSettings,
@@ -11,7 +11,7 @@ import {
 
 interface RpModeContextValue extends RpModeSettings {
   setIsRpMode: (isRpMode: boolean) => void;
-  setIsLiveThumbnailBlurEnabled: (isEnabled: boolean) => void;
+  setIsMediaPreviewBlurEnabled: (isEnabled: boolean) => void;
 }
 
 interface RpModeProviderProps {
@@ -36,26 +36,26 @@ export function RpModeProvider({
   initialSettings,
 }: RpModeProviderProps) {
   const [isRpMode, setIsRpModeState] = useState(initialSettings.isRpMode);
-  const [isLiveThumbnailBlurEnabled, setIsLiveThumbnailBlurEnabledState] =
-    useState(initialSettings.isLiveThumbnailBlurEnabled);
+  const [isMediaPreviewBlurEnabled, setIsMediaPreviewBlurEnabledState] =
+    useState(initialSettings.isMediaPreviewBlurEnabled);
 
   function setIsRpMode(nextIsRpMode: boolean) {
     setIsRpModeState(nextIsRpMode);
     persistBooleanCookie(RP_MODE_COOKIE_NAME, nextIsRpMode);
   }
 
-  function setIsLiveThumbnailBlurEnabled(nextIsEnabled: boolean) {
-    setIsLiveThumbnailBlurEnabledState(nextIsEnabled);
-    persistBooleanCookie(LIVE_THUMBNAIL_BLUR_COOKIE_NAME, nextIsEnabled);
+  function setIsMediaPreviewBlurEnabled(nextIsEnabled: boolean) {
+    setIsMediaPreviewBlurEnabledState(nextIsEnabled);
+    persistBooleanCookie(MEDIA_PREVIEW_BLUR_COOKIE_NAME, nextIsEnabled);
   }
 
   return (
     <RpModeContext.Provider
       value={{
         isRpMode,
-        isLiveThumbnailBlurEnabled,
+        isMediaPreviewBlurEnabled,
         setIsRpMode,
-        setIsLiveThumbnailBlurEnabled,
+        setIsMediaPreviewBlurEnabled,
       }}
     >
       {children}

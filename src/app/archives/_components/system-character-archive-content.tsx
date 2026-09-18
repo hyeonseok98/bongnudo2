@@ -6,12 +6,14 @@ import { useInfiniteQuery, useQuery } from "@tanstack/react-query";
 import { LoaderCircle } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
-import type { ArchiveDetail } from "@/features/archives/archive";
-import type { ClipItem } from "@/features/clips/clip";
+import type { ArchiveClipSummary, ArchiveDetail } from "@/features/archives/archive";
 import { archiveQueries } from "@/queries/archive-queries";
 
 import { ArchiveClipCard } from "./archive-clip-card";
-import { ArchiveClipPreviewDialog } from "./archive-clip-preview-dialog";
+import {
+  ArchiveClipPreviewDialog,
+  type ArchiveClipPreviewItem,
+} from "./archive-clip-preview-dialog";
 import { ArchiveDetailHeader } from "./archive-detail-header";
 import { useSystemArchiveDirectory } from "./use-system-archive-directory";
 
@@ -20,11 +22,20 @@ interface SystemCharacterArchiveContentProps {
 }
 
 export function SystemCharacterArchiveContent({ archive }: SystemCharacterArchiveContentProps) {
-  const [previewClip, setPreviewClip] = useState<ClipItem | null>(null);
+  const [previewClip, setPreviewClip] = useState<ArchiveClipSummary | null>(null);
   const { changeDay, changeSort, day, sort } = useSystemArchiveDirectory();
   const summaryQuery = useQuery(archiveQueries.systemClipSummary(archive.id));
   const clipsQuery = useInfiniteQuery(archiveQueries.systemClips(archive.id, { day, sort }));
   const clips = clipsQuery.data?.pages.flatMap((page) => page.items) ?? [];
+  const neighborsQuery = useQuery(
+    archiveQueries.systemClipNeighbors(archive.id, previewClip?.id ?? null, { day, sort }),
+  );
+  const nearbyItems: ArchiveClipPreviewItem[] = (neighborsQuery.data ?? []).map((clip) => ({
+    clip,
+    id: clip.id,
+    note: null,
+  }));
+  const previewIndex = nearbyItems.findIndex((item) => item.clip.id === previewClip?.id);
 
   return (
     <>
@@ -95,7 +106,24 @@ export function SystemCharacterArchiveContent({ archive }: SystemCharacterArchiv
           </div>
         ) : null}
       </section>
-      <ArchiveClipPreviewDialog clip={previewClip} onClose={() => setPreviewClip(null)} />
+      <ArchiveClipPreviewDialog
+        clip={previewClip}
+        hasNext={previewIndex >= 0 && previewIndex < nearbyItems.length - 1}
+        hasPrevious={previewIndex > 0}
+        nearbyItems={nearbyItems}
+        onClose={() => setPreviewClip(null)}
+        onNext={() => {
+          if (previewIndex >= 0 && previewIndex < nearbyItems.length - 1) {
+            setPreviewClip(nearbyItems[previewIndex + 1].clip);
+          }
+        }}
+        onPrevious={() => {
+          if (previewIndex > 0) {
+            setPreviewClip(nearbyItems[previewIndex - 1].clip);
+          }
+        }}
+        onSelect={(item) => setPreviewClip(item.clip)}
+      />
     </>
   );
 }

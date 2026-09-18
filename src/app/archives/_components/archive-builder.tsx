@@ -9,7 +9,11 @@ import { Input } from "@/components/ui/input";
 import { Select } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import type { ArchiveStoryType } from "@/features/archives/archive";
-import { getDisplayName } from "@/features/rp-mode/rp-mode";
+import {
+  getDisplayName,
+  MEDIA_PREVIEW_BLUR_CLASS,
+  shouldBlurMediaPreview,
+} from "@/features/rp-mode/rp-mode";
 import { useRpModeSettings } from "@/providers/rp-mode-provider";
 import { cn } from "@/utils/cn";
 
@@ -340,7 +344,7 @@ function ArchiveBuilderItem({
   onNoteChange: (value: string) => void;
   onRemove: () => void;
 }) {
-  const { isRpMode } = useRpModeSettings();
+  const { isMediaPreviewBlurEnabled, isRpMode } = useRpModeSettings();
   const { handleRef, isDragging, ref } = useSortable<ArchiveDragData>({
     data: { chapterId, kind: "item" },
     group: chapterId,
@@ -350,6 +354,7 @@ function ArchiveBuilderItem({
   const displayName = item.clip.participant
     ? getDisplayName(item.clip.participant, "clip-card", isRpMode)
     : { primaryName: "인물 정보 없음", secondaryName: null };
+  const shouldBlurThumbnail = shouldBlurMediaPreview(isRpMode, isMediaPreviewBlurEnabled);
 
   return (
     <div
@@ -370,7 +375,10 @@ function ArchiveBuilderItem({
       {item.clip.thumbnailUrl ? (
         <span
           aria-hidden="true"
-          className="aspect-video w-24 shrink-0 rounded bg-surface-muted bg-cover bg-center"
+          className={cn(
+            "aspect-video w-24 shrink-0 rounded bg-surface-muted bg-cover bg-center",
+            shouldBlurThumbnail && MEDIA_PREVIEW_BLUR_CLASS,
+          )}
           style={{ backgroundImage: `url(${JSON.stringify(item.clip.thumbnailUrl)})` }}
         />
       ) : null}

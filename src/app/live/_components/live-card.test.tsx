@@ -33,7 +33,7 @@ function renderLiveCard(cardStream = stream) {
     <RpModeProvider
       initialSettings={{
         isRpMode: false,
-        isLiveThumbnailBlurEnabled: false,
+        isMediaPreviewBlurEnabled: false,
       }}
     >
       <LiveCard stream={cardStream} />

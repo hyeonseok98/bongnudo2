@@ -4,6 +4,7 @@ import type { QueryData } from "@supabase/supabase-js";
 
 import type { AuthenticatedUser } from "@/features/auth/session";
 import {
+  getClipNeighborsForArchiveParticipant,
   getClipPageForArchiveParticipant,
 } from "@/features/clips/get-clips";
 import type { ClipCursor, ClipPage, ClipSort } from "@/features/clips/clip";
@@ -750,6 +751,69 @@ export async function getSystemArchiveClipPage(
     archive.system_participant_id,
     seasonDayId,
     cursor,
+    sort,
+  );
+}
+
+export async function getSystemArchiveClipNeighbors(
+  archiveId: string,
+  clipId: string,
+  dayNumber: number | null,
+  sort: ClipSort,
+): Promise<ClipPage["items"] | null> {
+  const supabase = getSupabaseAdminClient();
+  const archiveResult = await supabase
+    .from("archives")
+    .select("archive_kind, deleted_at, season_id, system_participant_id, visibility")
+    .eq("id", archiveId)
+    .maybeSingle();
+
+  if (archiveResult.error) {
+    throw new ArchiveRequestError("아카이브를 불러오지 못했습니다.", 500, {
+      cause: archiveResult.error,
+    });
+  }
+
+  const archive = archiveResult.data;
+
+  if (
+    !archive ||
+    archive.archive_kind !== "system_character" ||
+    archive.deleted_at !== null ||
+    archive.visibility !== "public" ||
+    archive.system_participant_id === null
+  ) {
+    return null;
+  }
+
+  let seasonDayId: string | null = null;
+
+  if (dayNumber !== null) {
+    const seasonDayResult = await supabase
+      .from("season_days")
+      .select("id")
+      .eq("season_id", archive.season_id)
+      .eq("day_number", dayNumber)
+      .maybeSingle();
+
+    if (seasonDayResult.error) {
+      throw new ArchiveRequestError("봉누도 일차를 확인하지 못했습니다.", 500, {
+        cause: seasonDayResult.error,
+      });
+    }
+
+    if (!seasonDayResult.data) {
+      return [];
+    }
+
+    seasonDayId = seasonDayResult.data.id;
+  }
+
+  return getClipNeighborsForArchiveParticipant(
+    archive.season_id,
+    archive.system_participant_id,
+    seasonDayId,
+    clipId,
     sort,
   );
 }

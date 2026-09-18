@@ -1,11 +1,12 @@
 export const RP_MODE_COOKIE_NAME = "bongnurok-rp-mode";
-export const LIVE_THUMBNAIL_BLUR_COOKIE_NAME =
+// 기존 사용자의 설정을 유지하기 위해 쿠키 이름은 변경하지 않습니다.
+export const MEDIA_PREVIEW_BLUR_COOKIE_NAME =
   "bongnurok-live-thumbnail-blur";
 export const RP_MODE_COOKIE_MAX_AGE = 60 * 60 * 24 * 365;
 
 export interface RpModeSettings {
   isRpMode: boolean;
-  isLiveThumbnailBlurEnabled: boolean;
+  isMediaPreviewBlurEnabled: boolean;
 }
 
 export interface NamedEntity {
@@ -28,8 +29,17 @@ export type DisplayNameContext =
 
 export const DEFAULT_RP_MODE_SETTINGS: RpModeSettings = {
   isRpMode: false,
-  isLiveThumbnailBlurEnabled: false,
+  isMediaPreviewBlurEnabled: false,
 };
+
+export const MEDIA_PREVIEW_BLUR_CLASS = "scale-105 blur-md";
+
+export function shouldBlurMediaPreview(
+  isRpMode: boolean,
+  isMediaPreviewBlurEnabled: boolean,
+): boolean {
+  return isRpMode && isMediaPreviewBlurEnabled;
+}
 
 const RP_NAME_UNAVAILABLE = "RP 정보 없음";
 
@@ -84,10 +94,10 @@ export function getDisplayName(
 
 export function getRpModeSettings(
   rpModeCookieValue: string | undefined,
-  liveThumbnailBlurCookieValue: string | undefined,
+  mediaPreviewBlurCookieValue: string | undefined,
 ): RpModeSettings {
   return {
     isRpMode: rpModeCookieValue === "true",
-    isLiveThumbnailBlurEnabled: liveThumbnailBlurCookieValue === "true",
+    isMediaPreviewBlurEnabled: mediaPreviewBlurCookieValue === "true",
   };
 }

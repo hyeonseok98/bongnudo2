@@ -283,7 +283,7 @@ function ArchiveEditorWorkspace({ archive }: { archive: ArchiveDetail }) {
         </div>
       </div>
 
-      <ArchiveClipPreviewDialog clip={previewClip} onClose={() => setPreviewClip(null)} />
+      <ArchiveClipPreviewDialog clip={previewClip} onClose={() => setPreviewClip(null)} size="editor" />
       {archive.canEditMetadata ? (
         <ArchiveSettingsDialog
           metadata={draft.metadata}

@@ -46,7 +46,7 @@ describe("LiveGrid", () => {
       <RpModeProvider
         initialSettings={{
           isRpMode: false,
-          isLiveThumbnailBlurEnabled: false,
+          isMediaPreviewBlurEnabled: false,
         }}
       >
         <LiveGrid

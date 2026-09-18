@@ -64,7 +64,7 @@ function renderCharacterCard(cardItem = item) {
     <RpModeProvider
       initialSettings={{
         isRpMode: false,
-        isLiveThumbnailBlurEnabled: false,
+        isMediaPreviewBlurEnabled: false,
       }}
     >
       <CharacterCard item={cardItem} />
