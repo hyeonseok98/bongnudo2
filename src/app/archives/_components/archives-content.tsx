@@ -48,21 +48,18 @@ export function ArchivesContent({ isSignedIn }: ArchivesContentProps) {
 }
 
 function ArchiveScopeTabs({ isSignedIn }: { isSignedIn: boolean }) {
+  if (!isSignedIn) {
+    return null;
+  }
+
   return (
     <div aria-label="아카이브 범위" className="flex flex-wrap gap-2 border-b border-default pb-4" role="tablist">
       <Button aria-selected size="sm" type="button">
         전체 공개
       </Button>
-      {isSignedIn ? (
-        <Link className={buttonVariants({ size: "sm", variant: "outline" })} href="/my/archives">
-          내 아카이브
-        </Link>
-      ) : (
-        <Link className={buttonVariants({ size: "sm", variant: "outline" })} href="/login?returnTo=%2Fmy%2Farchives">
-          <LogIn aria-hidden="true" />
-          내 아카이브
-        </Link>
-      )}
+      <Link className={buttonVariants({ size: "sm", variant: "outline" })} href="/my/archives">
+        내 아카이브
+      </Link>
     </div>
   );
 }
