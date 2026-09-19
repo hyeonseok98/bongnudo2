@@ -311,12 +311,12 @@ export async function getClipNeighborsForArchiveParticipant(
       .or(getRelativeCursorFilter(cursor, previousOperator))
       .order("clip_created_at", { ascending: previousAscending })
       .order("id", { ascending: previousAscending })
-      .limit(2),
+      .limit(4),
     createNeighborQuery()
       .or(getRelativeCursorFilter(cursor, nextOperator))
       .order("clip_created_at", { ascending: nextAscending })
       .order("id", { ascending: nextAscending })
-      .limit(2),
+      .limit(4),
   ]);
 
   if (previousResult.error || nextResult.error) {
@@ -325,7 +325,13 @@ export async function getClipNeighborsForArchiveParticipant(
     });
   }
 
-  const rows = [...previousResult.data.reverse(), current, ...nextResult.data];
+  const candidates = [...previousResult.data.reverse(), current, ...nextResult.data];
+  const currentIndex = candidates.findIndex((row) => row.id === current.id);
+  const start = Math.min(
+    Math.max(0, currentIndex - 2),
+    Math.max(0, candidates.length - 5),
+  );
+  const rows = candidates.slice(start, start + 5);
   const careerEventsByParticipant = await getCareerEventsByParticipant(client, seasonId, rows);
 
   return rows.map((row) => toClipItem(row, careerEventsByParticipant, viewer));

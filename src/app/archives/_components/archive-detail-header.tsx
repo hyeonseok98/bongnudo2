@@ -1,9 +1,9 @@
 "use client";
 
 import Link from "next/link";
-import { CalendarDays, ChevronLeft, FolderOpen, Pencil, UserRound } from "lucide-react";
+import { CalendarDays, ChevronLeft, FolderOpen, Pencil } from "lucide-react";
+import { useState } from "react";
 
-import { Badge } from "@/components/ui/badge";
 import { buttonVariants } from "@/components/ui/button";
 import type { ArchiveDetail, ArchiveSystemClipSummary } from "@/features/archives/archive";
 import { getDisplayName } from "@/features/rp-mode/rp-mode";
@@ -14,15 +14,6 @@ interface ArchiveDetailHeaderProps {
   systemSummary?: ArchiveSystemClipSummary;
 }
 
-const categoryLabels = {
-  character: "인물",
-  incident: "사건",
-  series: "시리즈",
-  other: "기타",
-} as const;
-
-const statusLabels = { completed: "완료", ongoing: "진행 중" } as const;
-
 const updatedAtFormatter = new Intl.DateTimeFormat("ko-KR", {
   day: "numeric",
   month: "long",
@@ -31,6 +22,7 @@ const updatedAtFormatter = new Intl.DateTimeFormat("ko-KR", {
 });
 
 export function ArchiveDetailHeader({ archive, systemSummary }: ArchiveDetailHeaderProps) {
+  const [isDescriptionExpanded, setIsDescriptionExpanded] = useState(false);
   const { isRpMode } = useRpModeSettings();
   const systemDisplayName = archive.systemParticipant
     ? getDisplayName(archive.systemParticipant, "clip-card", isRpMode)
@@ -57,16 +49,23 @@ export function ArchiveDetailHeader({ archive, systemSummary }: ArchiveDetailHea
       </nav>
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div className="min-w-0 space-y-3">
-          <div className="flex flex-wrap gap-2">
-            <Badge variant="outline">{categoryLabels[archive.category]}</Badge>
-            <Badge variant="outline">{statusLabels[archive.status]}</Badge>
-            <Badge variant="outline">
-              {archive.archiveKind === "system_character" ? "인물 기록" : "사용자 제작"}
-            </Badge>
-            <Badge variant="outline">{archive.visibility === "public" ? "공개" : "비공개"}</Badge>
-          </div>
           <h1 className="break-keep text-hero font-bold text-primary">{title}</h1>
-          {archive.description ? <p className="max-w-3xl text-body text-secondary">{archive.description}</p> : null}
+          {archive.description ? (
+            <div className="max-w-3xl">
+              <p className={isDescriptionExpanded ? "text-body text-secondary" : "line-clamp-2 text-body text-secondary"}>
+                {archive.description}
+              </p>
+              {archive.description.length > 80 ? (
+                <button
+                  className="mt-1 cursor-pointer text-body-sm font-medium text-brand-text hover:underline focus-visible:outline-2 focus-visible:outline-focus-ring focus-visible:outline-offset-2"
+                  onClick={() => setIsDescriptionExpanded((current) => !current)}
+                  type="button"
+                >
+                  {isDescriptionExpanded ? "접기" : "더보기"}
+                </button>
+              ) : null}
+            </div>
+          ) : null}
         </div>
         {archive.canEditContent || archive.canEditMetadata ? (
           <Link className={buttonVariants({ variant: "outline" })} href={`/archives/${archive.id}/edit`}>
@@ -76,7 +75,6 @@ export function ArchiveDetailHeader({ archive, systemSummary }: ArchiveDetailHea
         ) : null}
       </div>
       <div className="flex flex-wrap gap-x-5 gap-y-2 text-body-sm text-secondary">
-        {archive.creatorName ? <span className="inline-flex items-center gap-1.5"><UserRound aria-hidden="true" className="size-4" />{archive.creatorName}</span> : null}
         {clipCount !== undefined ? <span className="inline-flex items-center gap-1.5"><FolderOpen aria-hidden="true" className="size-4" />클립 {clipCount}개</span> : null}
         <span>{detail}</span>
         <span className="inline-flex items-center gap-1.5"><CalendarDays aria-hidden="true" className="size-4" />최종 수정 {updatedAtFormatter.format(new Date(archive.updatedAt))}</span>

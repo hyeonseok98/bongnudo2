@@ -54,7 +54,7 @@ export function ArchiveDayView() {
   const previewIndex = previewClip ? clips.findIndex((clip) => clip.id === previewClip.id) : -1;
   const nearbyItems: ArchiveClipPreviewItem[] = previewIndex < 0
     ? []
-    : clips.slice(Math.max(0, previewIndex - 2), previewIndex + 3).map((clip) => ({
+    : getCenteredItems(clips, previewIndex, 5).map((clip) => ({
       clip,
       id: clip.id,
       note: null,
@@ -169,6 +169,15 @@ export function ArchiveDayView() {
       />
     </section>
   );
+}
+
+function getCenteredItems<T>(items: T[], currentIndex: number, windowSize: number): T[] {
+  const start = Math.min(
+    Math.max(0, currentIndex - Math.floor(windowSize / 2)),
+    Math.max(0, items.length - windowSize),
+  );
+
+  return items.slice(start, start + windowSize);
 }
 
 function RelatedArchives({
