@@ -1,6 +1,6 @@
 "use client";
 
-import { ArrowLeft, Check, LogIn, Plus } from "lucide-react";
+import { ArrowLeft, ArrowRight, Check, LogIn } from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
 import { useMutation, useQuery } from "@tanstack/react-query";
@@ -129,7 +129,7 @@ export function ArchiveCreateContent({ isSignedIn }: ArchiveCreateContentProps) 
 
       <form action={handleSubmit} className="mt-6 rounded-xl border border-default bg-surface-raised p-5 sm:p-6">
         <fieldset className="space-y-7" disabled={createMutation.isPending}>
-          <FormField error={errors.title} label="제목" required>
+          <FormField error={errors.title} label="제목" required requiredIndicator="asterisk">
             <Input
               aria-invalid={errors.title ? true : undefined}
               maxLength={60}
@@ -139,9 +139,9 @@ export function ArchiveCreateContent({ isSignedIn }: ArchiveCreateContentProps) 
             />
           </FormField>
           <FormField label="설명 (선택)">
-            <Textarea maxLength={500} name="description" placeholder="아카이브를 소개해주세요. (선택)" />
+            <Textarea maxLength={500} name="description" placeholder="아카이브를 소개해주세요." />
           </FormField>
-          <FormField label="분류" required>
+          <FormField label="분류">
             <Select
               className="w-full sm:w-52"
               label="아카이브 분류"
@@ -157,7 +157,7 @@ export function ArchiveCreateContent({ isSignedIn }: ArchiveCreateContentProps) 
           </FormField>
 
           <fieldset className="space-y-3">
-            <legend className="text-body-sm font-medium text-primary">구성 방법 <span className="ml-2 text-caption font-medium text-status-danger">필수</span></legend>
+            <legend className="text-body-sm font-medium text-primary">구성 방법</legend>
             <div className="grid gap-3 sm:grid-cols-2">
               <StructureModeCard
                 description="원하는 챕터와 순서로 이야기를 구성"
@@ -175,7 +175,7 @@ export function ArchiveCreateContent({ isSignedIn }: ArchiveCreateContentProps) 
           </fieldset>
 
           <div className="flex flex-wrap items-start gap-5">
-            <FormField className="w-full sm:w-52" label="공개 범위" required>
+            <FormField className="w-full sm:w-52" label="공개 범위">
               <Select
                 className="w-full"
                 label="아카이브 공개 범위"
@@ -209,7 +209,7 @@ export function ArchiveCreateContent({ isSignedIn }: ArchiveCreateContentProps) 
             취소
           </Link>
           <Button disabled={createMutation.isPending} type="submit">
-            {createMutation.isPending ? <span className="size-4 animate-spin rounded-full border-2 border-current border-r-transparent" /> : <Plus aria-hidden="true" className="size-4" />}
+            {createMutation.isPending ? <span className="size-4 animate-spin rounded-full border-2 border-current border-r-transparent" /> : <ArrowRight aria-hidden="true" className="size-4" />}
             {createMutation.isPending ? "기본 정보를 저장하는 중" : "다음: 클립 구성"}
           </Button>
         </div>

@@ -9,6 +9,7 @@ interface FormFieldProps {
   hint?: ReactNode;
   label: string;
   required?: boolean;
+  requiredIndicator?: "asterisk" | "text";
 }
 
 export function FormField({
@@ -18,6 +19,7 @@ export function FormField({
   hint,
   label,
   required = false,
+  requiredIndicator = "text",
 }: FormFieldProps) {
   return (
     <label className={cn("block space-y-2", className)}>
@@ -25,7 +27,7 @@ export function FormField({
         {label}
         {required ? (
           <span aria-hidden="true" className="ml-2 text-caption font-medium text-status-danger">
-            필수
+            {requiredIndicator === "asterisk" ? "*" : "필수"}
           </span>
         ) : null}
       </span>

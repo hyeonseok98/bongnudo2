@@ -190,6 +190,7 @@ export function ArchiveBuilder({
             <ArchiveChapterTab
               active={chapter.id === activeChapter?.id}
               chapter={chapter}
+              index={draft.chapters.indexOf(chapter)}
               key={chapter.id}
               onSelect={() => onActiveChapterChange(chapter.id)}
             />
@@ -238,25 +239,38 @@ export function ArchiveBuilder({
 function ArchiveChapterTab({
   active,
   chapter,
+  index,
   onSelect,
 }: {
   active: boolean;
   chapter: ArchiveDraftChapter;
+  index: number;
   onSelect: () => void;
 }) {
+  const { handleRef, isDragging, ref } = useSortable<ArchiveWorkspaceDragData>({
+    data: { chapterId: null, kind: "chapter" },
+    id: chapter.id,
+    index,
+  });
+
   return (
-    <button
-      aria-selected={active}
-      className={cn(
-        "shrink-0 cursor-pointer rounded-lg border bg-background px-3 py-2 text-left text-caption font-medium text-primary transition-colors",
-        active ? "border-brand bg-surface-selected" : "border-default",
-      )}
-      onClick={onSelect}
-      role="tab"
-      type="button"
-    >
-      {chapter.title}
-    </button>
+    <div className={cn("shrink-0", isDragging && "opacity-50")} ref={ref}>
+      <button
+        aria-label={`${chapter.title} 선택 및 순서 변경`}
+        aria-selected={active}
+        className={cn(
+          "flex cursor-grab touch-none items-center gap-1.5 rounded-lg border bg-background px-3 py-2 text-left text-caption font-medium text-primary transition-colors active:cursor-grabbing",
+          active ? "border-brand bg-surface-selected" : "border-default",
+        )}
+        onClick={onSelect}
+        ref={handleRef}
+        role="tab"
+        type="button"
+      >
+        <GripVertical aria-hidden="true" className="size-3.5 text-tertiary" />
+        {chapter.title}
+      </button>
+    </div>
   );
 }
 
@@ -326,10 +340,10 @@ function ArchiveChapterEditor({
         </Button>
       </div>
 
-      <label className="mt-3 inline-flex cursor-pointer items-center gap-2 text-body-sm font-medium text-primary">
+      <label className="mt-3 inline-flex cursor-pointer items-center gap-2 rounded-sm text-body-sm font-medium text-primary focus-within:outline-2 focus-within:outline-brand focus-within:outline-offset-2">
         <input
           checked={chapter.storyType === "side"}
-          className="size-4 accent-brand"
+          className="size-4 cursor-pointer accent-brand"
           onChange={(event) => onSideStoryChange(event.target.checked)}
           type="checkbox"
         />
@@ -421,6 +435,9 @@ function ArchiveBuilderItem({
         ref={handleRef}
         type="button"
       >
+        <span aria-hidden="true" className="grid size-5 shrink-0 place-items-center rounded-full bg-surface-muted text-caption font-semibold text-secondary">
+          {index + 1}
+        </span>
         <GripVertical aria-hidden="true" className="size-4 shrink-0 text-tertiary" />
         {item.clip.thumbnailUrl ? (
           <span className="aspect-video w-24 shrink-0 overflow-hidden rounded bg-surface-muted">
@@ -495,7 +512,11 @@ function ArchiveFlowManager({
 }) {
   return (
     <Sheet onOpenChange={onOpenChange} open={open}>
-      <SheetContent className="w-[min(34rem,calc(100vw-2rem))] sm:max-w-xl" side="right">
+      <SheetContent
+        className="w-[28rem] max-w-[calc(100vw-2rem)] gap-0 sm:max-w-none"
+        overlayClassName="bg-black/5 supports-backdrop-filter:backdrop-blur-none"
+        side="right"
+      >
         <SheetHeader className="border-b border-default pr-12">
           <SheetTitle>전체 흐름 관리</SheetTitle>
           <SheetDescription>챕터를 드래그해 순서를 바꾸거나 선택해 바로 이동할 수 있습니다.</SheetDescription>
