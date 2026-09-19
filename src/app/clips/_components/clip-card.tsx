@@ -4,6 +4,10 @@ import { CalendarDays, Eye, Play, UserRound } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
 import { CollectedMediaExclusionButton } from "@/components/collected-media-exclusion-button";
+import {
+  RP_AFFILIATION_BADGE_FALLBACK,
+  RP_AFFILIATION_BADGE_STYLES,
+} from "@/constants/rp-affiliation-badge-styles";
 import type { ClipItem } from "@/features/clips/clip";
 import {
   getDisplayName,
@@ -57,10 +61,10 @@ export function ClipCard({
     : null;
 
   return (
-    <article className="group flex h-full min-w-0 flex-col overflow-hidden rounded-xl border border-default bg-surface-raised transition-[border-color,box-shadow] duration-fast hover:border-brand hover:shadow-sm focus-within:border-brand focus-within:ring-2 focus-within:ring-focus-ring/40">
+    <article className="group h-full min-w-0 overflow-hidden rounded-xl border border-default bg-surface-raised transition-[border-color,box-shadow] duration-fast hover:border-brand hover:shadow-sm focus-within:border-brand focus-within:ring-2 focus-within:ring-focus-ring/40">
       <button
         aria-label={`${clip.title} 클립 보기`}
-        className="flex w-full flex-1 cursor-pointer flex-col text-left focus-visible:outline-2 focus-visible:outline-focus-ring focus-visible:outline-offset-[-2px]"
+        className="block w-full cursor-pointer text-left focus-visible:outline-2 focus-visible:outline-focus-ring focus-visible:outline-offset-[-2px]"
         onClick={() => onPreview(clip)}
         type="button"
       >
@@ -91,12 +95,12 @@ export function ClipCard({
           ) : null}
         </div>
 
-        <div className="flex flex-1 flex-col gap-3 p-3">
-          <h2 className="line-clamp-2 min-h-12 text-body font-semibold leading-snug text-primary">
+        <div className="grid grid-rows-[3rem_2.5rem_1.5rem_1.25rem] gap-2 p-3">
+          <h2 className="line-clamp-2 text-body font-semibold leading-6 text-primary">
             {clip.title}
           </h2>
 
-          <div className="flex min-h-10 min-w-0 items-center gap-2">
+          <div className="flex min-w-0 items-center gap-2">
             {profileImageUrl ? (
               <span
                 aria-hidden="true"
@@ -122,18 +126,38 @@ export function ClipCard({
             </div>
           </div>
 
-          <div className="flex min-h-6 flex-wrap gap-1 overflow-hidden">
+          <div className="flex min-w-0 gap-1 overflow-hidden">
             {clip.historicalAffiliations.length > 0 ? (
               clip.historicalAffiliations.map((affiliation) => (
-                <Badge key={`${affiliation.organizationSlug}:${affiliation.role ?? ""}`} variant="outline">
-                  {affiliation.organizationName}
-                  {affiliation.role ? ` · ${affiliation.role}` : ""}
-                </Badge>
+                <div className="flex shrink-0 gap-1" key={`${affiliation.organizationSlug}:${affiliation.role ?? ""}`}>
+                  <Badge
+                    className={cn(
+                      (
+                        RP_AFFILIATION_BADGE_STYLES[affiliation.organizationSlug] ??
+                        RP_AFFILIATION_BADGE_FALLBACK
+                      ).surface,
+                    )}
+                  >
+                    {affiliation.organizationName}
+                  </Badge>
+                  {affiliation.role ? (
+                    <Badge
+                      className={cn(
+                        (
+                          RP_AFFILIATION_BADGE_STYLES[affiliation.organizationSlug] ??
+                          RP_AFFILIATION_BADGE_FALLBACK
+                        ).surface,
+                      )}
+                    >
+                      {affiliation.role}
+                    </Badge>
+                  ) : null}
+                </div>
               ))
             ) : null}
           </div>
 
-          <div className="mt-auto flex items-center justify-between gap-2 text-caption text-secondary">
+          <div className="flex items-center justify-between gap-2 text-caption text-secondary">
             <span className="inline-flex min-w-0 items-center gap-1.5">
               <CalendarDays aria-hidden="true" className="size-3.5 shrink-0" />
               {dateFormatter.format(new Date(clip.clipCreatedAt))}
