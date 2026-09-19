@@ -6,7 +6,6 @@ import {
 } from "@/components/filters/applied-filter-summary";
 import { FilterBar } from "@/components/filters/filter-bar";
 import { ParticipantFilter } from "@/components/filters/participant-filter";
-import { Button } from "@/components/ui/button";
 import { SearchField } from "@/components/ui/search-field";
 import { Select } from "@/components/ui/select";
 import type { CharacterListItem } from "@/features/characters/character";
@@ -101,9 +100,6 @@ export function ArchiveFilters({
           ]}
           value={status ?? "all"}
         />
-        <Button onClick={onReset} size="sm" type="button" variant="ghost">
-          필터 초기화
-        </Button>
       </FilterBar>
       <AppliedFilterSummary items={items} onClearAll={onReset} />
     </section>

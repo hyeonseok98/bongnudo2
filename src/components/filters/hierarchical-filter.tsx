@@ -255,7 +255,7 @@ function FilterTriggerContent({
 
 function getTriggerClassName(isOpen: boolean) {
   return cn(
-    "inline-flex h-10 min-w-36 cursor-pointer items-center gap-2 rounded-lg border bg-background px-3 text-left transition-[background-color,border-color] duration-default hover:bg-surface-muted focus-visible:border-focus-ring disabled:pointer-events-none disabled:opacity-50",
+    "inline-flex h-10 cursor-pointer items-center gap-1.5 rounded-lg border bg-background py-0 pr-2.5 pl-3 text-left transition-[background-color,border-color] duration-default hover:bg-surface-muted focus-visible:border-focus-ring disabled:pointer-events-none disabled:opacity-50",
     isOpen ? "border-brand" : "border-default",
   );
 }

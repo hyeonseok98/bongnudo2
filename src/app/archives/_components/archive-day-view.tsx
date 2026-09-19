@@ -14,6 +14,7 @@ import type { ArchiveListItem } from "@/features/archives/archive";
 import type { ClipItem, ClipListFilters } from "@/features/clips/clip";
 import { archiveQueries } from "@/queries/archive-queries";
 import { clipQueries } from "@/queries/clip-queries";
+import { cn } from "@/utils/cn";
 
 import { useClipOptions } from "../../clips/_hooks/use-clips";
 import { ArchiveClipCard } from "./archive-clip-card";
@@ -95,9 +96,17 @@ export function ArchiveDayView() {
             <h3 className="text-body font-semibold text-primary">봉누도 {day}일차</h3>
             <span className="inline-flex items-center gap-1.5 text-caption text-secondary">
               현재 불러온 클립 {clips.length}개
-              {clipsQuery.isFetching && !clipsQuery.isFetchingNextPage ? (
-                <span aria-label="일자별 클립을 업데이트하는 중입니다." className="text-tertiary" role="status"><LoaderCircle aria-hidden="true" className="size-3.5 animate-spin" /><span className="sr-only">일자별 클립을 업데이트하는 중입니다.</span></span>
-              ) : null}
+              <span
+                aria-label="일자별 클립을 업데이트하는 중입니다."
+                className={cn(
+                  "inline-flex size-4 items-center justify-center text-tertiary",
+                  !(clipsQuery.isFetching && !clipsQuery.isFetchingNextPage) && "invisible",
+                )}
+                role="status"
+              >
+                <LoaderCircle aria-hidden="true" className="size-3.5 animate-spin" />
+                <span className="sr-only">일자별 클립을 업데이트하는 중입니다.</span>
+              </span>
             </span>
           </div>
           {clips.length > 0 ? (

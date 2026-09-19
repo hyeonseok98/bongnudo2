@@ -45,7 +45,6 @@ export function SelectedFilterSummary({
       {selectedJobs.map((job) => (
         <Chip
           key={job.id}
-          className="border-brand"
           mode="removable"
           onRemove={() => onRemoveJob(job.id)}
           removeLabel={job.label + " 필터 제거"}

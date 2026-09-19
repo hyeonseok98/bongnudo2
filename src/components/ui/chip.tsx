@@ -27,14 +27,14 @@ export function Chip(props: ChipProps) {
     return (
       <span
         className={cn(
-          "inline-flex h-8 items-center gap-1 rounded-lg border border-default bg-surface-muted pr-1.5 pl-2.5 text-body-sm font-medium text-primary",
+          "inline-flex h-8 items-center gap-1 rounded-lg border border-brand/50 bg-surface-selected pr-1.5 pl-2.5 text-body-sm font-medium text-brand-text",
           props.className,
         )}
       >
         {props.children}
         <button
           aria-label={props.removeLabel}
-          className="grid size-5 cursor-pointer place-items-center rounded-sm text-tertiary transition-colors duration-default hover:bg-surface-selected hover:text-primary motion-reduce:transition-none"
+          className="grid size-5 cursor-pointer place-items-center rounded-sm text-brand-text/75 outline-none transition-colors duration-default hover:bg-brand/15 hover:text-primary focus-visible:bg-brand/15 focus-visible:text-primary focus-visible:ring-2 focus-visible:ring-focus-ring motion-reduce:transition-none"
           onClick={props.onRemove}
           type="button"
         >

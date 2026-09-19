@@ -5,6 +5,7 @@ import { X } from "lucide-react";
 import { useState } from "react";
 
 import { Button } from "@/components/ui/button";
+import { FormField } from "@/components/ui/form-field";
 import { Input } from "@/components/ui/input";
 import { Select } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
@@ -59,23 +60,20 @@ export function ArchiveSettingsDialog({
             </DialogPrimitive.Close>
           </div>
 
-          <div className="mt-5 space-y-4">
-            <label className="block space-y-1.5 text-body-sm font-medium text-primary">
-              제목
+          <div className="mt-5 space-y-5">
+            <FormField label="제목">
               <Input maxLength={60} onChange={(event) => updateMetadata({ title: event.target.value })} value={draft.title} />
-            </label>
-            <label className="block space-y-1.5 text-body-sm font-medium text-primary">
-              설명
+            </FormField>
+            <FormField label="설명">
               <Textarea
                 className="min-h-28"
                 maxLength={500}
                 onChange={(event) => updateMetadata({ description: event.target.value })}
                 value={draft.description ?? ""}
               />
-            </label>
+            </FormField>
             <div className="grid gap-3 sm:grid-cols-2">
-              <label className="space-y-1.5 text-body-sm font-medium text-primary">
-                분류
+              <FormField label="분류">
                 <Select
                   className="w-full"
                   label="아카이브 분류"
@@ -88,9 +86,8 @@ export function ArchiveSettingsDialog({
                   ]}
                   value={draft.category}
                 />
-              </label>
-              <label className="space-y-1.5 text-body-sm font-medium text-primary">
-                상태
+              </FormField>
+              <FormField label="상태">
                 <Select
                   className="w-full"
                   label="아카이브 상태"
@@ -101,11 +98,10 @@ export function ArchiveSettingsDialog({
                   ]}
                   value={draft.status}
                 />
-              </label>
+              </FormField>
             </div>
             <div className="grid gap-3 sm:grid-cols-2">
-              <label className="space-y-1.5 text-body-sm font-medium text-primary">
-                공개 범위
+              <FormField label="공개 범위">
                 <Select
                   className="w-full"
                   label="아카이브 공개 범위"
@@ -116,9 +112,8 @@ export function ArchiveSettingsDialog({
                   ]}
                   value={draft.visibility}
                 />
-              </label>
-              <label className="space-y-1.5 text-body-sm font-medium text-primary">
-                편집 정책
+              </FormField>
+              <FormField label="편집 정책">
                 <Select
                   className="w-full"
                   disabled={draft.visibility === "private"}
@@ -130,7 +125,7 @@ export function ArchiveSettingsDialog({
                   ]}
                   value={draft.editPolicy}
                 />
-              </label>
+              </FormField>
             </div>
             <p className="text-caption text-secondary">
               공개한 아카이브는 다시 비공개로 전환할 수 없습니다.

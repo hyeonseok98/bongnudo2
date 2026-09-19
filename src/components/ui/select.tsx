@@ -41,7 +41,7 @@ export function Select<Value extends string>({
         aria-label={label}
         disabled={disabled}
         className={cn(
-          "inline-flex h-10 min-w-36 cursor-pointer items-center justify-between gap-2 rounded-lg border border-default bg-background px-3 text-body-sm font-medium text-primary outline-none transition-[background-color,border-color] duration-default hover:bg-surface-muted focus-visible:border-focus-ring data-popup-open:border-brand disabled:cursor-not-allowed disabled:opacity-50 motion-reduce:transition-none",
+          "inline-flex h-10 cursor-pointer items-center justify-between gap-1.5 rounded-lg border border-default bg-background py-0 pr-2.5 pl-3 text-body-sm font-medium text-primary outline-none transition-[background-color,border-color] duration-default hover:bg-surface-muted focus-visible:border-focus-ring data-popup-open:border-brand disabled:cursor-not-allowed disabled:opacity-50 motion-reduce:transition-none",
           className,
         )}
       >

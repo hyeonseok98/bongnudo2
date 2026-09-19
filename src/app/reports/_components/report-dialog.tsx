@@ -8,6 +8,7 @@ import { useRef, useState } from "react";
 
 import { uploadReportImages } from "@/apis/reports/report-uploads";
 import { Button } from "@/components/ui/button";
+import { FormField } from "@/components/ui/form-field";
 import { Input } from "@/components/ui/input";
 import { Select } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
@@ -200,7 +201,7 @@ export function ReportDialog({ onClose, onSuccess }: ReportDialogProps) {
 
             <form className="flex min-h-0 flex-1 flex-col" onSubmit={handleSubmit}>
               <div className="grid min-h-0 flex-1 gap-5 overflow-y-auto p-5 md:grid-cols-[minmax(0,1.25fr)_minmax(16rem,0.75fr)] sm:p-6">
-                <div className="space-y-4">
+                <div className="space-y-5">
                   <fieldset className="space-y-2">
                     <legend className="text-caption font-semibold text-secondary">제보 유형</legend>
                     <div className="grid gap-2 sm:grid-cols-2">
@@ -219,7 +220,7 @@ export function ReportDialog({ onClose, onSuccess }: ReportDialogProps) {
                     </div>
                   </fieldset>
 
-                  <FieldLabel error={fieldErrors.categoryId} label="분류" required>
+                  <FormField error={fieldErrors.categoryId} label="분류" required>
                     <CategorySelect
                       onChange={(categoryId) => {
                         updateDraft({ categoryId });
@@ -229,9 +230,9 @@ export function ReportDialog({ onClose, onSuccess }: ReportDialogProps) {
                       reportType={form.reportType}
                       value={draft.categoryId}
                     />
-                  </FieldLabel>
+                  </FormField>
 
-                  <FieldLabel error={fieldErrors.title} label="제목" required>
+                  <FormField error={fieldErrors.title} label="제목" required>
                     <Input
                       aria-invalid={Boolean(fieldErrors.title)}
                       maxLength={100}
@@ -243,9 +244,9 @@ export function ReportDialog({ onClose, onSuccess }: ReportDialogProps) {
                       value={draft.title}
                     />
                     <CharacterCount current={draft.title.length} max={100} />
-                  </FieldLabel>
+                  </FormField>
 
-                  <FieldLabel error={fieldErrors.content} label="내용" required>
+                  <FormField error={fieldErrors.content} label="내용" required>
                     <Textarea
                       aria-invalid={Boolean(fieldErrors.content)}
                       className="h-32 min-h-32"
@@ -258,7 +259,7 @@ export function ReportDialog({ onClose, onSuccess }: ReportDialogProps) {
                       value={draft.content}
                     />
                     <CharacterCount current={draft.content.length} max={400} />
-                  </FieldLabel>
+                  </FormField>
                 </div>
 
                 <aside className="min-w-0 rounded-lg bg-surface-inset p-4">
@@ -329,37 +330,6 @@ function CategorySelect({
       options={selectOptions}
       value={value}
     />
-  );
-}
-
-function FieldLabel({
-  children,
-  error,
-  label,
-  required = false,
-}: {
-  children: React.ReactNode;
-  error?: string;
-  label: string;
-  required?: boolean;
-}) {
-  return (
-    <label className="block space-y-1.5">
-      <span className="text-caption font-semibold text-secondary">
-        {label}
-        {required ? (
-          <span aria-hidden="true" className="ml-1 text-status-danger">
-            *
-          </span>
-        ) : null}
-      </span>
-      {children}
-      {error ? (
-        <span className="block text-caption text-status-danger" role="alert">
-          {error}
-        </span>
-      ) : null}
-    </label>
   );
 }
 

@@ -143,14 +143,19 @@ function ArchivePublicList() {
       {archivesQuery.isError ? <ArchiveErrorState onRetry={() => void archivesQuery.refetch()} /> : null}
       {charactersQuery.data && !archivesQuery.isPending && !archivesQuery.isError ? (
         <section aria-labelledby="archive-results-heading" className="space-y-4">
-          <h2 className="text-body-sm text-secondary" id="archive-results-heading">
-            현재 불러온 아카이브 <strong className="font-semibold text-brand-text">{archives.length}개</strong>
-            {archivesQuery.isFetching && !archivesQuery.isFetchingNextPage ? (
-              <span aria-label="아카이브 결과를 업데이트하는 중입니다." className="ml-2 inline-flex align-middle text-tertiary" role="status">
+          <h2 className="flex min-h-5 items-center gap-2 text-body-sm text-secondary" id="archive-results-heading">
+            <span>현재 불러온 아카이브 <strong className="font-semibold text-brand-text">{archives.length}개</strong></span>
+            <span
+              aria-label="아카이브 결과를 업데이트하는 중입니다."
+              className={cn(
+                "inline-flex size-4 items-center justify-center text-tertiary",
+                !(archivesQuery.isFetching && !archivesQuery.isFetchingNextPage) && "invisible",
+              )}
+              role="status"
+            >
                 <LoaderCircle aria-hidden="true" className="size-3.5 animate-spin" />
                 <span className="sr-only">아카이브 결과를 업데이트하는 중입니다.</span>
-              </span>
-            ) : null}
+            </span>
           </h2>
 
           {archives.length > 0 ? (

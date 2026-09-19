@@ -3,6 +3,8 @@
 import { useQueryClient } from "@tanstack/react-query";
 import { LoaderCircle } from "lucide-react";
 
+import { cn } from "@/utils/cn";
+
 import { useCharacters } from "@/app/characters/_hooks/use-characters";
 import { Button } from "@/components/ui/button";
 import { FilterBarSkeleton, MediaGridSkeleton } from "@/components/media-grid-skeleton";
@@ -59,16 +61,21 @@ export function ReplaysContent({ canManageCollectedMedia }: ReplaysContentProps)
       {charactersQuery.data && optionsQuery.data && replaysQuery.isPending ? <MediaGridSkeleton /> : null}
       {charactersQuery.data && optionsQuery.data && !replaysQuery.isPending ? (
         <section aria-labelledby="replay-results-heading" className="space-y-4">
-          <div>
+          <div className="flex min-h-5 items-center gap-2">
             <h2 className="text-body-sm text-secondary" id="replay-results-heading">
               현재 불러온 다시보기 <strong className="font-semibold text-brand-text">{replays.length}개</strong>
             </h2>
-            {replaysQuery.isFetching && !replaysQuery.isFetchingNextPage ? (
-              <span aria-label="필터 결과를 업데이트하는 중입니다." className="ml-2 inline-flex align-middle text-tertiary" role="status">
-                <LoaderCircle aria-hidden="true" className="size-3.5 animate-spin" />
-                <span className="sr-only">필터 결과를 업데이트하는 중입니다.</span>
-              </span>
-            ) : null}
+            <span
+              aria-label="필터 결과를 업데이트하는 중입니다."
+              className={cn(
+                "inline-flex size-4 items-center justify-center text-tertiary",
+                !(replaysQuery.isFetching && !replaysQuery.isFetchingNextPage) && "invisible",
+              )}
+              role="status"
+            >
+              <LoaderCircle aria-hidden="true" className="size-3.5 animate-spin" />
+              <span className="sr-only">필터 결과를 업데이트하는 중입니다.</span>
+            </span>
           </div>
           {replaysQuery.isError ? (
             <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-status-danger/40 px-4 py-3" role="alert">

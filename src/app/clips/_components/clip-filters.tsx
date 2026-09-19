@@ -16,7 +16,6 @@ import {
 } from "@/components/filters/hierarchical-filter";
 import { ParticipantFilter } from "@/components/filters/participant-filter";
 import { TagFilter } from "@/components/filters/tag-filter";
-import { Button } from "@/components/ui/button";
 import { DatePicker } from "@/components/ui/date-picker";
 import { Select } from "@/components/ui/select";
 import type { ClipOptions } from "@/features/clips/clip";
@@ -168,9 +167,6 @@ export function ClipFilters({
             value={tagIds}
           />
         ) : null}
-        <Button onClick={onReset} size="sm" type="button" variant="ghost">
-          필터 초기화
-        </Button>
       </FilterBar>
       <AppliedFilterSummary items={items} onClearAll={onReset} />
     </section>

@@ -7,6 +7,7 @@ import { useMutation, useQuery } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
 
 import { Button, buttonVariants } from "@/components/ui/button";
+import { FormField } from "@/components/ui/form-field";
 import { Input } from "@/components/ui/input";
 import { Select } from "@/components/ui/select";
 import { RetryButton } from "@/components/ui/retry-button";
@@ -131,16 +132,13 @@ export function ArchiveCreateContent({ isSignedIn }: ArchiveCreateContentProps) 
 
       <form action={handleSubmit} className="mt-5 rounded-xl border border-default bg-surface-raised p-5 sm:p-6">
         <fieldset className="space-y-6" disabled={createMutation.isPending}>
-          <label className="block space-y-2 text-body-sm font-medium text-primary">
-            <span>제목</span>
+          <FormField label="제목">
             <Input maxLength={60} name="title" placeholder="아카이브 제목을 입력해주세요." required />
-          </label>
-          <label className="block space-y-2 text-body-sm font-medium text-primary">
-            <span>설명</span>
+          </FormField>
+          <FormField label="설명">
             <Textarea maxLength={500} name="description" placeholder="아카이브를 소개해주세요. (선택)" />
-          </label>
-          <label className="block space-y-2 text-body-sm font-medium text-primary">
-            <span>분류</span>
+          </FormField>
+          <FormField label="분류">
             <Select
               className="w-full"
               label="아카이브 분류"
@@ -153,11 +151,11 @@ export function ArchiveCreateContent({ isSignedIn }: ArchiveCreateContentProps) 
               ]}
               value={category}
             />
-          </label>
+          </FormField>
 
-          <fieldset>
+          <fieldset className="space-y-2">
             <legend className="text-body-sm font-medium text-primary">구성 방법</legend>
-            <div className="mt-2 grid gap-3 sm:grid-cols-2">
+            <div className="grid gap-3 sm:grid-cols-2">
               <StructureModeCard
                 description="원하는 챕터와 순서로 이야기를 구성"
                 isSelected={structureMode === "freeform"}
@@ -174,8 +172,7 @@ export function ArchiveCreateContent({ isSignedIn }: ArchiveCreateContentProps) 
           </fieldset>
 
           <div className="grid gap-5 sm:grid-cols-2">
-            <label className="space-y-2 text-body-sm font-medium text-primary">
-              <span>공개 범위</span>
+            <FormField label="공개 범위">
               <Select
                 className="w-full"
                 label="아카이브 공개 범위"
@@ -186,9 +183,8 @@ export function ArchiveCreateContent({ isSignedIn }: ArchiveCreateContentProps) 
                 ]}
                 value={visibility}
               />
-            </label>
-            <label className="space-y-2 text-body-sm font-medium text-primary">
-              <span>편집 정책</span>
+            </FormField>
+            <FormField label="편집 정책">
               <Select
                 className="w-full"
                 disabled={visibility === "private"}
@@ -200,7 +196,7 @@ export function ArchiveCreateContent({ isSignedIn }: ArchiveCreateContentProps) 
                 ]}
                 value={editPolicy}
               />
-            </label>
+            </FormField>
           </div>
           <p className="text-caption text-secondary">
             공개한 아카이브는 다시 비공개로 전환할 수 없습니다.

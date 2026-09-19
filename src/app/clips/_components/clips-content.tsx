@@ -76,16 +76,21 @@ export function ClipsContent({ canAddTags, canManageCollectedMedia }: ClipsConte
       {charactersQuery.data && optionsQuery.data && !clipsQuery.isPending ? (
         <section aria-labelledby="clip-results-heading" className="space-y-4">
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-            <div>
+            <div className="flex min-h-5 items-center gap-2">
               <h2 className="text-body-sm text-secondary" id="clip-results-heading">
                 현재 불러온 클립 <strong className="font-semibold text-brand-text">{clips.length}개</strong>
               </h2>
-              {clipsQuery.isFetching && !clipsQuery.isFetchingNextPage ? (
-                <span aria-label="필터 결과를 업데이트하는 중입니다." className="ml-2 inline-flex align-middle text-tertiary" role="status">
-                  <LoaderCircle aria-hidden="true" className="size-3.5 animate-spin" />
-                  <span className="sr-only">필터 결과를 업데이트하는 중입니다.</span>
-                </span>
-              ) : null}
+              <span
+                aria-label="필터 결과를 업데이트하는 중입니다."
+                className={cn(
+                  "inline-flex size-4 items-center justify-center text-tertiary",
+                  !(clipsQuery.isFetching && !clipsQuery.isFetchingNextPage) && "invisible",
+                )}
+                role="status"
+              >
+                <LoaderCircle aria-hidden="true" className="size-3.5 animate-spin" />
+                <span className="sr-only">필터 결과를 업데이트하는 중입니다.</span>
+              </span>
             </div>
             <div className="flex items-center gap-2 self-end sm:self-auto">
               <ClipViewToggle
