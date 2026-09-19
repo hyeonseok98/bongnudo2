@@ -1,11 +1,15 @@
 "use client";
 
-import { type DragEndEvent, useDragDropMonitor, useDroppable } from "@dnd-kit/react";
+import {
+  PointerSensor,
+  useDroppable,
+} from "@dnd-kit/react";
 import { useSortable } from "@dnd-kit/react/sortable";
 import { ArrowDown, ArrowUp, GripVertical, ListTree, Plus, Trash2, UserRound } from "lucide-react";
 import { useState } from "react";
 
 import { Button } from "@/components/ui/button";
+import { FormField } from "@/components/ui/form-field";
 import { Input } from "@/components/ui/input";
 import { Select } from "@/components/ui/select";
 import {
@@ -29,10 +33,7 @@ import type {
   ArchiveEditorDraft,
   ArchiveSeasonDay,
 } from "./archive-editor-draft";
-import {
-  isArchiveWorkspaceDragData,
-  type ArchiveWorkspaceDragData,
-} from "./archive-workspace-dnd";
+import type { ArchiveWorkspaceDragData } from "./archive-workspace-dnd";
 
 interface ArchiveBuilderProps {
   activeChapterId: string | null;
@@ -42,6 +43,23 @@ interface ArchiveBuilderProps {
   onPreviewItem: (item: ArchiveDraftChapter["items"][number]) => void;
   seasonDays: ArchiveSeasonDay[];
 }
+
+const clickTolerantPointerSensors = [PointerSensor.configure({
+  activationConstraints(event, source) {
+    const defaultConstraints = PointerSensor.defaults.activationConstraints;
+
+    if (typeof defaultConstraints !== "function") {
+      return defaultConstraints;
+    }
+
+    // Explicit mouse handles otherwise activate immediately and consume a short tab click.
+    return defaultConstraints(event, new Proxy(source, {
+      get(target, property, receiver) {
+        return property === "handle" ? undefined : Reflect.get(target, property, receiver);
+      },
+    }));
+  },
+})];
 
 export function ArchiveBuilder({
   activeChapterId,
@@ -119,51 +137,6 @@ export function ArchiveBuilder({
     });
   }
 
-  function handleDragEnd(event: DragEndEvent) {
-    const source = event.operation.source;
-    const target = event.operation.target;
-
-    if (event.canceled || !source || !target || source.id === target.id) {
-      return;
-    }
-
-    const sourceData = source.data;
-    const targetData = target.data;
-
-    if (
-      !isArchiveWorkspaceDragData(sourceData) ||
-      !isArchiveWorkspaceDragData(targetData) ||
-      sourceData.kind !== targetData.kind
-    ) {
-      return;
-    }
-
-    if (sourceData.kind === "chapter") {
-      if (targetData.kind !== "chapter" || sourceData.surface !== targetData.surface) {
-        return;
-      }
-
-      onDraftChange({
-        ...draft,
-        chapters: moveById(draft.chapters, sourceData.chapterId, targetData.chapterId),
-      });
-      return;
-    }
-
-    if (
-      sourceData.kind === "item" &&
-      sourceData.chapterId !== null &&
-      sourceData.chapterId === targetData.chapterId
-    ) {
-      updateChapter(sourceData.chapterId, (chapter) => ({
-        ...chapter,
-        items: moveById(chapter.items, String(source.id), String(target.id)),
-      }));
-    }
-  }
-
-  useDragDropMonitor<ArchiveWorkspaceDragData>({ onDragEnd: handleDragEnd });
-
   return (
     <section aria-labelledby="archive-builder-heading" className="space-y-4">
       <div className="flex items-start justify-between gap-3">
@@ -189,41 +162,45 @@ export function ArchiveBuilder({
         </div>
       </div>
 
-      <div aria-label="챕터 목록" className="flex gap-2 overflow-x-auto pb-1" role="tablist">
-          {draft.chapters.map((chapter) => (
-            <ArchiveChapterTab
-              active={chapter.id === activeChapter?.id}
-              chapter={chapter}
-              index={draft.chapters.indexOf(chapter)}
-              key={chapter.id}
-              onSelect={() => onActiveChapterChange(chapter.id)}
-            />
-          ))}
-        </div>
-
-        {activeChapter ? (
-          <ArchiveChapterEditor
-            chapter={activeChapter}
-            isFreeform={isFreeform}
-            onDescriptionChange={(description) => updateChapter(activeChapter.id, (current) => ({ ...current, description }))}
-            onNoteChange={(itemId, note) => updateChapter(activeChapter.id, (current) => ({
-              ...current,
-              items: current.items.map((item) => item.id === itemId ? { ...item, note } : item),
-            }))}
-            onMoveItem={(itemId, offset) => moveItem(activeChapter.id, itemId, offset)}
-            onRemove={() => removeChapter(activeChapter.id)}
-            onRemoveItem={(itemId) => removeItem(activeChapter.id, itemId)}
-            onSeasonDayChange={(seasonDayId) => updateChapter(activeChapter.id, (current) => ({ ...current, seasonDayId }))}
-            onSideStoryChange={(isSideStory) => updateChapter(activeChapter.id, (current) => ({ ...current, storyType: isSideStory ? "side" : "main" }))}
-            onTitleChange={(title) => updateChapter(activeChapter.id, (current) => ({ ...current, title }))}
-            onPreviewItem={onPreviewItem}
-            seasonDays={seasonDays}
+      <div
+        aria-label="챕터 목록"
+        className="scrollbar-hidden flex gap-2 overflow-x-auto overscroll-x-contain"
+        role="tablist"
+      >
+        {draft.chapters.map((chapter) => (
+          <ArchiveChapterTab
+            active={chapter.id === activeChapter?.id}
+            chapter={chapter}
+            index={draft.chapters.indexOf(chapter)}
+            key={chapter.id}
+            onSelect={() => onActiveChapterChange(chapter.id)}
           />
-        ) : (
-          <p className="rounded-xl border border-dashed border-default px-4 py-8 text-center text-body-sm text-secondary">
-            챕터를 추가해 아카이브를 시작해주세요.
-          </p>
-        )}
+        ))}
+      </div>
+
+      {activeChapter ? (
+        <ArchiveChapterEditor
+          chapter={activeChapter}
+          isFreeform={isFreeform}
+          onDescriptionChange={(description) => updateChapter(activeChapter.id, (current) => ({ ...current, description }))}
+          onNoteChange={(itemId, note) => updateChapter(activeChapter.id, (current) => ({
+            ...current,
+            items: current.items.map((item) => item.id === itemId ? { ...item, note } : item),
+          }))}
+          onMoveItem={(itemId, offset) => moveItem(activeChapter.id, itemId, offset)}
+          onRemove={() => removeChapter(activeChapter.id)}
+          onRemoveItem={(itemId) => removeItem(activeChapter.id, itemId)}
+          onSeasonDayChange={(seasonDayId) => updateChapter(activeChapter.id, (current) => ({ ...current, seasonDayId }))}
+          onSideStoryChange={(isSideStory) => updateChapter(activeChapter.id, (current) => ({ ...current, storyType: isSideStory ? "side" : "main" }))}
+          onTitleChange={(title) => updateChapter(activeChapter.id, (current) => ({ ...current, title }))}
+          onPreviewItem={onPreviewItem}
+          seasonDays={seasonDays}
+        />
+      ) : (
+        <p className="rounded-xl border border-dashed border-default px-4 py-8 text-center text-body-sm text-secondary">
+          챕터를 추가해 아카이브를 시작해주세요.
+        </p>
+      )}
       <ArchiveFlowManager
         activeChapterId={activeChapter?.id ?? null}
         chapters={draft.chapters}
@@ -255,6 +232,7 @@ function ArchiveChapterTab({
     data: { chapterId: chapter.id, kind: "chapter", surface: "tabs" },
     id: `chapter-tab:${chapter.id}`,
     index,
+    sensors: clickTolerantPointerSensors,
   });
 
   return (
@@ -321,23 +299,27 @@ function ArchiveChapterEditor({
       <div className="flex gap-2">
         <div className="grid min-w-0 flex-1 gap-3 sm:grid-cols-2">
           {isFreeform ? null : (
-            <Select
-              className="w-full"
-              label="봉누도 일차"
-              onValueChange={onSeasonDayChange}
-              options={seasonDays.map((seasonDay) => ({
-                label: `${seasonDay.dayNumber}일차 · ${seasonDay.sessionDate}`,
-                value: seasonDay.id,
-              }))}
-              value={chapter.seasonDayId ?? ""}
-            />
+            <FormField label="봉누도 일차">
+              <Select
+                className="w-full"
+                label="봉누도 일차"
+                onValueChange={onSeasonDayChange}
+                options={seasonDays.map((seasonDay) => ({
+                  label: `${seasonDay.dayNumber}일차 · ${seasonDay.sessionDate}`,
+                  value: seasonDay.id,
+                }))}
+                value={chapter.seasonDayId ?? ""}
+              />
+            </FormField>
           )}
-          <Input
-            aria-label="챕터 제목"
-            maxLength={50}
-            onChange={(event) => onTitleChange(event.target.value)}
-            value={chapter.title}
-          />
+          <FormField label="챕터 이름">
+            <Input
+              maxLength={50}
+              onChange={(event) => onTitleChange(event.target.value)}
+              placeholder="챕터 이름을 입력해주세요."
+              value={chapter.title}
+            />
+          </FormField>
         </div>
         <Button aria-label="챕터 삭제" onClick={onRemove} size="icon-sm" type="button" variant="ghost">
           <Trash2 aria-hidden="true" className="size-4" />
@@ -354,14 +336,15 @@ function ArchiveChapterEditor({
         사이드 스토리
       </label>
 
-      <Textarea
-        aria-label="챕터 설명"
-        className="mt-3 min-h-20"
-        maxLength={300}
-        onChange={(event) => onDescriptionChange(event.target.value)}
-        placeholder="챕터 설명을 입력해주세요."
-        value={chapter.description ?? ""}
-      />
+      <FormField className="mt-3" label="챕터 설명">
+        <Textarea
+          className="min-h-20"
+          maxLength={300}
+          onChange={(event) => onDescriptionChange(event.target.value)}
+          placeholder="챕터 설명을 입력해주세요. (선택)"
+          value={chapter.description ?? ""}
+        />
+      </FormField>
 
       <div className="mt-4 space-y-2">
         {chapter.items.map((item, itemIndex) => (
@@ -377,6 +360,7 @@ function ArchiveChapterEditor({
             onRemove={() => onRemoveItem(item.id)}
             isFirst={itemIndex === 0}
             isLast={itemIndex === chapter.items.length - 1}
+            position={itemIndex + 1}
           />
         ))}
         {chapter.items.length === 0 ? (
@@ -400,6 +384,7 @@ function ArchiveBuilderItem({
   onNoteChange,
   onPreview,
   onRemove,
+  position,
 }: {
   chapterId: string;
   index: number;
@@ -411,6 +396,7 @@ function ArchiveBuilderItem({
   onNoteChange: (value: string) => void;
   onPreview: () => void;
   onRemove: () => void;
+  position: number;
 }) {
   const { isMediaPreviewBlurEnabled, isRpMode } = useRpModeSettings();
   const { handleRef, isDragging, ref } = useSortable<ArchiveWorkspaceDragData>({
@@ -418,6 +404,7 @@ function ArchiveBuilderItem({
     group: chapterId,
     id: item.id,
     index,
+    sensors: clickTolerantPointerSensors,
   });
   const displayName = item.clip.participant
     ? getDisplayName(item.clip.participant, "clip-card", isRpMode)
@@ -440,7 +427,7 @@ function ArchiveBuilderItem({
         type="button"
       >
         <span aria-hidden="true" className="grid size-5 shrink-0 place-items-center rounded-full bg-surface-muted text-caption font-semibold text-secondary">
-          {index + 1}
+          {position}
         </span>
         <GripVertical aria-hidden="true" className="size-4 shrink-0 text-tertiary" />
         {item.clip.thumbnailUrl ? (
@@ -517,11 +504,11 @@ function ArchiveFlowManager({
   return (
     <Sheet onOpenChange={onOpenChange} open={open}>
       <SheetContent
-        className="!w-[28rem] !max-w-[calc(100vw-1rem)] gap-0 overflow-hidden"
-        overlayClassName="bg-black/15 supports-backdrop-filter:backdrop-blur-none"
+        className="!top-14 !bottom-auto !h-[calc(100dvh-3.5rem)] !w-[28rem] !max-w-[calc(100vw-1rem)] gap-0 overflow-hidden !bg-surface-raised [&_[data-slot=sheet-close]]:z-20"
+        overlayClassName="!top-14 !bottom-0 !bg-black/40 !backdrop-blur-none"
         side="right"
       >
-        <SheetHeader className="shrink-0 border-b border-default pr-12">
+        <SheetHeader className="sticky top-0 z-10 shrink-0 border-b border-default bg-surface-raised pr-12">
           <SheetTitle>전체 흐름 관리</SheetTitle>
           <SheetDescription>챕터를 드래그해 순서를 바꾸거나 선택해 바로 이동할 수 있습니다.</SheetDescription>
         </SheetHeader>
@@ -571,6 +558,7 @@ function ArchiveFlowChapterCard({
     data: { chapterId: chapter.id, kind: "chapter", surface: "flow" },
     id: `chapter-flow:${chapter.id}`,
     index,
+    sensors: clickTolerantPointerSensors,
   });
 
   return (

@@ -1,6 +1,7 @@
 "use client";
 
 import { DragDropProvider, type DragEndEvent } from "@dnd-kit/react";
+import { isSortableOperation } from "@dnd-kit/react/sortable";
 import { AlertTriangle, Check, LogIn, LogOut, Settings2 } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -155,20 +156,76 @@ function ArchiveEditorWorkspace({ archive }: { archive: ArchiveDetail }) {
   }
 
   function handleWorkspaceDragEnd(event: DragEndEvent) {
-    const sourceData = event.operation.source?.data;
-    const targetData = event.operation.target?.data;
+    const source = event.operation.source;
+    const target = event.operation.target;
+    const sourceData = source?.data;
+    const targetData = target?.data;
 
     if (
       event.canceled ||
+      !source ||
+      !target ||
       !isArchiveWorkspaceDragData(sourceData) ||
-      !isArchiveWorkspaceDragData(targetData) ||
-      sourceData.kind !== "explorer-clip" ||
-      (targetData.kind !== "chapter-drop" && targetData.kind !== "item")
+      !isArchiveWorkspaceDragData(targetData)
     ) {
       return;
     }
 
-    addClip(sourceData.clip, targetData.chapterId);
+    if (
+      sourceData.kind === "explorer-clip" &&
+      (targetData.kind === "chapter-drop" || targetData.kind === "item")
+    ) {
+      addClip(sourceData.clip, targetData.chapterId);
+      return;
+    }
+
+    if (
+      sourceData.kind === "chapter" &&
+      targetData.kind === "chapter" &&
+      sourceData.surface === targetData.surface &&
+      isSortableOperation(event.operation)
+    ) {
+      const sortableSource = event.operation.source;
+
+      if (!sortableSource) {
+        return;
+      }
+
+      const sourceIndex = sortableSource.initialIndex;
+      const targetIndex = sortableSource.index;
+
+      setDraft((current) => ({
+        ...current,
+        chapters: moveByIndex(current.chapters, sourceIndex, targetIndex),
+      }));
+      return;
+    }
+
+    if (
+      sourceData.kind === "item" &&
+      targetData.kind === "item" &&
+      sourceData.chapterId === targetData.chapterId &&
+      isSortableOperation(event.operation)
+    ) {
+      const sortableSource = event.operation.source;
+
+      if (!sortableSource) {
+        return;
+      }
+
+      const sourceIndex = sortableSource.initialIndex;
+      const targetIndex = sortableSource.index;
+
+      setDraft((current) => ({
+        ...current,
+        chapters: current.chapters.map((chapter) => chapter.id === sourceData.chapterId
+          ? {
+              ...chapter,
+              items: moveByIndex(chapter.items, sourceIndex, targetIndex),
+            }
+          : chapter),
+      }));
+    }
   }
 
   function saveDraft() {
@@ -325,6 +382,18 @@ function ArchiveLoginRequired({ archiveId }: { archiveId: string }) {
       </Link>
     </div>
   );
+}
+
+function moveByIndex<T>(items: T[], sourceIndex: number, targetIndex: number): T[] {
+  if (sourceIndex < 0 || targetIndex < 0 || sourceIndex === targetIndex) {
+    return items;
+  }
+
+  const nextItems = [...items];
+  const [source] = nextItems.splice(sourceIndex, 1);
+  nextItems.splice(targetIndex, 0, source);
+
+  return nextItems;
 }
 
 function ArchiveEditorNotice({ children, onRetry }: { children: string; onRetry?: () => void }) {

@@ -22,7 +22,7 @@ export function FormField({
   requiredIndicator = "text",
 }: FormFieldProps) {
   return (
-    <label className={cn("block space-y-2", className)}>
+    <label className={cn("grid gap-2", className)}>
       <span className="block text-body-sm font-medium text-primary">
         {label}
         {required ? (
