@@ -9,11 +9,11 @@ import {
 } from "@/app/live/_utils/live-directory";
 
 import {
-  HomeDirectoryLink,
+  HomeSectionHeader,
   HomeSectionMessage,
 } from "./home-section";
 
-const HOME_LIVE_COUNT = 5;
+const HOME_LIVE_COUNT = 3;
 
 export function HomeLive() {
   const charactersQuery = useCharacters();
@@ -34,15 +34,12 @@ export function HomeLive() {
 
   return (
     <section aria-labelledby="home-live-heading" className="space-y-4">
-      <header className="flex items-end justify-between gap-4">
-        <h2
-          className="text-heading-sm font-semibold text-primary"
-          id="home-live-heading"
-        >
-          지금, LIVE
-        </h2>
-        <HomeDirectoryLink href="/live">전체보기</HomeDirectoryLink>
-      </header>
+      <HomeSectionHeader
+        description="지금 방송 중인 봉누도2 참가자를 확인해보세요."
+        headingId="home-live-heading"
+        href="/live"
+        title="지금, LIVE"
+      />
 
       {isPending ? (
         <HomeSectionMessage>

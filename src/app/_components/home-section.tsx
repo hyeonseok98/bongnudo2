@@ -1,12 +1,14 @@
 import { ChevronRight } from "lucide-react";
 import Link from "next/link";
 
+type HomeDirectoryHref = "/archives" | "/characters" | "/clips" | "/live" | "/organizations" | "/replays";
+
 export function HomeDirectoryLink({
   children,
   href,
 }: {
   children: string;
-  href: "/characters" | "/live" | "/organizations";
+  href: HomeDirectoryHref;
 }) {
   return (
     <Link
@@ -16,6 +18,30 @@ export function HomeDirectoryLink({
       {children}
       <ChevronRight aria-hidden="true" className="size-4" />
     </Link>
+  );
+}
+
+export function HomeSectionHeader({
+  description,
+  headingId,
+  href,
+  title,
+}: {
+  description: string;
+  headingId: string;
+  href: HomeDirectoryHref;
+  title: string;
+}) {
+  return (
+    <header className="flex items-end justify-between gap-4">
+      <div>
+        <h2 className="text-heading-sm font-semibold text-primary" id={headingId}>
+          {title}
+        </h2>
+        <p className="mt-1 text-body-sm text-secondary">{description}</p>
+      </div>
+      <HomeDirectoryLink href={href}>전체보기</HomeDirectoryLink>
+    </header>
   );
 }
 

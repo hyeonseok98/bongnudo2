@@ -1,9 +1,10 @@
 import type { Metadata } from "next";
 
-import { HomeCharacters } from "./_components/home-characters";
+import { HomeArchives } from "./_components/home-archives";
+import { HomeClips } from "./_components/home-clips";
 import { HomeHero } from "./_components/home-hero";
 import { HomeLive } from "./_components/home-live";
-import { HomeOrganizations } from "./_components/home-organizations";
+import { HomeReplays } from "./_components/home-replays";
 
 export const metadata: Metadata = {
   title: "봉누록",
@@ -13,12 +14,13 @@ export const metadata: Metadata = {
 
 export default function HomePage() {
   return (
-    <main>
+    <main className="pb-2">
       <HomeHero />
-      <div className="space-y-10 py-8 sm:space-y-12 sm:py-10 lg:py-12">
+      <div className="space-y-12 py-8 sm:space-y-14 sm:py-10 lg:space-y-16 lg:py-12">
+        <HomeClips />
+        <HomeReplays />
+        <HomeArchives />
         <HomeLive />
-        <HomeCharacters />
-        <HomeOrganizations />
       </div>
     </main>
   );

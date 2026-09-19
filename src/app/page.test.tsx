@@ -7,17 +7,20 @@ vi.mock("./_components/home-hero", () => ({
 vi.mock("./_components/home-live", () => ({
   HomeLive: () => <section data-home-section="live" />,
 }));
-vi.mock("./_components/home-characters", () => ({
-  HomeCharacters: () => <section data-home-section="characters" />,
+vi.mock("./_components/home-clips", () => ({
+  HomeClips: () => <section data-home-section="clips" />,
 }));
-vi.mock("./_components/home-organizations", () => ({
-  HomeOrganizations: () => <section data-home-section="organizations" />,
+vi.mock("./_components/home-replays", () => ({
+  HomeReplays: () => <section data-home-section="replays" />,
+}));
+vi.mock("./_components/home-archives", () => ({
+  HomeArchives: () => <section data-home-section="archives" />,
 }));
 
 import HomePage from "./page";
 
 describe("HomePage", () => {
-  it("MVP 섹션을 지정된 순서로 렌더링함", () => {
+  it("콘텐츠 탐색 섹션을 지정된 순서로 렌더링함", () => {
     const { container } = render(<HomePage />);
     const sectionOrder = Array.from(
       container.querySelectorAll<HTMLElement>("[data-home-section]"),
@@ -25,11 +28,10 @@ describe("HomePage", () => {
 
     expect(sectionOrder).toEqual([
       "hero",
+      "clips",
+      "replays",
+      "archives",
       "live",
-      "characters",
-      "organizations",
     ]);
-    expect(container.textContent).not.toContain("다시보기");
-    expect(container.textContent).not.toContain("클립");
   });
 });
