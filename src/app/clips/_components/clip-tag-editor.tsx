@@ -15,9 +15,15 @@ interface ClipTagEditorProps {
   canAddTags: boolean;
   clipId: string;
   tags: ClipItem["tags"];
+  variant?: "card" | "menu";
 }
 
-export function ClipTagEditor({ canAddTags, clipId, tags }: ClipTagEditorProps) {
+export function ClipTagEditor({
+  canAddTags,
+  clipId,
+  tags,
+  variant = "card",
+}: ClipTagEditorProps) {
   const queryClient = useQueryClient();
   const [isAdding, setIsAdding] = useState(false);
   const [name, setName] = useState("");
@@ -51,7 +57,10 @@ export function ClipTagEditor({ canAddTags, clipId, tags }: ClipTagEditorProps) 
   }
 
   return (
-    <div className="space-y-2 border-t border-default pt-2" onClick={(event) => event.stopPropagation()}>
+    <div
+      className={variant === "menu" ? "space-y-2" : "space-y-2 border-t border-default pt-2"}
+      onClick={(event) => event.stopPropagation()}
+    >
       <div className="flex flex-wrap gap-1">
         {tags.map((tag) => (
           <span

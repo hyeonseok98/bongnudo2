@@ -8,12 +8,14 @@ interface CollectedMediaExclusionButtonProps {
   mediaId: string;
   mediaType: "clip" | "replay";
   onExcluded: () => void;
+  variant?: "card" | "menu";
 }
 
 export function CollectedMediaExclusionButton({
   mediaId,
   mediaType,
   onExcluded,
+  variant = "card",
 }: CollectedMediaExclusionButtonProps) {
   const [isPending, setIsPending] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -46,13 +48,14 @@ export function CollectedMediaExclusionButton({
   }
 
   return (
-    <div className="px-3 pb-3">
+    <div className={variant === "menu" ? "space-y-1" : "px-3 pb-3"}>
       <Button
+        className={variant === "menu" ? "w-full justify-start" : undefined}
         disabled={isPending}
         onClick={() => void handleExclude()}
         size="sm"
         type="button"
-        variant="outline"
+        variant={variant === "menu" ? "ghost" : "outline"}
       >
         {isPending ? "제외하는 중입니다." : "봉누도2에서 제외"}
       </Button>

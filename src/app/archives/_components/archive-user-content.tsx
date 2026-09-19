@@ -119,19 +119,26 @@ export function ArchiveUserContent({ archive }: ArchiveUserContentProps) {
             <aside aria-label="아카이브 목차" className="sticky top-20 hidden max-h-[calc(100dvh-6rem)] overflow-y-auto rounded-xl border border-default bg-surface-raised p-3 lg:block">
               <p className="px-2 pb-2 text-body-sm font-semibold text-primary">일차 · 챕터</p>
               <nav>
-                <ul className="space-y-1">
+                <ul className="relative space-y-1 before:absolute before:top-3 before:bottom-3 before:left-3 before:w-px before:bg-tertiary/60">
                   {visibleChapters.map((chapter) => {
+                    const isActive = activeChapterId === chapter.id;
                     const chapterLabel = archive.structureMode === "day_based" && chapter.seasonDay
                       ? `${chapter.seasonDay.dayNumber}일차 · ${chapter.title}`
                       : chapter.title;
 
                     return (
-                      <li key={chapter.id}>
+                      <li className="relative" key={chapter.id}>
+                        <span
+                          aria-hidden="true"
+                          className={isActive
+                            ? "pointer-events-none absolute top-3 left-2 z-10 size-2 rounded-full bg-brand"
+                            : "pointer-events-none absolute top-3 left-2 z-10 size-2 rounded-full bg-tertiary"}
+                        />
                         <button
-                          aria-current={activeChapterId === chapter.id ? "location" : undefined}
-                          className={activeChapterId === chapter.id
-                            ? "w-full cursor-pointer rounded-lg bg-surface-selected px-3 py-2 text-left text-body-sm font-medium text-brand-text"
-                            : "w-full cursor-pointer rounded-lg px-3 py-2 text-left text-body-sm text-secondary hover:bg-surface-muted hover:text-primary focus-visible:outline-2 focus-visible:outline-focus-ring"}
+                          aria-current={isActive ? "location" : undefined}
+                          className={isActive
+                            ? "w-full cursor-pointer rounded-lg py-2 pr-2 pl-6 text-left text-body-sm font-medium text-brand-text focus-visible:outline-2 focus-visible:outline-focus-ring"
+                            : "w-full cursor-pointer rounded-lg py-2 pr-2 pl-6 text-left text-body-sm text-secondary hover:bg-surface-muted hover:text-primary focus-visible:outline-2 focus-visible:outline-focus-ring"}
                           onClick={() => {
                             setActiveChapterId(chapter.id);
                             document.getElementById(`archive-chapter-${chapter.id}`)?.scrollIntoView({ behavior: "smooth", block: "start" });

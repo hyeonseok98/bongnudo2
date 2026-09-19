@@ -49,8 +49,8 @@ export function Select<Value extends string>({
         <ChevronDown aria-hidden="true" className="size-4 shrink-0 text-tertiary" />
       </Popover.Trigger>
       <Popover.Portal>
-        <Popover.Positioner
-          align="end"
+          <Popover.Positioner
+          align="start"
           className="z-popover"
           collisionPadding={16}
           positionMethod="fixed"
@@ -63,7 +63,7 @@ export function Select<Value extends string>({
                 <button
                   aria-selected={option.value === value}
                   className={cn(
-                    "flex min-h-9 w-full cursor-pointer items-center rounded-md px-2.5 text-left text-body-sm font-medium text-secondary outline-none transition-colors duration-default hover:bg-surface-muted hover:text-primary focus-visible:bg-surface-muted focus-visible:text-primary motion-reduce:transition-none",
+                    "flex min-h-9 w-full cursor-pointer items-center rounded-md px-3 text-left text-body-sm font-medium text-secondary outline-none transition-colors duration-default hover:bg-surface-muted hover:text-primary focus-visible:bg-surface-muted focus-visible:text-primary motion-reduce:transition-none",
                     option.value === value && "bg-surface-selected text-primary",
                   )}
                   key={option.value}

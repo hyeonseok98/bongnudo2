@@ -2,6 +2,7 @@
 
 import { CalendarDays, Eye, Play, UserRound } from "lucide-react";
 
+import { CollectedMediaActionsMenu } from "@/components/collected-media-actions-menu";
 import { Badge } from "@/components/ui/badge";
 import { CollectedMediaExclusionButton } from "@/components/collected-media-exclusion-button";
 import {
@@ -61,7 +62,7 @@ export function ClipCard({
     : null;
 
   return (
-    <article className="group h-full min-w-0 overflow-hidden rounded-xl border border-default bg-surface-raised transition-[border-color,box-shadow] duration-fast hover:border-brand hover:shadow-sm focus-within:border-brand focus-within:ring-2 focus-within:ring-focus-ring/40">
+    <article className="group relative h-full min-w-0 overflow-hidden rounded-xl border border-default bg-surface-raised transition-[border-color,box-shadow] duration-fast hover:border-brand hover:shadow-sm focus-within:border-brand focus-within:ring-2 focus-within:ring-focus-ring/40">
       <button
         aria-label={`${clip.title} 클립 보기`}
         className="block w-full cursor-pointer text-left focus-visible:outline-2 focus-visible:outline-focus-ring focus-visible:outline-offset-[-2px]"
@@ -154,7 +155,11 @@ export function ClipCard({
                   ) : null}
                 </div>
               ))
-            ) : null}
+            ) : (
+              <Badge className={RP_AFFILIATION_BADGE_STYLES.citizen.surface}>
+                시민
+              </Badge>
+            )}
           </div>
 
           <div className="flex items-center justify-between gap-2 text-caption text-secondary">
@@ -169,13 +174,23 @@ export function ClipCard({
           </div>
         </div>
       </button>
-      {clip.tags.length > 0 || canAddTags ? (
-        <div className="px-3 pb-3">
-          <ClipTagEditor canAddTags={canAddTags} clipId={clip.id} tags={clip.tags} />
-        </div>
-      ) : null}
-      {canManageCollectedMedia && onExcluded ? (
-        <CollectedMediaExclusionButton mediaId={clip.id} mediaType="clip" onExcluded={onExcluded} />
+      {canAddTags || (canManageCollectedMedia && onExcluded) ? (
+        <CollectedMediaActionsMenu label={`${clip.title} 더보기`}>
+          <ClipTagEditor
+            canAddTags={canAddTags}
+            clipId={clip.id}
+            tags={clip.tags}
+            variant="menu"
+          />
+          {canManageCollectedMedia && onExcluded ? (
+            <CollectedMediaExclusionButton
+              mediaId={clip.id}
+              mediaType="clip"
+              onExcluded={onExcluded}
+              variant="menu"
+            />
+          ) : null}
+        </CollectedMediaActionsMenu>
       ) : null}
     </article>
   );

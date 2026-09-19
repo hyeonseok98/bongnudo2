@@ -117,7 +117,7 @@ export function ClipsContent({ canAddTags, canManageCollectedMedia }: ClipsConte
                 <span className="sr-only">필터 결과를 업데이트하는 중입니다.</span>
               </span>
             </div>
-            <div className="flex items-center gap-2 self-end sm:self-auto">
+            <div className="flex items-center gap-3 self-end sm:self-auto">
               <ClipViewToggle
                 view={directory.view}
                 onViewChange={directory.changeView}

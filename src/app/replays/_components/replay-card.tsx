@@ -2,6 +2,7 @@
 
 import { CalendarDays, Eye, Play, UserRound } from "lucide-react";
 
+import { CollectedMediaActionsMenu } from "@/components/collected-media-actions-menu";
 import { Badge } from "@/components/ui/badge";
 import { CollectedMediaExclusionButton } from "@/components/collected-media-exclusion-button";
 import {
@@ -51,7 +52,7 @@ export function ReplayCard({ canManageCollectedMedia = false, onExcluded, partic
     : null;
 
   return (
-    <article className="group h-full min-w-0 overflow-hidden rounded-xl border border-default bg-surface-raised transition-[border-color,box-shadow] duration-fast hover:border-brand hover:shadow-sm focus-within:border-brand focus-within:ring-2 focus-within:ring-focus-ring/40">
+    <article className="group relative h-full min-w-0 overflow-hidden rounded-xl border border-default bg-surface-raised transition-[border-color,box-shadow] duration-fast hover:border-brand hover:shadow-sm focus-within:border-brand focus-within:ring-2 focus-within:ring-focus-ring/40">
       <a
         aria-label={`${replay.title} 다시보기 보기`}
         className="block cursor-pointer focus-visible:outline-2 focus-visible:outline-focus-ring focus-visible:outline-offset-[-2px]"
@@ -137,7 +138,11 @@ export function ReplayCard({ canManageCollectedMedia = false, onExcluded, partic
                   ) : null}
                 </div>
               ))
-            ) : null}
+            ) : (
+              <Badge className={RP_AFFILIATION_BADGE_STYLES.citizen.surface}>
+                시민
+              </Badge>
+            )}
           </div>
 
           <div className="flex items-center justify-between gap-2 text-caption text-secondary">
@@ -153,7 +158,14 @@ export function ReplayCard({ canManageCollectedMedia = false, onExcluded, partic
         </div>
       </a>
       {canManageCollectedMedia && onExcluded ? (
-        <CollectedMediaExclusionButton mediaId={replay.id} mediaType="replay" onExcluded={onExcluded} />
+        <CollectedMediaActionsMenu label={`${replay.title} 더보기`}>
+          <CollectedMediaExclusionButton
+            mediaId={replay.id}
+            mediaType="replay"
+            onExcluded={onExcluded}
+            variant="menu"
+          />
+        </CollectedMediaActionsMenu>
       ) : null}
     </article>
   );
