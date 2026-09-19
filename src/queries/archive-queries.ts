@@ -12,6 +12,7 @@ import {
   getArchive,
   getArchiveEditorOptions,
   getArchivePersonDetail,
+  getArchivePeopleSections,
   getMyArchives,
   getPublicArchivesForSeasonDay,
   getPublicArchives,
@@ -104,6 +105,11 @@ export const archiveQueries = {
 
         return getArchivePersonDetail(participantId);
       },
+    }),
+  people: () =>
+    queryOptions({
+      queryKey: [...archiveQueries.all(), "people"] as const,
+      queryFn: getArchivePeopleSections,
     }),
   systemClipSummary: (archiveId: string) =>
     queryOptions({

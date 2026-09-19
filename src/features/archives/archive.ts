@@ -138,8 +138,10 @@ export interface ArchiveClipSummary {
 export interface ArchiveEditorOptions {
   seasonDays: Array<{
     dayNumber: number;
+    endsAt: string;
     id: string;
     sessionDate: string;
+    startsAt: string;
   }>;
   seasonId: number;
 }
@@ -167,6 +169,15 @@ export interface ArchivePersonDetail {
   };
   relatedArchives: ArchiveListItem[];
   systemArchiveId: string | null;
+}
+
+export interface ArchivePeopleSection {
+  archives: ArchiveListItem[];
+  participant: {
+    id: string;
+    rpName: string | null;
+    streamerName: string;
+  };
 }
 
 export interface ArchiveSystemClipSummary {
@@ -226,10 +237,12 @@ export interface MyArchiveListItem {
   clipCount: number;
   currentRevision: number;
   deletedAt: string | null;
+  description: string | null;
   editPolicy: ArchiveEditPolicy;
   id: string;
   lastEditedByMeAt: string | null;
   ownerName: string | null;
+  representativeImageUrl: string | null;
   restoreExpiresAt: string | null;
   sortAt: string;
   status: ArchiveStatus;

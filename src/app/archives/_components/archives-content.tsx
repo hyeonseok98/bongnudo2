@@ -41,34 +41,14 @@ export function ArchivesContent({ isSignedIn }: ArchivesContentProps) {
             봉누도2의 이야기를 만든 기록과 인물별 클립을 찾아보세요.
           </p>
         </div>
-        <ArchiveCreateCta isSignedIn={isSignedIn} />
+        <ArchiveHeaderActions isSignedIn={isSignedIn} />
       </header>
 
-      <div className="space-y-4">
-        <ArchiveScopeTabs isSignedIn={isSignedIn} />
-        <ArchiveViewTabs onViewChange={(nextView) => void setView(nextView, { history: "replace" })} view={view} />
-      </div>
+      <ArchiveViewTabs onViewChange={(nextView) => void setView(nextView, { history: "replace" })} view={view} />
 
       {view === "all" ? <ArchivePublicList /> : null}
       {view === "day" ? <ArchiveDayView /> : null}
       {view === "people" ? <ArchivePeopleView /> : null}
-    </div>
-  );
-}
-
-function ArchiveScopeTabs({ isSignedIn }: { isSignedIn: boolean }) {
-  if (!isSignedIn) {
-    return null;
-  }
-
-  return (
-    <div aria-label="아카이브 범위" className="flex flex-wrap gap-2 border-b border-default pb-3" role="tablist">
-      <Button aria-selected size="sm" type="button">
-        전체 공개
-      </Button>
-      <Link className={buttonVariants({ size: "sm", variant: "outline" })} href="/my/archives">
-        내 아카이브
-      </Link>
     </div>
   );
 }
@@ -193,14 +173,21 @@ function ArchivePublicList() {
   );
 }
 
-function ArchiveCreateCta({ isSignedIn }: { isSignedIn: boolean }) {
+function ArchiveHeaderActions({ isSignedIn }: { isSignedIn: boolean }) {
   const href = isSignedIn ? "/archives/new" : "/login?returnTo=%2Farchives%2Fnew";
 
   return (
-    <Link className={cn(buttonVariants(), "self-start sm:self-auto")} href={href}>
-      {isSignedIn ? <Plus aria-hidden="true" /> : <LogIn aria-hidden="true" />}
-      아카이브 만들기
-    </Link>
+    <div className="flex flex-wrap gap-2 self-start sm:self-auto">
+      {isSignedIn ? (
+        <Link className={buttonVariants({ variant: "outline" })} href="/my/archives">
+          내 아카이브
+        </Link>
+      ) : null}
+      <Link className={buttonVariants()} href={href}>
+        {isSignedIn ? <Plus aria-hidden="true" /> : <LogIn aria-hidden="true" />}
+        아카이브 만들기
+      </Link>
+    </div>
   );
 }
 

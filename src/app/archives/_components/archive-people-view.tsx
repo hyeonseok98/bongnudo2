@@ -1,52 +1,47 @@
 "use client";
 
-import Link from "next/link";
-
 import { useQuery } from "@tanstack/react-query";
-import { Archive, Building2, Clapperboard, UserRound, X } from "lucide-react";
+import { Archive, UserRound } from "lucide-react";
 
 import { ArchiveGridSkeleton } from "@/components/archive-grid-skeleton";
-import { ParticipantFilter } from "@/components/filters/participant-filter";
-import { Badge } from "@/components/ui/badge";
-import { Button, buttonVariants } from "@/components/ui/button";
 import { RetryButton } from "@/components/ui/retry-button";
-import type { ArchivePersonDetail } from "@/features/archives/archive";
+import type { ArchivePeopleSection } from "@/features/archives/archive";
+import { getDisplayName } from "@/features/rp-mode/rp-mode";
+import { useRpModeSettings } from "@/providers/rp-mode-provider";
 import { archiveQueries } from "@/queries/archive-queries";
-import { cn } from "@/utils/cn";
 
-import { useArchiveDirectory } from "../_hooks/use-archive-directory";
 import { ArchiveCard } from "./archive-card";
 
 export function ArchivePeopleView() {
-  const directory = useArchiveDirectory();
-  const personQuery = useQuery(archiveQueries.person(directory.participantId));
+  const peopleQuery = useQuery(archiveQueries.people());
 
   return (
     <section aria-labelledby="archive-people-heading" className="space-y-7">
       <div>
         <h2 className="text-heading font-semibold text-primary" id="archive-people-heading">인물별 탐색</h2>
-        <p className="mt-2 text-body text-secondary">RP명 또는 스트리머명으로 인물을 찾아 기록을 살펴보세요.</p>
+        <p className="mt-2 text-body text-secondary">인물과 함께 남은 공개 아카이브를 살펴보세요.</p>
       </div>
 
-      <ParticipantFilter
-        className="w-full sm:max-w-sm"
-        onValueChange={(participantIds) => directory.changeParticipant(participantIds[0] ?? null)}
-        selectionMode="single"
-        value={directory.participantId ? [directory.participantId] : []}
-      />
-
-      {directory.participantId === null ? (
-        <ArchivePeopleMessage>인물을 검색해 선택해주세요.</ArchivePeopleMessage>
-      ) : null}
-      {directory.participantId !== null && personQuery.isPending ? (
-        <ArchivePeopleLoadingState />
-      ) : null}
-      {personQuery.isError ? <ArchivePeopleError isRetrying={personQuery.isFetching} onRetry={() => void personQuery.refetch()} /> : null}
-      {personQuery.data ? (
-        <ArchivePersonResult
-          detail={personQuery.data}
-          onClear={() => directory.changeParticipant(null)}
+      {peopleQuery.isPending ? <ArchivePeopleLoadingState /> : null}
+      {peopleQuery.isError ? (
+        <ArchivePeopleError
+          isRetrying={peopleQuery.isFetching}
+          onRetry={() => void peopleQuery.refetch()}
         />
+      ) : null}
+      {peopleQuery.data && peopleQuery.data.length > 0 ? (
+        <div className="space-y-10">
+          {peopleQuery.data.map((section) => (
+            <ArchivePersonSection
+              archives={section.archives}
+              key={section.participant.id}
+              participant={section.participant}
+            />
+          ))}
+        </div>
+      ) : null}
+      {peopleQuery.data && peopleQuery.data.length === 0 ? (
+        <ArchivePeopleMessage>인물과 연결된 공개 아카이브가 없습니다.</ArchivePeopleMessage>
       ) : null}
     </section>
   );
@@ -54,92 +49,44 @@ export function ArchivePeopleView() {
 
 function ArchivePeopleLoadingState() {
   return (
-    <div className="space-y-6" role="status">
-      <div className="rounded-xl border border-default bg-surface-raised p-5">
-        <div className="h-5 w-24 animate-pulse rounded-md bg-muted" />
-        <div className="mt-3 h-4 w-40 animate-pulse rounded-md bg-muted" />
-      </div>
-      <ArchiveGridSkeleton count={3} />
+    <div className="space-y-10" role="status">
+      {Array.from({ length: 3 }, (_, index) => (
+        <section className="space-y-4" key={index}>
+          <div className="h-6 w-32 animate-pulse rounded-md bg-muted" />
+          <ArchiveGridSkeleton count={3} />
+        </section>
+      ))}
     </div>
   );
 }
 
-function ArchivePersonResult({
-  detail,
-  onClear,
-}: {
-  detail: ArchivePersonDetail;
-  onClear: () => void;
-}) {
+function ArchivePersonSection({ archives, participant }: ArchivePeopleSection) {
+  const { isRpMode } = useRpModeSettings();
+  const displayName = getDisplayName(participant, "clip-card", isRpMode);
+
   return (
-    <div className="space-y-9">
-      <section aria-labelledby="archive-person-info-heading" className="rounded-xl border border-default bg-surface-raised p-5">
-        <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-          <div className="flex items-start gap-3">
-            <div className="grid size-10 shrink-0 place-items-center rounded-full bg-surface-muted text-brand-text">
-              <UserRound aria-hidden="true" className="size-5" />
-            </div>
-            <div>
-              <h3 className="text-heading-sm font-semibold text-primary" id="archive-person-info-heading">
-                {detail.participant.rpName ?? "RP 정보 없음"}
-              </h3>
-              <p className="mt-1 text-body-sm text-secondary">스트리머명 {detail.participant.streamerName}</p>
-            </div>
-          </div>
-          <Button className="self-start" onClick={onClear} size="sm" type="button" variant="ghost">
-            <X aria-hidden="true" />
-            선택 해제
-          </Button>
+    <section aria-labelledby={`archive-person-${participant.id}`} className="space-y-4">
+      <div className="flex items-center gap-2.5">
+        <div className="grid size-8 shrink-0 place-items-center rounded-full bg-surface-muted text-brand-text">
+          <UserRound aria-hidden="true" className="size-4" />
         </div>
-
-        <div className="mt-5 border-t border-default pt-4">
-          <div className="flex items-center gap-2 text-body-sm font-medium text-primary">
-            <Building2 aria-hidden="true" className="size-4 text-brand-text" />
-            현재 소속 및 직업
-          </div>
-          {detail.participant.affiliations.length > 0 ? (
-            <div className="mt-3 flex flex-wrap gap-2">
-              {detail.participant.affiliations.map((affiliation) => (
-                <Badge key={`${affiliation.organizationSlug}-${affiliation.role ?? "none"}`} variant="outline">
-                  {affiliation.organizationName}{affiliation.role ? ` · ${affiliation.role}` : ""}
-                </Badge>
-              ))}
-            </div>
-          ) : (
-            <p className="mt-3 text-body-sm text-secondary">현재 소속 또는 직업 정보가 없습니다.</p>
-          )}
+        <div className="min-w-0">
+          <h3 className="truncate text-heading-sm font-semibold text-primary" id={`archive-person-${participant.id}`}>
+            {displayName.primaryName}
+          </h3>
+          {displayName.secondaryName ? (
+            <p className="mt-0.5 truncate text-body-sm text-secondary">{displayName.secondaryName}</p>
+          ) : null}
         </div>
-      </section>
-
-      <section aria-labelledby="archive-person-system-heading" className="space-y-3">
-        <div>
-          <h3 className="text-heading-sm font-semibold text-primary" id="archive-person-system-heading">전체 클립</h3>
-          <p className="mt-1 text-body-sm text-secondary">이 인물의 봉누도2 클립 기록을 모아봅니다.</p>
+      </div>
+      {archives.length > 0 ? (
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5">
+          {archives.map((archive) => <ArchiveCard archive={archive} key={archive.id} />)}
         </div>
-        {detail.systemArchiveId ? (
-          <Link className={cn(buttonVariants({ variant: "outline" }), "w-fit")} href={`/archives/${detail.systemArchiveId}`}>
-            <Clapperboard aria-hidden="true" />
-            전체 클립 보기
-          </Link>
-        ) : (
-          <ArchivePeopleMessage>전체 클립 기록이 없습니다.</ArchivePeopleMessage>
-        )}
-      </section>
-
-      <section aria-labelledby="archive-person-related-heading" className="space-y-4 border-t border-default pt-7">
-        <div>
-          <h3 className="text-heading-sm font-semibold text-primary" id="archive-person-related-heading">관련 사용자 아카이브</h3>
-          <p className="mt-1 text-body-sm text-secondary">이 인물이 포함된 공개 아카이브입니다.</p>
-        </div>
-        {detail.relatedArchives.length > 0 ? (
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5">
-            {detail.relatedArchives.map((archive) => <ArchiveCard archive={archive} key={archive.id} />)}
-          </div>
-        ) : (
-          <ArchivePeopleMessage>관련 공개 아카이브가 없습니다.</ArchivePeopleMessage>
-        )}
-      </section>
-    </div>
+      ) : (
+        <p className="text-body-sm text-secondary">관련 공개 아카이브가 없습니다.</p>
+      )}
+    </section>
   );
 }
 

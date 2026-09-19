@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import {
+  getDefaultSeasonDayByDateTime,
   getSeasonDayByDateTime,
   getSeasonDayById,
   type SeasonDay,
@@ -52,5 +53,26 @@ describe("season day", () => {
     expect(getSeasonDayById(seasonDays, "day-2")).toMatchObject({
       dayNumber: 2,
     });
+  });
+
+  it("기본 일차는 진행 중인 운영 일차를 선택함", () => {
+    expect(getDefaultSeasonDayByDateTime(
+      seasonDays,
+      "2026-09-15T10:00:00.000Z",
+    )).toMatchObject({ id: "day-2" });
+  });
+
+  it("휴식 시간에는 가장 최근 운영 일차를 선택함", () => {
+    expect(getDefaultSeasonDayByDateTime(
+      seasonDays,
+      "2026-09-15T07:00:00.000Z",
+    )).toMatchObject({ id: "day-1" });
+  });
+
+  it("시즌 종료 후에는 마지막 운영 일차를 선택함", () => {
+    expect(getDefaultSeasonDayByDateTime(
+      seasonDays,
+      "2026-09-20T00:00:00.000Z",
+    )).toMatchObject({ id: "day-2" });
   });
 });

@@ -23,6 +23,7 @@ import type {
   ArchiveListItem,
   ArchivePage,
   ArchivePersonDetail,
+  ArchivePeopleSection,
   ArchiveSaveResult,
   ArchiveStatus,
   ArchiveStoryType,
@@ -453,6 +454,183 @@ export async function getArchivePersonDetail(
   };
 }
 
+export async function getArchivePeopleSections(): Promise<ArchivePeopleSection[]> {
+  const supabase = getSupabaseAdminClient();
+  const [participantsResult, systemArchives, userArchives] = await Promise.all([
+    supabase
+      .from("season_participants")
+      .select(`
+        id,
+        rp_name,
+        season:seasons!inner (
+          is_active
+        ),
+        streamer:streamers!inner (
+          name
+        )
+      `)
+      .eq("seasons.is_active", true),
+    getAllPublicArchivesByType("system"),
+    getAllPublicArchivesByType("user"),
+  ]);
+
+  if (participantsResult.error) {
+    throw new ArchiveRequestError("인물별 아카이브를 불러오지 못했습니다.", 500, {
+      cause: participantsResult.error,
+    });
+  }
+
+  const archiveIdsByParticipantId = await getArchiveIdsByParticipant(
+    userArchives.map((archive) => archive.id),
+  );
+  const userArchivesById = new Map(userArchives.map((archive) => [archive.id, archive]));
+  const systemArchiveByParticipantId = new Map(
+    systemArchives.flatMap((archive) => (
+      archive.systemParticipant ? [[archive.systemParticipant.id, archive] as const] : []
+    )),
+  );
+
+  return (participantsResult.data ?? [])
+    .map((participant) => ({
+      id: participant.id,
+      rpName: participant.rp_name,
+      streamerName: participant.streamer.name,
+    }))
+    .sort((left, right) => (left.rpName ?? left.streamerName).localeCompare(
+      right.rpName ?? right.streamerName,
+      "ko",
+    ))
+    .flatMap((participant) => {
+      const relatedUserArchives = Array.from(archiveIdsByParticipantId.get(participant.id) ?? [])
+        .flatMap((archiveId) => userArchivesById.get(archiveId) ?? [])
+        .sort((left, right) => right.sortAt.localeCompare(left.sortAt));
+      const systemArchive = systemArchiveByParticipantId.get(participant.id);
+      const archives = systemArchive
+        ? [systemArchive, ...relatedUserArchives]
+        : relatedUserArchives;
+
+      return [{ archives, participant }];
+    });
+}
+
+async function getAllPublicArchivesByType(
+  type: "system" | "user",
+): Promise<ArchiveListItem[]> {
+  const archives: ArchiveListItem[] = [];
+  let cursor: ArchiveListCursor | null = null;
+
+  do {
+    const page = await getPublicArchivePage({
+      category: null,
+      participantId: null,
+      query: "",
+      sort: "updated",
+      status: null,
+      type,
+    }, cursor);
+    archives.push(...page.items);
+    cursor = page.nextCursor;
+  } while (cursor !== null);
+
+  return archives;
+}
+
+async function getArchiveIdsByParticipant(
+  archiveIds: string[],
+): Promise<Map<string, Set<string>>> {
+  const archiveIdsByParticipantId = new Map<string, Set<string>>();
+
+  if (archiveIds.length === 0) {
+    return archiveIdsByParticipantId;
+  }
+
+  const supabase = getSupabaseAdminClient();
+  const pageSize = 1_000;
+
+  for (let from = 0; ; from += pageSize) {
+    const result = await supabase
+      .from("archive_items")
+      .select(`
+        archive_id,
+        clip:clips!inner (
+          season_participant_id
+        )
+      `)
+      .in("archive_id", archiveIds)
+      .range(from, from + pageSize - 1);
+
+    if (result.error) {
+      throw new ArchiveRequestError("인물별 아카이브를 불러오지 못했습니다.", 500, {
+        cause: result.error,
+      });
+    }
+
+    for (const item of result.data ?? []) {
+      const participantId = item.clip?.season_participant_id;
+
+      if (!participantId) continue;
+
+      const participantArchiveIds = archiveIdsByParticipantId.get(participantId) ?? new Set<string>();
+      participantArchiveIds.add(item.archive_id);
+      archiveIdsByParticipantId.set(participantId, participantArchiveIds);
+    }
+
+    if ((result.data?.length ?? 0) < pageSize) break;
+  }
+
+  return archiveIdsByParticipantId;
+}
+
+async function getMyArchiveDisplayDetails(archiveIds: string[]): Promise<Map<string, {
+  description: string | null;
+  representativeImageUrl: string | null;
+}>> {
+  if (archiveIds.length === 0) {
+    return new Map();
+  }
+
+  const supabase = getSupabaseAdminClient();
+  const [archivesResult, archiveItemsResult] = await Promise.all([
+    supabase
+      .from("archives")
+      .select("id, description")
+      .in("id", archiveIds),
+    supabase
+      .from("archive_items")
+      .select(`
+        archive_id,
+        clip:clips!inner (
+          thumbnail_url
+        )
+      `)
+      .in("archive_id", archiveIds),
+  ]);
+
+  if (archivesResult.error || archiveItemsResult.error) {
+    throw new ArchiveRequestError("내 아카이브를 불러오지 못했습니다.", 500, {
+      cause: archivesResult.error ?? archiveItemsResult.error ?? undefined,
+    });
+  }
+
+  const detailsByArchiveId = new Map<string, {
+    description: string | null;
+    representativeImageUrl: string | null;
+  }>((archivesResult.data ?? []).map((archive) => [archive.id, {
+    description: archive.description,
+    representativeImageUrl: null,
+  }]));
+
+  for (const item of archiveItemsResult.data ?? []) {
+    const detail = detailsByArchiveId.get(item.archive_id);
+
+    if (detail && detail.representativeImageUrl === null && item.clip?.thumbnail_url) {
+      detail.representativeImageUrl = item.clip.thumbnail_url;
+    }
+  }
+
+  return detailsByArchiveId;
+}
+
 export async function getMyArchivePage(
   user: AuthenticatedUser,
   tab: MyArchiveTab,
@@ -477,10 +655,16 @@ export async function getMyArchivePage(
   const items = rows
     .slice(0, MY_ARCHIVE_LIST_PAGE_SIZE)
     .map((row) => toMyArchiveListItem(row, tab, user));
-  const lastItem = items.at(-1);
+  const displayDetailsByArchiveId = await getMyArchiveDisplayDetails(items.map((item) => item.id));
+  const displayItems = items.map((item) => ({
+    ...item,
+    description: displayDetailsByArchiveId.get(item.id)?.description ?? null,
+    representativeImageUrl: displayDetailsByArchiveId.get(item.id)?.representativeImageUrl ?? null,
+  }));
+  const lastItem = displayItems.at(-1);
 
   return {
-    items,
+    items: displayItems,
     nextCursor: rows.length > MY_ARCHIVE_LIST_PAGE_SIZE && lastItem
       ? { id: lastItem.id, sortAt: lastItem.sortAt }
       : null,
@@ -672,7 +856,7 @@ export async function getArchiveEditorOptions(): Promise<ArchiveEditorOptions> {
   const seasonId = seasonResult.data[0].id;
   const seasonDaysResult = await supabase
     .from("season_days")
-    .select("id, day_number, session_date")
+    .select("id, day_number, session_date, starts_at, ends_at")
     .eq("season_id", seasonId)
     .order("day_number", { ascending: true });
 
@@ -685,8 +869,10 @@ export async function getArchiveEditorOptions(): Promise<ArchiveEditorOptions> {
   return {
     seasonDays: seasonDaysResult.data.map((seasonDay) => ({
       dayNumber: seasonDay.day_number,
+      endsAt: seasonDay.ends_at,
       id: seasonDay.id,
       sessionDate: seasonDay.session_date,
+      startsAt: seasonDay.starts_at,
     })),
     seasonId,
   };
@@ -1006,10 +1192,12 @@ function toMyArchiveListItem(
     clipCount: Number(row.clip_count),
     currentRevision: row.current_revision,
     deletedAt,
+    description: null,
     editPolicy: toArchiveEditPolicy(row.edit_policy),
     id: row.archive_id,
     lastEditedByMeAt,
     ownerName: row.owner_name,
+    representativeImageUrl: null,
     restoreExpiresAt: row.restore_expires_at,
     sortAt,
     status: toArchiveStatus(row.status),

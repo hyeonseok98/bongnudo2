@@ -12,11 +12,11 @@ import { FilterBarSkeleton, MediaGridSkeleton } from "@/components/media-grid-sk
 import { RetryButton } from "@/components/ui/retry-button";
 import type { ArchiveListItem } from "@/features/archives/archive";
 import type { ClipItem, ClipListFilters } from "@/features/clips/clip";
+import { getDefaultSeasonDayByDateTime } from "@/features/seasons/season-day";
 import { archiveQueries } from "@/queries/archive-queries";
 import { clipQueries } from "@/queries/clip-queries";
 import { cn } from "@/utils/cn";
 
-import { useClipOptions } from "../../clips/_hooks/use-clips";
 import { ArchiveClipCard } from "./archive-clip-card";
 import {
   ArchiveClipPreviewDialog,
@@ -37,8 +37,11 @@ const archiveDayFilters: Omit<ClipListFilters, "day"> = {
 export function ArchiveDayView() {
   const [selectedDay, setSelectedDay] = useQueryState("day", parseAsInteger);
   const [previewClip, setPreviewClip] = useState<ClipItem | null>(null);
-  const optionsQuery = useClipOptions();
-  const day = selectedDay ?? optionsQuery.data?.seasonDays.at(-1)?.dayNumber ?? null;
+  const optionsQuery = useQuery(archiveQueries.editorOptions());
+  const day = selectedDay ?? getDefaultSeasonDayByDateTime(
+    optionsQuery.data?.seasonDays ?? [],
+    new Date(),
+  )?.dayNumber ?? null;
   const seasonDayId = optionsQuery.data?.seasonDays.find(
     (seasonDay) => seasonDay.dayNumber === day,
   )?.id ?? null;

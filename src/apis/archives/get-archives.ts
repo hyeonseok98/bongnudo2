@@ -10,6 +10,7 @@ import type {
   MyArchivePage,
   MyArchiveTab,
   ArchivePage,
+  ArchivePeopleSection,
   ArchivePersonDetail,
   ArchiveSaveInput,
   ArchiveSaveResult,
@@ -158,8 +159,10 @@ const archiveClipNeighborsSchema = z.object({
 const archiveEditorOptionsSchema = z.object({
   seasonDays: z.array(z.object({
     dayNumber: z.number().int().positive(),
+    endsAt: z.string().datetime({ offset: true }),
     id: z.uuid(),
     sessionDate: z.string().date(),
+    startsAt: z.string().datetime({ offset: true }),
   })),
   seasonId: z.number().int().positive(),
 });
@@ -212,6 +215,15 @@ const archivePersonDetailSchema = z.object({
   systemArchiveId: z.uuid().nullable(),
 });
 
+const archivePeopleSectionsSchema = z.array(z.object({
+  archives: archiveDayArchivesSchema,
+  participant: z.object({
+    id: z.uuid(),
+    rpName: z.string().nullable(),
+    streamerName: z.string(),
+  }),
+}));
+
 const myArchivePageSchema = z.object({
   items: z.array(z.object({
     canEditContent: z.boolean(),
@@ -219,10 +231,12 @@ const myArchivePageSchema = z.object({
     clipCount: z.number().int().nonnegative(),
     currentRevision: z.number().int().positive(),
     deletedAt: z.string().datetime({ offset: true }).nullable(),
+    description: z.string().nullable(),
     editPolicy: z.enum(["owner_only", "public_edit"]),
     id: z.uuid(),
     lastEditedByMeAt: z.string().datetime({ offset: true }).nullable(),
     ownerName: z.string().nullable(),
+    representativeImageUrl: z.string().url().nullable(),
     restoreExpiresAt: z.string().datetime({ offset: true }).nullable(),
     sortAt: z.string().datetime({ offset: true }),
     status: z.enum(["ongoing", "completed"]),
@@ -336,6 +350,16 @@ export async function getArchivePersonDetail(
   }
 
   return archivePersonDetailSchema.parse(await response.json());
+}
+
+export async function getArchivePeopleSections(): Promise<ArchivePeopleSection[]> {
+  const response = await fetch("/api/archives/people", { cache: "no-store" });
+
+  if (!response.ok) {
+    throw new Error(await getArchiveErrorMessage(response, "인물별 아카이브를 불러오지 못했습니다."));
+  }
+
+  return archivePeopleSectionsSchema.parse(await response.json());
 }
 
 export async function getMyArchives(
