@@ -2021,6 +2021,33 @@ export type Database = {
               created_timeline_event_id: string
             }[]
           }
+      get_clip_historical_affiliations: {
+        Args: {
+          p_participant_id: string
+          p_season_id: number
+          p_target_at: string
+        }
+        Returns: Json
+      }
+      get_clip_page: {
+        Args: {
+          p_cursor_clip_created_at?: string
+          p_cursor_id?: string
+          p_date_end?: string
+          p_date_start?: string
+          p_day_number?: number
+          p_groups?: string[]
+          p_jobs?: string[]
+          p_limit?: number
+          p_participant_ids?: string[]
+          p_sort?: string
+          p_tag_ids?: string[]
+        }
+        Returns: {
+          clip_created_at: string
+          clip_id: string
+        }[]
+      }
       get_my_archive_page: {
         Args: {
           p_actor_user_id: string

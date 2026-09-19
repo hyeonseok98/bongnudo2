@@ -4,15 +4,9 @@ import { useQuery } from "@tanstack/react-query";
 import { Search, X } from "lucide-react";
 import { useState } from "react";
 
+import { characterQueries } from "@/queries/character-queries";
 import { cn } from "@/utils/cn";
-import { useDebouncedValue } from "@/hooks/use-debounced-value";
-import { reportQueries } from "@/queries/report-queries";
-
-export interface ParticipantFilterValue {
-  id: string;
-  rpName: string | null;
-  streamerName: string;
-}
+import { matchesKoreanSearch } from "@/utils/korean-search";
 
 interface ParticipantFilterProps {
   className?: string;
@@ -28,10 +22,14 @@ export function ParticipantFilter({
   value,
 }: ParticipantFilterProps) {
   const [query, setQuery] = useState("");
-  const debouncedQuery = useDebouncedValue(query.trim(), 250);
-  const participantQuery = useQuery(
-    reportQueries.participantSearch(debouncedQuery),
-  );
+  const participantQuery = useQuery(characterQueries.list());
+  const normalizedQuery = query.trim();
+  const matchingParticipants = participantQuery.data?.characters.filter(
+    (participant) =>
+      matchesKoreanSearch(participant.streamerName, normalizedQuery) ||
+      (participant.rpName !== null &&
+        matchesKoreanSearch(participant.rpName, normalizedQuery)),
+  ) ?? [];
 
   function handleSelect(participantId: string) {
     if (selectionMode === "single") {
@@ -71,12 +69,12 @@ export function ParticipantFilter({
         <div className="absolute z-popover mt-2 max-h-64 w-full overflow-y-auto rounded-lg border border-default bg-surface-raised p-1 shadow-xl sm:w-72">
           {participantQuery.isPending ? (
             <p className="px-2.5 py-2 text-caption text-secondary">인물을 검색하는 중입니다.</p>
-          ) : participantQuery.data?.length ? (
-            participantQuery.data.map((participant) => (
+          ) : matchingParticipants.length > 0 ? (
+            matchingParticipants.map((participant) => (
               <button
                 className="flex w-full cursor-pointer flex-col rounded-md px-2.5 py-2 text-left transition-colors hover:bg-surface-muted"
-                key={participant.seasonParticipantId}
-                onClick={() => handleSelect(participant.seasonParticipantId)}
+                key={participant.id}
+                onClick={() => handleSelect(participant.id)}
                 type="button"
               >
                 <span className="text-body-sm font-medium text-primary">

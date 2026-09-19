@@ -22,8 +22,6 @@ import { getKstDateRange } from "@/features/seasons/season-date";
 import { matchesKoreanSearch } from "@/utils/korean-search";
 
 const PAGE_SIZE = 24;
-const SOURCE_BATCH_SIZE = 48;
-const MAX_SCAN_BATCHES = 6;
 
 function createActiveSeasonQuery(client: SupabaseClient<Database>) {
   return client.from("seasons").select("id").eq("is_active", true).limit(2);
@@ -58,6 +56,7 @@ function createClipRowsQuery(
     duration_seconds,
     view_count,
     clip_created_at,
+    season_id,
     season_participant_id,
     participant:season_participants!clips_participant_same_season_fkey (
       id,
@@ -146,99 +145,74 @@ export async function getClipPage(
   cursor: ClipCursor | null,
 ): Promise<ClipPage> {
   const client = getSupabaseServerClient();
-  const [seasonId, viewer] = await Promise.all([
-    getActiveSeasonId(client),
-    getCurrentUser(),
-  ]);
-  const participantIds = await resolveParticipantIds(client, seasonId, filters);
+  const viewerPromise = getCurrentUser();
+  const participantIds = await resolveClipParticipantIds(client, filters);
 
   if (participantIds?.length === 0) {
     return { items: [], nextCursor: null };
   }
 
-  const seasonDayId = await resolveSeasonDayId(client, seasonId, filters.day);
+  const dateRange = filters.date ? getKstDateRange(filters.date) : null;
+  const { data: pageRows, error: pageError } = await client.rpc("get_clip_page", {
+    p_cursor_clip_created_at: cursor?.clipCreatedAt,
+    p_cursor_id: cursor?.id,
+    p_date_end: dateRange?.end,
+    p_date_start: dateRange?.start,
+    p_day_number: filters.day ?? undefined,
+    p_groups: filters.groups,
+    p_jobs: filters.jobs,
+    p_limit: PAGE_SIZE + 1,
+    p_participant_ids: participantIds ?? undefined,
+    p_sort: filters.sort,
+    p_tag_ids: filters.tagIds,
+  });
 
-  if (filters.day !== null && seasonDayId === null) {
+  if (pageError) {
+    throw new Error("클립을 불러오지 못함.", { cause: pageError });
+  }
+
+  const hasNextPage = pageRows.length > PAGE_SIZE;
+  const visiblePageRows = hasNextPage ? pageRows.slice(0, PAGE_SIZE) : pageRows;
+
+  if (visiblePageRows.length === 0) {
     return { items: [], nextCursor: null };
   }
 
-  const dateRange = filters.date ? getKstDateRange(filters.date) : null;
-  const items: ClipItem[] = [];
-  let sourceCursor = cursor;
+  const { data: sourceRows, error: sourceError } = await createClipRowsQuery(client)
+    .in("id", visiblePageRows.map((row) => row.clip_id));
 
-  for (let scanBatch = 0; scanBatch < MAX_SCAN_BATCHES; scanBatch += 1) {
-    let query = createClipRowsQuery(client, filters.tagIds.length > 0)
-      .eq("season_id", seasonId)
-      .order("clip_created_at", { ascending: filters.sort === "oldest" })
-      .order("id", { ascending: filters.sort === "oldest" })
-      .limit(SOURCE_BATCH_SIZE);
-
-    if (participantIds !== null) {
-      query = query.in("season_participant_id", participantIds);
-    }
-
-    if (seasonDayId !== null) {
-      query = query.eq("season_day_id", seasonDayId);
-    }
-
-    if (dateRange !== null) {
-      query = query
-        .gte("clip_created_at", dateRange.start)
-        .lt("clip_created_at", dateRange.end);
-    }
-
-    if (filters.tagIds.length > 0) {
-      query = query.in("clip_tags.tag_id", filters.tagIds);
-    }
-
-    if (sourceCursor !== null) {
-      query = query.or(getCursorFilter(sourceCursor, filters.sort));
-    }
-
-    const { data, error } = await query;
-
-    if (error) {
-      throw new Error("클립을 불러오지 못함.", { cause: error });
-    }
-
-    if (data.length === 0) {
-      return { items, nextCursor: null };
-    }
-
-    const careerEventsByParticipant = await getCareerEventsByParticipant(
-      client,
-      seasonId,
-      data,
-    );
-
-    for (let index = 0; index < data.length; index += 1) {
-      const row = data[index];
-      sourceCursor = { clipCreatedAt: row.clip_created_at, id: row.id };
-      const clip = toClipItem(row, careerEventsByParticipant, viewer);
-
-      if (!matchesJobFilters(clip, filters.jobs, careerEventsByParticipant)) {
-        continue;
-      }
-
-      items.push(clip);
-
-      if (items.length === PAGE_SIZE) {
-        const hasUnscannedSourceRows = index < data.length - 1;
-        const mayHaveMoreRows = hasUnscannedSourceRows || data.length === SOURCE_BATCH_SIZE;
-
-        return {
-          items,
-          nextCursor: mayHaveMoreRows ? sourceCursor : null,
-        };
-      }
-    }
-
-    if (data.length < SOURCE_BATCH_SIZE) {
-      return { items, nextCursor: null };
-    }
+  if (sourceError) {
+    throw new Error("클립을 불러오지 못함.", { cause: sourceError });
   }
 
-  return { items, nextCursor: sourceCursor };
+  const seasonId = sourceRows[0]?.season_id;
+
+  if (seasonId === undefined) {
+    throw new Error("클립 시즌 정보를 확인하지 못함.");
+  }
+
+  const [careerEventsByParticipant, viewer] = await Promise.all([
+    getCareerEventsByParticipant(client, seasonId, sourceRows),
+    viewerPromise,
+  ]);
+  const sourceRowsById = new Map(sourceRows.map((row) => [row.id, row]));
+  const items = visiblePageRows.map((pageRow) => {
+    const sourceRow = sourceRowsById.get(pageRow.clip_id);
+
+    if (!sourceRow) {
+      throw new Error("클립 상세 정보를 확인하지 못함.");
+    }
+
+    return toClipItem(sourceRow, careerEventsByParticipant, viewer);
+  });
+  const last = items.at(-1);
+
+  return {
+    items,
+    nextCursor: hasNextPage && last
+      ? { clipCreatedAt: last.clipCreatedAt, id: last.id }
+      : null,
+  };
 }
 
 export async function getClipPageForArchiveParticipant(
@@ -433,6 +407,35 @@ async function resolveParticipantIds(
 
       return isQueryMatched && isGroupMatched;
     })
+    .map((participant) => participant.id);
+}
+
+async function resolveClipParticipantIds(
+  client: SupabaseClient<Database>,
+  filters: ClipListFilters,
+): Promise<string[] | null> {
+  const query = filters.query.trim();
+
+  if (!query) {
+    return filters.participantIds.length > 0 ? filters.participantIds : null;
+  }
+
+  const seasonId = await getActiveSeasonId(client);
+  const { data, error } = await createParticipantCandidatesQuery(client)
+    .eq("season_id", seasonId);
+
+  if (error) {
+    throw new Error("클립 인물 필터를 확인하지 못함.", { cause: error });
+  }
+
+  return data
+    .filter((participant) =>
+      (filters.participantIds.length === 0 || filters.participantIds.includes(participant.id)) &&
+      (
+        matchesKoreanSearch(participant.streamer.name, query) ||
+        (participant.rp_name !== null && matchesKoreanSearch(participant.rp_name, query))
+      )
+    )
     .map((participant) => participant.id);
 }
 

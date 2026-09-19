@@ -12,12 +12,15 @@ import type {
   ClipPage,
 } from "@/features/clips/clip";
 
+const METADATA_STALE_TIME = 5 * 60 * 1_000;
+
 export const clipQueries = {
   all: () => ["clips"] as const,
   options: () =>
     queryOptions({
       queryKey: [...clipQueries.all(), "options"] as const,
       queryFn: getClipOptions,
+      staleTime: METADATA_STALE_TIME,
     }),
   list: (filters: ClipListFilters) =>
     infiniteQueryOptions<

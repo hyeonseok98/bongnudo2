@@ -8,11 +8,14 @@ import {
 import { getReplayOptions, getReplays } from "@/apis/replays/get-replays";
 import type { ReplayCursor, ReplayListFilters, ReplayPage } from "@/features/replays/replay";
 
+const METADATA_STALE_TIME = 5 * 60 * 1_000;
+
 export const replayQueries = {
   all: () => ["replays"] as const,
   options: () => queryOptions({
     queryKey: [...replayQueries.all(), "options"] as const,
     queryFn: getReplayOptions,
+    staleTime: METADATA_STALE_TIME,
   }),
   list: (filters: ReplayListFilters) =>
     infiniteQueryOptions<
