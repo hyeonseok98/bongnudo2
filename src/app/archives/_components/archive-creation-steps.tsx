@@ -13,13 +13,14 @@ export function ArchiveCreationSteps({ currentStep }: ArchiveCreationStepsProps)
         const stepNumber = (index + 1) as 1 | 2;
         const isCurrent = stepNumber === currentStep;
         const isComplete = stepNumber < currentStep;
+        const stateLabel = isCurrent ? "현재" : isComplete ? "완료" : "다음";
 
         return (
           <li className="flex min-w-0 flex-1 items-center gap-3" key={label}>
             <div
               aria-current={isCurrent ? "step" : undefined}
               className={cn(
-                "flex items-center gap-2 text-body-sm font-medium",
+                "flex shrink-0 items-center gap-2 text-body-sm font-medium",
                 isCurrent && "text-primary",
                 isComplete && "text-brand-text",
                 stepNumber > currentStep && "text-secondary",
@@ -35,7 +36,8 @@ export function ArchiveCreationSteps({ currentStep }: ArchiveCreationStepsProps)
               >
                 {stepNumber}
               </span>
-              <span className="truncate">{label}</span>
+              <span className="whitespace-nowrap">{label}</span>
+              <span className="text-caption font-normal text-tertiary">{stateLabel}</span>
             </div>
             {stepNumber < steps.length ? (
               <span aria-hidden="true" className="h-px min-w-4 flex-1 bg-border" />

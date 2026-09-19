@@ -139,9 +139,13 @@ export function ArchiveBuilder({
     }
 
     if (sourceData.kind === "chapter") {
+      if (targetData.kind !== "chapter" || sourceData.surface !== targetData.surface) {
+        return;
+      }
+
       onDraftChange({
         ...draft,
-        chapters: moveById(draft.chapters, String(source.id), String(target.id)),
+        chapters: moveById(draft.chapters, sourceData.chapterId, targetData.chapterId),
       });
       return;
     }
@@ -248,8 +252,8 @@ function ArchiveChapterTab({
   onSelect: () => void;
 }) {
   const { handleRef, isDragging, ref } = useSortable<ArchiveWorkspaceDragData>({
-    data: { chapterId: null, kind: "chapter" },
-    id: chapter.id,
+    data: { chapterId: chapter.id, kind: "chapter", surface: "tabs" },
+    id: `chapter-tab:${chapter.id}`,
     index,
   });
 
@@ -513,11 +517,11 @@ function ArchiveFlowManager({
   return (
     <Sheet onOpenChange={onOpenChange} open={open}>
       <SheetContent
-        className="w-[28rem] max-w-[calc(100vw-2rem)] gap-0 sm:max-w-none"
-        overlayClassName="bg-black/5 supports-backdrop-filter:backdrop-blur-none"
+        className="!w-[28rem] !max-w-[calc(100vw-1rem)] gap-0 overflow-hidden"
+        overlayClassName="bg-black/15 supports-backdrop-filter:backdrop-blur-none"
         side="right"
       >
-        <SheetHeader className="border-b border-default pr-12">
+        <SheetHeader className="shrink-0 border-b border-default pr-12">
           <SheetTitle>전체 흐름 관리</SheetTitle>
           <SheetDescription>챕터를 드래그해 순서를 바꾸거나 선택해 바로 이동할 수 있습니다.</SheetDescription>
         </SheetHeader>
@@ -564,8 +568,8 @@ function ArchiveFlowChapterCard({
   seasonDay?: ArchiveSeasonDay;
 }) {
   const { handleRef, isDragging, ref } = useSortable<ArchiveWorkspaceDragData>({
-    data: { chapterId: null, kind: "chapter" },
-    id: chapter.id,
+    data: { chapterId: chapter.id, kind: "chapter", surface: "flow" },
+    id: `chapter-flow:${chapter.id}`,
     index,
   });
 
