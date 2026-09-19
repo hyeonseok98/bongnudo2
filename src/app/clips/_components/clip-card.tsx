@@ -22,11 +22,14 @@ interface ClipCardProps {
   canManageCollectedMedia?: boolean;
   clip: ClipItem;
   onExcluded?: () => void;
+  onPreview: (clip: ClipItem) => void;
   participantProfileImages?: ReadonlyMap<string, ParticipantProfileImages>;
 }
 
 const dateFormatter = new Intl.DateTimeFormat("ko-KR", {
   day: "numeric",
+  hour: "2-digit",
+  minute: "2-digit",
   month: "long",
   timeZone: "Asia/Seoul",
 });
@@ -38,6 +41,7 @@ export function ClipCard({
   canManageCollectedMedia = false,
   clip,
   onExcluded,
+  onPreview,
   participantProfileImages,
 }: ClipCardProps) {
   const { isMediaPreviewBlurEnabled, isRpMode } = useRpModeSettings();
@@ -53,13 +57,12 @@ export function ClipCard({
     : null;
 
   return (
-    <article className="group min-w-0 overflow-hidden rounded-xl border border-default bg-surface-raised transition-[border-color,box-shadow] duration-fast hover:border-brand hover:shadow-sm focus-within:border-brand focus-within:ring-2 focus-within:ring-focus-ring/40">
-      <a
+    <article className="group flex h-full min-w-0 flex-col overflow-hidden rounded-xl border border-default bg-surface-raised transition-[border-color,box-shadow] duration-fast hover:border-brand hover:shadow-sm focus-within:border-brand focus-within:ring-2 focus-within:ring-focus-ring/40">
+      <button
         aria-label={`${clip.title} 클립 보기`}
-        className="block cursor-pointer focus-visible:outline-2 focus-visible:outline-focus-ring focus-visible:outline-offset-[-2px]"
-        href={clip.clipUrl}
-        rel="noopener noreferrer"
-        target="_blank"
+        className="flex w-full flex-1 cursor-pointer flex-col text-left focus-visible:outline-2 focus-visible:outline-focus-ring focus-visible:outline-offset-[-2px]"
+        onClick={() => onPreview(clip)}
+        type="button"
       >
         <div className="relative aspect-video overflow-hidden bg-surface-muted">
           {clip.thumbnailUrl ? (
@@ -81,14 +84,19 @@ export function ClipCard({
               {formatDuration(clip.durationSeconds)}
             </Badge>
           ) : null}
+          {clip.seasonDay ? (
+            <Badge className="absolute top-2 left-2 bg-black/70 text-white">
+              {clip.seasonDay.dayNumber}일차
+            </Badge>
+          ) : null}
         </div>
 
-        <div className="space-y-3 p-3">
-          <h2 className="line-clamp-2 text-body font-semibold leading-snug text-primary">
+        <div className="flex flex-1 flex-col gap-3 p-3">
+          <h2 className="line-clamp-2 min-h-12 text-body font-semibold leading-snug text-primary">
             {clip.title}
           </h2>
 
-          <div className="flex min-w-0 items-center gap-2">
+          <div className="flex min-h-10 min-w-0 items-center gap-2">
             {profileImageUrl ? (
               <span
                 aria-hidden="true"
@@ -114,18 +122,18 @@ export function ClipCard({
             </div>
           </div>
 
-          {clip.historicalAffiliations.length > 0 ? (
-            <div className="flex flex-wrap gap-1">
-              {clip.historicalAffiliations.map((affiliation) => (
+          <div className="flex min-h-6 flex-wrap gap-1 overflow-hidden">
+            {clip.historicalAffiliations.length > 0 ? (
+              clip.historicalAffiliations.map((affiliation) => (
                 <Badge key={`${affiliation.organizationSlug}:${affiliation.role ?? ""}`} variant="outline">
                   {affiliation.organizationName}
                   {affiliation.role ? ` · ${affiliation.role}` : ""}
                 </Badge>
-              ))}
-            </div>
-          ) : null}
+              ))
+            ) : null}
+          </div>
 
-          <div className="flex items-center justify-between gap-2 text-caption text-secondary">
+          <div className="mt-auto flex items-center justify-between gap-2 text-caption text-secondary">
             <span className="inline-flex min-w-0 items-center gap-1.5">
               <CalendarDays aria-hidden="true" className="size-3.5 shrink-0" />
               {dateFormatter.format(new Date(clip.clipCreatedAt))}
@@ -136,7 +144,7 @@ export function ClipCard({
             </span>
           </div>
         </div>
-      </a>
+      </button>
       {clip.tags.length > 0 || canAddTags ? (
         <div className="px-3 pb-3">
           <ClipTagEditor canAddTags={canAddTags} clipId={clip.id} tags={clip.tags} />
@@ -154,6 +162,7 @@ interface ClipCardGridProps {
   canManageCollectedMedia?: boolean;
   clips: ClipItem[];
   onExcluded?: () => void;
+  onPreview: (clip: ClipItem) => void;
   participantProfileImages?: ReadonlyMap<string, ParticipantProfileImages>;
 }
 
@@ -162,10 +171,11 @@ export function ClipCardGrid({
   canManageCollectedMedia = false,
   clips,
   onExcluded,
+  onPreview,
   participantProfileImages,
 }: ClipCardGridProps) {
   return (
-    <div className="grid grid-cols-1 items-start gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5">
+    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-6">
       {clips.map((clip) => (
         <ClipCard
           canAddTags={canAddTags}
@@ -173,6 +183,7 @@ export function ClipCardGrid({
           clip={clip}
           key={clip.id}
           onExcluded={onExcluded}
+          onPreview={onPreview}
           participantProfileImages={participantProfileImages}
         />
       ))}

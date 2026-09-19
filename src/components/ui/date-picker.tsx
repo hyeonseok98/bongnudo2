@@ -100,6 +100,7 @@ export function DatePicker({
           align="start"
           className="z-popover"
           collisionPadding={16}
+          positionMethod="fixed"
           sideOffset={6}
         >
           <Popover.Popup className="w-72 rounded-xl border border-default bg-surface-raised p-3 shadow-2xl outline-none transition-[transform,opacity] duration-default data-ending-style:scale-95 data-ending-style:opacity-0 data-starting-style:scale-95 data-starting-style:opacity-0 motion-reduce:transition-none">

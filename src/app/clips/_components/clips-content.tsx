@@ -1,13 +1,18 @@
 "use client";
 
 import { List, LoaderCircle, UsersRound } from "lucide-react";
+import { useState } from "react";
 
 import { useQueryClient } from "@tanstack/react-query";
 
+import {
+  ArchiveClipPreviewDialog,
+  type ArchiveClipPreviewItem,
+} from "@/app/archives/_components/archive-clip-preview-dialog";
 import { useCharacters } from "@/app/characters/_hooks/use-characters";
 import { Select } from "@/components/ui/select";
 import { RetryButton } from "@/components/ui/retry-button";
-import { FilterBarSkeleton, MediaGridSkeleton } from "@/components/media-grid-skeleton";
+import { FilterBarSkeleton, MediaResultsSkeleton } from "@/components/media-grid-skeleton";
 import type { ClipItem } from "@/features/clips/clip";
 import { clipQueries } from "@/queries/clip-queries";
 import { cn } from "@/utils/cn";
@@ -29,6 +34,7 @@ export function ClipsContent({ canAddTags, canManageCollectedMedia }: ClipsConte
   const charactersQuery = useCharacters();
   const optionsQuery = useClipOptions();
   const clipsQuery = useClips(directory.filters);
+  const [previewClip, setPreviewClip] = useState<ClipItem | null>(null);
   const characters = charactersQuery.data?.characters ?? [];
   const streamerAffiliations = charactersQuery.data?.streamerAffiliations ?? [];
   const participantProfileImages = new Map(
@@ -41,6 +47,16 @@ export function ClipsContent({ canAddTags, canManageCollectedMedia }: ClipsConte
     ]),
   );
   const clips = clipsQuery.data?.pages.flatMap((page) => page.items) ?? [];
+  const previewIndex = previewClip
+    ? clips.findIndex((clip) => clip.id === previewClip.id)
+    : -1;
+  const nearbyItems: ArchiveClipPreviewItem[] = previewIndex < 0
+    ? []
+    : clips.slice(Math.max(0, previewIndex - 2), previewIndex + 3).map((clip) => ({
+      clip,
+      id: clip.id,
+      note: null,
+    }));
 
   function handleLoadMore() {
     if (!clipsQuery.hasNextPage || clipsQuery.isFetchingNextPage) {
@@ -53,7 +69,7 @@ export function ClipsContent({ canAddTags, canManageCollectedMedia }: ClipsConte
   return (
     <div className="space-y-6">
       <ClipsHeading />
-      {charactersQuery.isPending || optionsQuery.isPending ? <FilterBarSkeleton /> : null}
+      {charactersQuery.isPending || optionsQuery.isPending ? <FilterBarSkeleton includeTagFilter /> : null}
       {charactersQuery.isError || optionsQuery.isError ? (
         <ClipsErrorState isRetrying={charactersQuery.isFetching || optionsQuery.isFetching} onRetry={() => {
           void charactersQuery.refetch();
@@ -81,13 +97,13 @@ export function ClipsContent({ canAddTags, canManageCollectedMedia }: ClipsConte
         />
       ) : null}
 
-      {charactersQuery.data && optionsQuery.data && clipsQuery.isPending ? <MediaGridSkeleton /> : null}
+      {charactersQuery.data && optionsQuery.data && clipsQuery.isPending ? <MediaResultsSkeleton hasToolbarActions /> : null}
       {charactersQuery.data && optionsQuery.data && !clipsQuery.isPending ? (
         <section aria-labelledby="clip-results-heading" className="space-y-4">
-          <div className="flex flex-col gap-3 rounded-xl border border-default bg-surface-raised p-3 sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex min-h-10 flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <div className="flex min-h-5 items-center gap-2">
               <h2 className="text-body-sm text-secondary" id="clip-results-heading">
-                현재 불러온 클립 <strong className="font-semibold text-brand-text">{clips.length}개</strong>
+                현재 불러온 클립 <strong className="font-medium text-primary">{clips.length}개</strong>
               </h2>
               <span
                 aria-label="필터 결과를 업데이트하는 중입니다."
@@ -109,6 +125,7 @@ export function ClipsContent({ canAddTags, canManageCollectedMedia }: ClipsConte
               <>
                 <span className="text-body-sm text-secondary">정렬</span>
                 <Select
+                  className="w-32"
                   label="클립 정렬"
                   onValueChange={directory.changeSort}
                   options={[
@@ -132,6 +149,7 @@ export function ClipsContent({ canAddTags, canManageCollectedMedia }: ClipsConte
                 canManageCollectedMedia={canManageCollectedMedia}
                 clips={clips}
                 onExcluded={() => void queryClient.invalidateQueries({ queryKey: clipQueries.all() })}
+                onPreview={setPreviewClip}
                 participantProfileImages={participantProfileImages}
               />
             ) : (
@@ -140,6 +158,7 @@ export function ClipsContent({ canAddTags, canManageCollectedMedia }: ClipsConte
                 canManageCollectedMedia={canManageCollectedMedia}
                 clips={clips}
                 onExcluded={() => void queryClient.invalidateQueries({ queryKey: clipQueries.all() })}
+                onPreview={setPreviewClip}
                 participantProfileImages={participantProfileImages}
               />
             )
@@ -154,6 +173,30 @@ export function ClipsContent({ canAddTags, canManageCollectedMedia }: ClipsConte
           />
         </section>
       ) : null}
+      <ArchiveClipPreviewDialog
+        clip={previewClip}
+        hasNext={previewIndex >= 0 && previewIndex < clips.length - 1}
+        hasPrevious={previewIndex > 0}
+        nearbyItems={nearbyItems}
+        onClose={() => setPreviewClip(null)}
+        onNext={() => {
+          if (previewIndex >= 0 && previewIndex < clips.length - 1) {
+            setPreviewClip(clips[previewIndex + 1]);
+          }
+        }}
+        onPrevious={() => {
+          if (previewIndex > 0) {
+            setPreviewClip(clips[previewIndex - 1]);
+          }
+        }}
+        onSelect={(item) => {
+          const nextClip = clips.find((clip) => clip.id === item.id);
+
+          if (nextClip) {
+            setPreviewClip(nextClip);
+          }
+        }}
+      />
     </div>
   );
 }
@@ -244,6 +287,7 @@ interface ClipPeopleViewProps {
   canManageCollectedMedia: boolean;
   clips: ClipItem[];
   onExcluded: () => void;
+  onPreview: (clip: ClipItem) => void;
   participantProfileImages: ReadonlyMap<string, {
     rpProfileImageUrl: string | null;
     streamerProfileImageUrl: string | null;
@@ -255,6 +299,7 @@ function ClipPeopleView({
   canManageCollectedMedia,
   clips,
   onExcluded,
+  onPreview,
   participantProfileImages,
 }: ClipPeopleViewProps) {
   const clipsByParticipant = new Map<string, { clips: ClipItem[]; label: string }>();
@@ -289,6 +334,7 @@ function ClipPeopleView({
             canManageCollectedMedia={canManageCollectedMedia}
             clips={group.clips}
             onExcluded={onExcluded}
+            onPreview={onPreview}
             participantProfileImages={participantProfileImages}
           />
         </section>

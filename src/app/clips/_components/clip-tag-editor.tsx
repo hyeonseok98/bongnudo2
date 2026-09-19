@@ -76,43 +76,58 @@ export function ClipTagEditor({ canAddTags, clipId, tags }: ClipTagEditorProps) 
       </div>
 
       {canAddTags && isAdding ? (
-        <div className="relative flex gap-1">
-          <input
-            aria-label="클립 태그"
-            className="h-8 min-w-0 flex-1 rounded-md border border-default bg-background px-2 text-caption text-primary outline-none focus-visible:border-focus-ring"
-            maxLength={20}
-            onChange={(event) => setName(event.target.value)}
-            onKeyDown={(event) => {
-              if (event.key === "Enter") {
-                event.preventDefault();
-                submitTag();
-              }
-            }}
-            placeholder="태그 입력"
-            value={name}
-          />
-          <Button
-            disabled={!name.trim() || addTagMutation.isPending}
-            onClick={() => submitTag()}
-            size="sm"
-            type="button"
-          >
-            추가
-          </Button>
-          {name && suggestionsQuery.data?.length ? (
-            <div className="absolute top-9 z-popover max-h-40 w-full overflow-y-auto rounded-md border border-default bg-surface-raised p-1 shadow-lg">
-              {suggestionsQuery.data.map((tag) => (
-                <button
-                  className="block w-full cursor-pointer rounded px-2 py-1.5 text-left text-caption text-primary hover:bg-surface-muted"
-                  key={tag.id}
-                  onClick={() => submitTag(tag.name)}
-                  type="button"
-                >
-                  #{tag.name}
-                </button>
-              ))}
-            </div>
-          ) : null}
+        <div>
+          <div className="relative flex gap-1">
+            <input
+              aria-label="클립 태그"
+              autoComplete="off"
+              className="h-8 min-w-0 flex-1 rounded-md border border-default bg-background px-2 text-caption text-primary outline-none focus-visible:border-focus-ring"
+              maxLength={20}
+              onChange={(event) => setName(event.target.value)}
+              onKeyDown={(event) => {
+                if (event.key === "Enter") {
+                  event.preventDefault();
+                  submitTag();
+                }
+              }}
+              placeholder="태그 입력"
+              value={name}
+            />
+            <Button
+              disabled={!name.trim() || addTagMutation.isPending}
+              onClick={() => submitTag()}
+              size="sm"
+              type="button"
+            >
+              저장
+            </Button>
+            <Button
+              disabled={addTagMutation.isPending}
+              onClick={() => {
+                setName("");
+                setIsAdding(false);
+              }}
+              size="sm"
+              type="button"
+              variant="ghost"
+            >
+              취소
+            </Button>
+            {name && suggestionsQuery.data?.length ? (
+              <div className="absolute top-9 z-popover max-h-40 w-full overflow-y-auto rounded-md border border-default bg-surface-raised p-1 shadow-lg">
+                {suggestionsQuery.data.map((tag) => (
+                  <button
+                    className="block w-full cursor-pointer rounded px-2 py-1.5 text-left text-caption text-primary hover:bg-surface-muted"
+                    key={tag.id}
+                    onClick={() => submitTag(tag.name)}
+                    type="button"
+                  >
+                    #{tag.name}
+                  </button>
+                ))}
+              </div>
+            ) : null}
+          </div>
         </div>
       ) : canAddTags ? (
         <button

@@ -29,6 +29,7 @@ export function SearchField({
       <Input
         {...props}
         aria-label={label}
+        autoComplete={props.autoComplete ?? "off"}
         className={cn(onClear ? "pr-11 pl-11" : "pr-4 pl-11", className)}
         role="searchbox"
         type="text"

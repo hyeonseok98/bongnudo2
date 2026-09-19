@@ -227,6 +227,14 @@
   }
 }
 
+[role="searchbox"]:-webkit-autofill,
+[role="searchbox"]:-webkit-autofill:hover,
+[role="searchbox"]:-webkit-autofill:focus {
+  -webkit-text-fill-color: var(--text-primary);
+  box-shadow: 0 0 0 1000px var(--background) inset;
+  caret-color: var(--text-primary);
+}
+
 .theme-transition,
 .theme-transition *,
 .theme-transition::before,

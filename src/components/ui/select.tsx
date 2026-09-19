@@ -1,7 +1,7 @@
 "use client";
 
 import { Popover } from "@base-ui/react/popover";
-import { Check, ChevronDown } from "lucide-react";
+import { ChevronDown } from "lucide-react";
 import { useState } from "react";
 
 import { cn } from "@/utils/cn";
@@ -53,6 +53,7 @@ export function Select<Value extends string>({
           align="end"
           className="z-popover"
           collisionPadding={16}
+          positionMethod="fixed"
           sideOffset={8}
         >
           <Popover.Popup className="min-w-[var(--anchor-width)] overflow-hidden rounded-lg border border-default bg-surface-raised p-1 shadow-xl outline-none transition-[transform,opacity] duration-default data-ending-style:scale-95 data-ending-style:opacity-0 data-starting-style:scale-95 data-starting-style:opacity-0 motion-reduce:transition-none">
@@ -62,19 +63,14 @@ export function Select<Value extends string>({
                 <button
                   aria-selected={option.value === value}
                   className={cn(
-                    "flex min-h-9 w-full cursor-pointer items-center gap-2 rounded-md px-2.5 text-left text-body-sm font-medium text-secondary outline-none transition-colors duration-default hover:bg-surface-muted hover:text-primary focus-visible:bg-surface-muted focus-visible:text-primary motion-reduce:transition-none",
-                    option.value === value && "text-primary",
+                    "flex min-h-9 w-full cursor-pointer items-center rounded-md px-2.5 text-left text-body-sm font-medium text-secondary outline-none transition-colors duration-default hover:bg-surface-muted hover:text-primary focus-visible:bg-surface-muted focus-visible:text-primary motion-reduce:transition-none",
+                    option.value === value && "bg-surface-selected text-primary",
                   )}
                   key={option.value}
                   onClick={() => handleValueChange(option.value)}
                   role="option"
                   type="button"
                 >
-                  <span className="grid size-4 place-items-center text-brand-text">
-                    {option.value === value ? (
-                      <Check aria-hidden="true" className="size-4" />
-                    ) : null}
-                  </span>
                   {option.label}
                 </button>
               ))}

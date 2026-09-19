@@ -40,6 +40,7 @@ export interface HierarchicalFilterSelection {
 
 interface HierarchicalFilterProps {
   applyLabel?: string;
+  className?: string;
   disabled?: boolean;
   getResultCount: (selection: HierarchicalFilterSelection) => number;
   label: string;
@@ -54,6 +55,7 @@ interface HierarchicalFilterProps {
 
 export function HierarchicalFilter({
   applyLabel,
+  className,
   disabled,
   getResultCount,
   label,
@@ -172,7 +174,7 @@ export function HierarchicalFilter({
         <SheetTrigger
           render={
             <button
-              className={getTriggerClassName(isOpen)}
+              className={getTriggerClassName(isOpen, className)}
               disabled={disabled}
               type="button"
             />
@@ -199,7 +201,7 @@ export function HierarchicalFilter({
   return (
     <Popover.Root open={isOpen} onOpenChange={handleOpenChange}>
       <Popover.Trigger
-        className={getTriggerClassName(isOpen)}
+        className={getTriggerClassName(isOpen, className)}
         disabled={disabled}
       >
         <FilterTriggerContent label={label} value={triggerValue} />
@@ -215,6 +217,7 @@ export function HierarchicalFilter({
           }}
           collisionPadding={16}
           collisionBoundary="clipping-ancestors"
+          positionMethod="fixed"
           side="bottom"
           sideOffset={8}
         >
@@ -253,10 +256,11 @@ function FilterTriggerContent({
   );
 }
 
-function getTriggerClassName(isOpen: boolean) {
+function getTriggerClassName(isOpen: boolean, className?: string) {
   return cn(
     "inline-flex h-10 cursor-pointer items-center gap-1.5 rounded-lg border bg-background py-0 pr-2.5 pl-3 text-left transition-[background-color,border-color] duration-default hover:bg-surface-muted focus-visible:border-focus-ring disabled:pointer-events-none disabled:opacity-50",
     isOpen ? "border-brand" : "border-default",
+    className,
   );
 }
 

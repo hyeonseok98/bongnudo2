@@ -47,10 +47,10 @@ export function ReplayCard({ canManageCollectedMedia = false, onExcluded, partic
     : null;
 
   return (
-    <article className="group min-w-0 overflow-hidden rounded-xl border border-default bg-surface-raised transition-[border-color,box-shadow] duration-fast hover:border-brand hover:shadow-sm focus-within:border-brand focus-within:ring-2 focus-within:ring-focus-ring/40">
+    <article className="group flex h-full min-w-0 flex-col overflow-hidden rounded-xl border border-default bg-surface-raised transition-[border-color,box-shadow] duration-fast hover:border-brand hover:shadow-sm focus-within:border-brand focus-within:ring-2 focus-within:ring-focus-ring/40">
       <a
         aria-label={`${replay.title} 다시보기 보기`}
-        className="block cursor-pointer focus-visible:outline-2 focus-visible:outline-focus-ring focus-visible:outline-offset-[-2px]"
+        className="flex flex-1 cursor-pointer flex-col focus-visible:outline-2 focus-visible:outline-focus-ring focus-visible:outline-offset-[-2px]"
         href={replay.replayUrl}
         rel="noopener noreferrer"
         target="_blank"
@@ -82,10 +82,10 @@ export function ReplayCard({ canManageCollectedMedia = false, onExcluded, partic
           ) : null}
         </div>
 
-        <div className="space-y-3 p-3">
-          <h2 className="line-clamp-2 text-body font-semibold leading-snug text-primary">{replay.title}</h2>
+        <div className="flex flex-1 flex-col gap-3 p-3">
+          <h2 className="line-clamp-2 min-h-12 text-body font-semibold leading-snug text-primary">{replay.title}</h2>
 
-          <div className="flex min-w-0 items-center gap-2">
+          <div className="flex min-h-10 min-w-0 items-center gap-2">
             {profileImageUrl ? (
               <span
                 aria-hidden="true"
@@ -105,18 +105,18 @@ export function ReplayCard({ canManageCollectedMedia = false, onExcluded, partic
             </div>
           </div>
 
-          {replay.historicalAffiliations.length > 0 ? (
-            <div className="flex flex-wrap gap-1">
-              {replay.historicalAffiliations.map((affiliation) => (
+          <div className="flex min-h-6 flex-wrap gap-1 overflow-hidden">
+            {replay.historicalAffiliations.length > 0 ? (
+              replay.historicalAffiliations.map((affiliation) => (
                 <Badge key={`${affiliation.organizationSlug}:${affiliation.role ?? ""}`} variant="outline">
                   {affiliation.organizationName}
                   {affiliation.role ? ` · ${affiliation.role}` : ""}
                 </Badge>
-              ))}
-            </div>
-          ) : null}
+              ))
+            ) : null}
+          </div>
 
-          <div className="flex items-center justify-between gap-2 text-caption text-secondary">
+          <div className="mt-auto flex items-center justify-between gap-2 text-caption text-secondary">
             <span className="inline-flex min-w-0 items-center gap-1.5">
               <CalendarDays aria-hidden="true" className="size-3.5 shrink-0" />
               {replayTime ? dateFormatter.format(new Date(replayTime)) : "방송 시각 정보 없음"}
@@ -149,7 +149,7 @@ export function ReplayCardGrid({
   replays,
 }: ReplayCardGridProps) {
   return (
-    <div className="grid grid-cols-1 items-start gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5">
+    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-6">
       {replays.map((replay) => (
         <ReplayCard
           canManageCollectedMedia={canManageCollectedMedia}

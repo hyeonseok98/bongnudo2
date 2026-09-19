@@ -117,7 +117,7 @@ export function ClipFilters({
     <section aria-label={`${searchLabel} 및 필터`} className="space-y-3">
       <FilterBar>
         <Select
-          className="w-44"
+          className="w-40"
           label="봉누도 일차"
           onValueChange={(value) =>
             onDayChange(value === "all" ? null : Number(value))
@@ -132,7 +132,7 @@ export function ClipFilters({
           value={day === null ? "all" : String(day)}
         />
         <DatePicker
-          className="w-44"
+          className="w-48"
           label="날짜"
           max={getCurrentKstDate()}
           onValueChange={onDateChange}
@@ -140,6 +140,7 @@ export function ClipFilters({
           value={date}
         />
         <HierarchicalFilter
+          className="w-36"
           getResultCount={getResultCount}
           label="직업"
           nodes={jobNodes}
@@ -148,6 +149,7 @@ export function ClipFilters({
           value={jobs}
         />
         <HierarchicalFilter
+          className="w-36"
           getResultCount={getResultCount}
           label="소속"
           nodes={groupFilterData.nodes}
@@ -156,13 +158,13 @@ export function ClipFilters({
           value={groups}
         />
         <ParticipantFilter
-          className="w-52"
+          className="w-64"
           onValueChange={onParticipantsChange}
           value={participantIds}
         />
         {tagIds && onTagsChange ? (
           <TagFilter
-            className="w-52"
+            className="w-64"
             onValueChange={onTagsChange}
             value={tagIds}
           />

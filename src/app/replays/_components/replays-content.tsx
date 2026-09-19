@@ -7,7 +7,7 @@ import { cn } from "@/utils/cn";
 
 import { useCharacters } from "@/app/characters/_hooks/use-characters";
 import { Button } from "@/components/ui/button";
-import { FilterBarSkeleton, MediaGridSkeleton } from "@/components/media-grid-skeleton";
+import { FilterBarSkeleton, MediaResultsSkeleton } from "@/components/media-grid-skeleton";
 import { RetryButton } from "@/components/ui/retry-button";
 import { replayQueries } from "@/queries/replay-queries";
 
@@ -67,12 +67,12 @@ export function ReplaysContent({ canManageCollectedMedia }: ReplaysContentProps)
           onReset={directory.resetFilters}
         />
       ) : null}
-      {charactersQuery.data && optionsQuery.data && replaysQuery.isPending ? <MediaGridSkeleton /> : null}
+      {charactersQuery.data && optionsQuery.data && replaysQuery.isPending ? <MediaResultsSkeleton /> : null}
       {charactersQuery.data && optionsQuery.data && !replaysQuery.isPending ? (
         <section aria-labelledby="replay-results-heading" className="space-y-4">
-          <div className="flex min-h-11 items-center gap-2 rounded-xl border border-default bg-surface-raised px-3 py-2">
+          <div className="flex min-h-10 items-center gap-2">
             <h2 className="text-body-sm text-secondary" id="replay-results-heading">
-              현재 불러온 다시보기 <strong className="font-semibold text-brand-text">{replays.length}개</strong>
+              현재 불러온 다시보기 <strong className="font-medium text-primary">{replays.length}개</strong>
             </h2>
             <span
               aria-label="필터 결과를 업데이트하는 중입니다."
