@@ -11,6 +11,7 @@ import type { ArchiveClipSummary, ArchiveDetail } from "@/features/archives/arch
 import { archiveMutations, archiveQueries } from "@/queries/archive-queries";
 
 import { ArchiveBuilder } from "./archive-builder";
+import { ArchiveCreationSteps } from "./archive-creation-steps";
 import { ArchiveClipExplorer } from "./archive-clip-explorer";
 import { ArchiveClipPreviewDialog } from "./archive-clip-preview-dialog";
 import {
@@ -230,16 +231,7 @@ function ArchiveEditorWorkspace({ archive }: { archive: ArchiveDetail }) {
         </div>
       </header>
 
-      <ol aria-label="아카이브 제작 단계" className="grid grid-cols-2 gap-3">
-        <li className="rounded-lg border border-default px-4 py-3 text-body-sm font-medium text-secondary">
-          <span className="mr-2 text-brand-text">✓</span>
-          기본 정보
-        </li>
-        <li className="rounded-lg border border-brand bg-surface-selected px-4 py-3 text-body-sm font-semibold text-primary">
-          <span className="mr-2 text-brand-text">2</span>
-          클립 구성
-        </li>
-      </ol>
+      <ArchiveCreationSteps currentStep={2} />
 
       {message ? (
         <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-default bg-surface-muted px-3 py-2 text-body-sm text-secondary" role="status">

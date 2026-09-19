@@ -22,10 +22,15 @@ import { archiveMutations, archiveQueries } from "@/queries/archive-queries";
 import { cn } from "@/utils/cn";
 
 import { createNewArchiveContent } from "./archive-editor-draft";
+import { ArchiveCreationSteps } from "./archive-creation-steps";
 import { ArchiveCreateSkeleton } from "./archive-create-skeleton";
 
 interface ArchiveCreateContentProps {
   isSignedIn: boolean;
+}
+
+interface ArchiveCreateErrors {
+  title?: string;
 }
 
 export function ArchiveCreateContent({ isSignedIn }: ArchiveCreateContentProps) {
@@ -34,8 +39,9 @@ export function ArchiveCreateContent({ isSignedIn }: ArchiveCreateContentProps) 
   const createMutation = useMutation(archiveMutations.create());
   const [structureMode, setStructureMode] = useState<ArchiveStructureMode>("freeform");
   const [category, setCategory] = useState<ArchiveCategory>("other");
-  const [visibility, setVisibility] = useState<ArchiveVisibility>("private");
+  const [visibility, setVisibility] = useState<ArchiveVisibility>("public");
   const [editPolicy, setEditPolicy] = useState<ArchiveEditPolicy>("owner_only");
+  const [errors, setErrors] = useState<ArchiveCreateErrors>({});
   const [message, setMessage] = useState<string | null>(null);
 
   function changeVisibility(nextVisibility: ArchiveVisibility) {
@@ -55,10 +61,11 @@ export function ArchiveCreateContent({ isSignedIn }: ArchiveCreateContentProps) 
     const description = formData.get("description");
 
     if (typeof title !== "string" || !title.trim()) {
-      setMessage("제목을 입력해주세요.");
+      setErrors({ title: "제목을 입력해주세요." });
       return;
     }
 
+    setErrors({});
     setMessage(null);
     createMutation.mutate({
       content: createNewArchiveContent(structureMode, optionsQuery.data.seasonDays),
@@ -113,34 +120,30 @@ export function ArchiveCreateContent({ isSignedIn }: ArchiveCreateContentProps) 
         아카이브 목록
       </Link>
 
-      <header className="mt-4">
-        <p className="text-body-sm font-medium text-brand-text">사용자 제작 아카이브</p>
-        <h1 className="mt-1 text-title font-bold text-primary">새 아카이브 만들기</h1>
-        <p className="mt-2 text-body-sm text-secondary">기본 정보를 정한 뒤 클립을 담아 나만의 기록을 만들어보세요.</p>
+      <header className="mt-5">
+        <h1 className="text-title font-bold text-primary">새 아카이브 만들기</h1>
+        <p className="mt-2 text-body text-secondary">기본 정보를 입력하고 클립을 구성해주세요.</p>
       </header>
 
-      <ol aria-label="아카이브 제작 단계" className="mt-6 grid grid-cols-2 gap-3">
-        <li className="rounded-lg border border-brand bg-surface-selected px-4 py-3 text-body-sm font-semibold text-primary">
-          <span className="mr-2 text-brand-text">1</span>
-          기본 정보
-        </li>
-        <li className="rounded-lg border border-default px-4 py-3 text-body-sm font-medium text-secondary">
-          <span className="mr-2">2</span>
-          클립 구성
-        </li>
-      </ol>
+      <div className="mt-7"><ArchiveCreationSteps currentStep={1} /></div>
 
-      <form action={handleSubmit} className="mt-5 rounded-xl border border-default bg-surface-raised p-5 sm:p-6">
-        <fieldset className="space-y-6" disabled={createMutation.isPending}>
-          <FormField label="제목">
-            <Input maxLength={60} name="title" placeholder="아카이브 제목을 입력해주세요." required />
+      <form action={handleSubmit} className="mt-6 rounded-xl border border-default bg-surface-raised p-5 sm:p-6">
+        <fieldset className="space-y-7" disabled={createMutation.isPending}>
+          <FormField error={errors.title} label="제목" required>
+            <Input
+              aria-invalid={errors.title ? true : undefined}
+              maxLength={60}
+              name="title"
+              onChange={() => errors.title && setErrors({})}
+              placeholder="아카이브 제목을 입력해주세요."
+            />
           </FormField>
-          <FormField label="설명">
+          <FormField label="설명 (선택)">
             <Textarea maxLength={500} name="description" placeholder="아카이브를 소개해주세요. (선택)" />
           </FormField>
-          <FormField label="분류">
+          <FormField label="분류" required>
             <Select
-              className="w-full"
+              className="w-full sm:w-52"
               label="아카이브 분류"
               onValueChange={setCategory}
               options={[
@@ -153,8 +156,8 @@ export function ArchiveCreateContent({ isSignedIn }: ArchiveCreateContentProps) 
             />
           </FormField>
 
-          <fieldset className="space-y-2">
-            <legend className="text-body-sm font-medium text-primary">구성 방법</legend>
+          <fieldset className="space-y-3">
+            <legend className="text-body-sm font-medium text-primary">구성 방법 <span className="ml-2 text-caption font-medium text-status-danger">필수</span></legend>
             <div className="grid gap-3 sm:grid-cols-2">
               <StructureModeCard
                 description="원하는 챕터와 순서로 이야기를 구성"
@@ -171,8 +174,8 @@ export function ArchiveCreateContent({ isSignedIn }: ArchiveCreateContentProps) 
             </div>
           </fieldset>
 
-          <div className="grid gap-5 sm:grid-cols-2">
-            <FormField label="공개 범위">
+          <div className="flex flex-wrap items-start gap-5">
+            <FormField className="w-full sm:w-52" label="공개 범위" required>
               <Select
                 className="w-full"
                 label="아카이브 공개 범위"
@@ -184,10 +187,9 @@ export function ArchiveCreateContent({ isSignedIn }: ArchiveCreateContentProps) 
                 value={visibility}
               />
             </FormField>
-            <FormField label="편집 정책">
+            {visibility === "public" ? <FormField className="w-full sm:w-64" label="편집 정책">
               <Select
                 className="w-full"
-                disabled={visibility === "private"}
                 label="아카이브 편집 정책"
                 onValueChange={setEditPolicy}
                 options={[
@@ -196,11 +198,9 @@ export function ArchiveCreateContent({ isSignedIn }: ArchiveCreateContentProps) 
                 ]}
                 value={editPolicy}
               />
-            </FormField>
+            </FormField> : null}
           </div>
-          <p className="text-caption text-secondary">
-            공개한 아카이브는 다시 비공개로 전환할 수 없습니다.
-          </p>
+          {visibility === "public" ? <p className="-mt-3 text-caption text-secondary">공개한 아카이브는 다시 비공개로 전환할 수 없습니다.</p> : null}
         </fieldset>
 
         {message ? <p className="mt-5 text-body-sm text-status-danger" role="alert">{message}</p> : null}

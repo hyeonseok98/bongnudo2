@@ -24,8 +24,8 @@ export function FormField({
       <span className="block text-body-sm font-medium text-primary">
         {label}
         {required ? (
-          <span aria-hidden="true" className="ml-1 text-status-danger">
-            *
+          <span aria-hidden="true" className="ml-2 text-caption font-medium text-status-danger">
+            필수
           </span>
         ) : null}
       </span>
