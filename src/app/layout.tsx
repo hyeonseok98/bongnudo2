@@ -1,10 +1,10 @@
 import { Footer } from "@/components/layouts/footer";
 import { Header } from "@/components/layouts/header";
+import { HeaderWithCurrentUser } from "@/components/layouts/header-with-current-user";
 import { MainContainer } from "@/components/layouts/main-container";
 import { Sidebar } from "@/components/layouts/sidebar";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { SIDEBAR_COOKIE_NAME } from "@/constants/sidebar";
-import { getCurrentUser } from "@/features/auth/session";
 import {
   getRpModeSettings,
   MEDIA_PREVIEW_BLUR_COOKIE_NAME,
@@ -20,6 +20,7 @@ import type { Metadata } from "next";
 import localFont from "next/font/local";
 import { cookies } from "next/headers";
 import { NuqsAdapter } from "nuqs/adapters/next/app";
+import { Suspense } from "react";
 
 import "./globals.css";
 
@@ -40,10 +41,7 @@ export const metadata: Metadata = {
 };
 
 export default async function RootLayout({ children }: LayoutProps<"/">) {
-  const [cookieStore, currentUser] = await Promise.all([
-    cookies(),
-    getCurrentUser(),
-  ]);
+  const cookieStore = await cookies();
 
   const initialIsOpen = cookieStore.get(SIDEBAR_COOKIE_NAME)?.value !== "false";
   const initialRpModeSettings = getRpModeSettings(
@@ -63,7 +61,9 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
             <RpModeProvider initialSettings={initialRpModeSettings}>
               <SidebarProvider initialIsOpen={initialIsOpen}>
                 <div className="flex h-dvh flex-col overflow-hidden bg-background">
-                  <Header currentUser={currentUser} />
+                  <Suspense fallback={<Header currentUser={null} />}>
+                    <HeaderWithCurrentUser />
+                  </Suspense>
 
                   <div className="flex min-h-0 flex-1">
                     <Sidebar />

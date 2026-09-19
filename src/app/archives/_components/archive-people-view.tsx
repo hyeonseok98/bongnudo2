@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useQuery } from "@tanstack/react-query";
 import { Archive, Building2, Clapperboard, UserRound, X } from "lucide-react";
 
+import { ArchiveGridSkeleton } from "@/components/archive-grid-skeleton";
 import { ParticipantFilter } from "@/components/filters/participant-filter";
 import { Badge } from "@/components/ui/badge";
 import { Button, buttonVariants } from "@/components/ui/button";
@@ -38,7 +39,7 @@ export function ArchivePeopleView() {
         <ArchivePeopleMessage>인물을 검색해 선택해주세요.</ArchivePeopleMessage>
       ) : null}
       {directory.participantId !== null && personQuery.isPending ? (
-        <ArchivePeopleMessage>인물별 아카이브를 불러오는 중입니다.</ArchivePeopleMessage>
+        <ArchivePeopleLoadingState />
       ) : null}
       {personQuery.isError ? <ArchivePeopleError isRetrying={personQuery.isFetching} onRetry={() => void personQuery.refetch()} /> : null}
       {personQuery.data ? (
@@ -48,6 +49,18 @@ export function ArchivePeopleView() {
         />
       ) : null}
     </section>
+  );
+}
+
+function ArchivePeopleLoadingState() {
+  return (
+    <div className="space-y-6" role="status">
+      <div className="rounded-xl border border-default bg-surface-raised p-5">
+        <div className="h-5 w-24 animate-pulse rounded-md bg-muted" />
+        <div className="mt-3 h-4 w-40 animate-pulse rounded-md bg-muted" />
+      </div>
+      <ArchiveGridSkeleton count={3} />
+    </div>
   );
 }
 

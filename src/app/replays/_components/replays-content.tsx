@@ -1,9 +1,11 @@
 "use client";
 
 import { useQueryClient } from "@tanstack/react-query";
+import { LoaderCircle } from "lucide-react";
 
 import { useCharacters } from "@/app/characters/_hooks/use-characters";
 import { Button } from "@/components/ui/button";
+import { FilterBarSkeleton, MediaGridSkeleton } from "@/components/media-grid-skeleton";
 import { RetryButton } from "@/components/ui/retry-button";
 import { replayQueries } from "@/queries/replay-queries";
 
@@ -26,44 +28,46 @@ export function ReplaysContent({ canManageCollectedMedia }: ReplaysContentProps)
   const streamerAffiliations = charactersQuery.data?.streamerAffiliations ?? [];
   const replays = replaysQuery.data?.pages.flatMap((page) => page.items) ?? [];
 
-  if (charactersQuery.isPending || optionsQuery.isPending) return <ReplaysLoadingState />;
-  if (charactersQuery.isError || optionsQuery.isError) {
-    return <ReplaysErrorState isRetrying={charactersQuery.isFetching || optionsQuery.isFetching} onRetry={() => {
-      void charactersQuery.refetch();
-      void optionsQuery.refetch();
-    }} />;
-  }
-
   return (
     <div className="space-y-6">
       <ReplaysHeading />
-      <ReplayFilters
-        characters={characters}
-        date={directory.date}
-        day={directory.day}
-        groups={directory.groupSelection}
-        jobs={directory.jobSelection}
-        options={optionsQuery.data}
-        participantIds={directory.participantIds}
-        streamerAffiliations={streamerAffiliations}
-        onDateChange={directory.changeDate}
-        onDayChange={directory.changeDay}
-        onGroupsApply={directory.applyGroups}
-        onJobsApply={directory.applyJobs}
-        onParticipantsChange={directory.changeParticipants}
-        onReset={directory.resetFilters}
-      />
-
-      {replaysQuery.isPending ? (
-        <p className="text-body-sm text-secondary" role="status">다시보기를 불러오는 중입니다.</p>
-      ) : (
+      {charactersQuery.isPending || optionsQuery.isPending ? <FilterBarSkeleton /> : null}
+      {charactersQuery.isError || optionsQuery.isError ? (
+        <ReplaysErrorState isRetrying={charactersQuery.isFetching || optionsQuery.isFetching} onRetry={() => {
+          void charactersQuery.refetch();
+          void optionsQuery.refetch();
+        }} />
+      ) : null}
+      {charactersQuery.data && optionsQuery.data ? (
+        <ReplayFilters
+          characters={characters}
+          date={directory.date}
+          day={directory.day}
+          groups={directory.groupSelection}
+          jobs={directory.jobSelection}
+          options={optionsQuery.data}
+          participantIds={directory.participantIds}
+          streamerAffiliations={streamerAffiliations}
+          onDateChange={directory.changeDate}
+          onDayChange={directory.changeDay}
+          onGroupsApply={directory.applyGroups}
+          onJobsApply={directory.applyJobs}
+          onParticipantsChange={directory.changeParticipants}
+          onReset={directory.resetFilters}
+        />
+      ) : null}
+      {charactersQuery.data && optionsQuery.data && replaysQuery.isPending ? <MediaGridSkeleton /> : null}
+      {charactersQuery.data && optionsQuery.data && !replaysQuery.isPending ? (
         <section aria-labelledby="replay-results-heading" className="space-y-4">
           <div>
             <h2 className="text-body-sm text-secondary" id="replay-results-heading">
               현재 불러온 다시보기 <strong className="font-semibold text-brand-text">{replays.length}개</strong>
             </h2>
             {replaysQuery.isFetching && !replaysQuery.isFetchingNextPage ? (
-              <p className="mt-1 text-caption text-tertiary" role="status">필터 결과를 업데이트하는 중입니다.</p>
+              <span aria-label="필터 결과를 업데이트하는 중입니다." className="ml-2 inline-flex align-middle text-tertiary" role="status">
+                <LoaderCircle aria-hidden="true" className="size-3.5 animate-spin" />
+                <span className="sr-only">필터 결과를 업데이트하는 중입니다.</span>
+              </span>
             ) : null}
           </div>
           {replaysQuery.isError ? (
@@ -87,7 +91,7 @@ export function ReplaysContent({ canManageCollectedMedia }: ReplaysContentProps)
             </div>
           ) : null}
         </section>
-      )}
+      ) : null}
     </div>
   );
 }
@@ -101,19 +105,9 @@ function ReplaysHeading() {
   );
 }
 
-function ReplaysLoadingState() {
-  return (
-    <div className="space-y-6">
-      <ReplaysHeading />
-      <p className="text-body-sm text-secondary" role="status">다시보기 탐색 정보를 불러오는 중입니다.</p>
-    </div>
-  );
-}
-
 function ReplaysErrorState({ isRetrying, onRetry }: { isRetrying: boolean; onRetry: () => void }) {
   return (
     <div className="space-y-4">
-      <ReplaysHeading />
       <p className="text-body-sm text-status-danger" role="alert">다시보기 탐색 정보를 불러오지 못했습니다.</p>
       <RetryButton isPending={isRetrying} onRetry={onRetry} />
     </div>

@@ -2,7 +2,7 @@
 
 import { ArrowLeft, Check, LogIn, Plus } from "lucide-react";
 import Link from "next/link";
-import { useState, type ReactNode } from "react";
+import { useState } from "react";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
 
@@ -21,6 +21,7 @@ import { archiveMutations, archiveQueries } from "@/queries/archive-queries";
 import { cn } from "@/utils/cn";
 
 import { createNewArchiveContent } from "./archive-editor-draft";
+import { ArchiveCreateSkeleton } from "./archive-create-skeleton";
 
 interface ArchiveCreateContentProps {
   isSignedIn: boolean;
@@ -92,15 +93,15 @@ export function ArchiveCreateContent({ isSignedIn }: ArchiveCreateContentProps) 
   }
 
   if (optionsQuery.isPending) {
-    return <CreateNotice>아카이브 생성 정보를 불러오는 중입니다.</CreateNotice>;
+    return <ArchiveCreateSkeleton />;
   }
 
   if (optionsQuery.isError) {
     return (
-      <CreateNotice isError>
-        아카이브 생성 정보를 불러오지 못했습니다.
+      <div className="flex flex-col items-center gap-3 py-10 text-body-sm text-status-danger">
+        <p>아카이브 생성 정보를 불러오지 못했습니다.</p>
         <RetryButton isPending={optionsQuery.isFetching} onRetry={() => void optionsQuery.refetch()} />
-      </CreateNotice>
+      </div>
     );
   }
 
@@ -252,13 +253,5 @@ function StructureModeCard({
       </span>
       <span className="mt-2 block text-caption text-secondary">{description}</span>
     </button>
-  );
-}
-
-function CreateNotice({ children, isError = false }: { children: ReactNode; isError?: boolean }) {
-  return (
-    <div className={cn("flex flex-col items-center gap-3 py-10 text-body-sm", isError ? "text-status-danger" : "text-secondary")}>
-      {children}
-    </div>
   );
 }

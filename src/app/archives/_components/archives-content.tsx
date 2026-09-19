@@ -4,10 +4,12 @@ import Link from "next/link";
 
 import { parseAsStringLiteral, useQueryState } from "nuqs";
 
-import { Archive, CalendarDays, LogIn, Plus, UsersRound } from "lucide-react";
+import { Archive, CalendarDays, LoaderCircle, LogIn, Plus, UsersRound } from "lucide-react";
 
 import { useCharacters } from "@/app/characters/_hooks/use-characters";
 import { Button, buttonVariants } from "@/components/ui/button";
+import { ArchiveGridSkeleton } from "@/components/archive-grid-skeleton";
+import { FilterBarSkeleton } from "@/components/media-grid-skeleton";
 import { RetryButton } from "@/components/ui/retry-button";
 import { cn } from "@/utils/cn";
 
@@ -115,32 +117,40 @@ function ArchivePublicList() {
   const archivesQuery = useArchives(directory.filters);
   const archives = archivesQuery.data?.pages.flatMap((page) => page.items) ?? [];
 
-  if (charactersQuery.isPending) return <ArchiveLoadingState />;
   if (charactersQuery.isError) {
     return <ArchiveErrorState isRetrying={charactersQuery.isFetching} onRetry={() => void charactersQuery.refetch()} />;
   }
 
   return (
     <div className="space-y-6">
-      <ArchiveFilters
-        category={directory.category}
-        characters={charactersQuery.data.characters}
-        participantId={directory.participantId}
-        searchInput={directory.searchInput}
-        status={directory.status}
-        onCategoryChange={directory.changeCategory}
-        onParticipantChange={directory.changeParticipant}
-        onReset={directory.resetFilters}
-        onSearchInputChange={directory.changeSearchInput}
-        onStatusChange={directory.changeStatus}
-      />
+      {charactersQuery.isPending ? <FilterBarSkeleton /> : null}
+      {charactersQuery.data ? (
+        <ArchiveFilters
+          category={directory.category}
+          characters={charactersQuery.data.characters}
+          participantId={directory.participantId}
+          searchInput={directory.searchInput}
+          status={directory.status}
+          onCategoryChange={directory.changeCategory}
+          onParticipantChange={directory.changeParticipant}
+          onReset={directory.resetFilters}
+          onSearchInputChange={directory.changeSearchInput}
+          onStatusChange={directory.changeStatus}
+        />
+      ) : null}
 
-      {archivesQuery.isPending ? <ArchiveLoadingState /> : null}
+      {charactersQuery.data && archivesQuery.isPending ? <ArchiveGridSkeleton /> : null}
       {archivesQuery.isError ? <ArchiveErrorState onRetry={() => void archivesQuery.refetch()} /> : null}
-      {!archivesQuery.isPending && !archivesQuery.isError ? (
+      {charactersQuery.data && !archivesQuery.isPending && !archivesQuery.isError ? (
         <section aria-labelledby="archive-results-heading" className="space-y-4">
           <h2 className="text-body-sm text-secondary" id="archive-results-heading">
             현재 불러온 아카이브 <strong className="font-semibold text-brand-text">{archives.length}개</strong>
+            {archivesQuery.isFetching && !archivesQuery.isFetchingNextPage ? (
+              <span aria-label="아카이브 결과를 업데이트하는 중입니다." className="ml-2 inline-flex align-middle text-tertiary" role="status">
+                <LoaderCircle aria-hidden="true" className="size-3.5 animate-spin" />
+                <span className="sr-only">아카이브 결과를 업데이트하는 중입니다.</span>
+              </span>
+            ) : null}
           </h2>
 
           {archives.length > 0 ? (
@@ -184,16 +194,6 @@ function ArchiveCreateCta({ isSignedIn }: { isSignedIn: boolean }) {
       {isSignedIn ? <Plus aria-hidden="true" /> : <LogIn aria-hidden="true" />}
       아카이브 만들기
     </Link>
-  );
-}
-
-function ArchiveLoadingState() {
-  return (
-    <div aria-label="아카이브를 불러오는 중입니다." className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5">
-      {Array.from({ length: 8 }, (_, index) => (
-        <div className="aspect-[4/3] animate-pulse rounded-xl bg-surface-muted" key={index} />
-      ))}
-    </div>
   );
 }
 

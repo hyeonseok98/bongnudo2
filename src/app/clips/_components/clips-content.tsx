@@ -1,12 +1,13 @@
 "use client";
 
-import { List, UsersRound } from "lucide-react";
+import { List, LoaderCircle, UsersRound } from "lucide-react";
 
 import { useQueryClient } from "@tanstack/react-query";
 
 import { useCharacters } from "@/app/characters/_hooks/use-characters";
 import { Select } from "@/components/ui/select";
 import { RetryButton } from "@/components/ui/retry-button";
+import { FilterBarSkeleton, MediaGridSkeleton } from "@/components/media-grid-skeleton";
 import type { ClipItem } from "@/features/clips/clip";
 import { clipQueries } from "@/queries/clip-queries";
 import { cn } from "@/utils/cn";
@@ -40,44 +41,39 @@ export function ClipsContent({ canAddTags, canManageCollectedMedia }: ClipsConte
     void clipsQuery.fetchNextPage();
   }
 
-  if (charactersQuery.isPending || optionsQuery.isPending) {
-    return <ClipsLoadingState />;
-  }
-
-  if (charactersQuery.isError || optionsQuery.isError) {
-    return <ClipsErrorState isRetrying={charactersQuery.isFetching || optionsQuery.isFetching} onRetry={() => {
-      void charactersQuery.refetch();
-      void optionsQuery.refetch();
-    }} />;
-  }
-
   return (
     <div className="space-y-6">
       <ClipsHeading />
-      <ClipFilters
-        characters={characters}
-        date={directory.date}
-        day={directory.day}
-        groups={directory.groupSelection}
-        jobs={directory.jobSelection}
-        options={optionsQuery.data}
-        participantIds={directory.participantIds}
-        tagIds={directory.tagIds}
-        streamerAffiliations={streamerAffiliations}
-        onDateChange={directory.changeDate}
-        onDayChange={directory.changeDay}
-        onGroupsApply={directory.applyGroups}
-        onJobsApply={directory.applyJobs}
-        onParticipantsChange={directory.changeParticipants}
-        onTagsChange={directory.changeTags}
-        onReset={directory.resetFilters}
-      />
+      {charactersQuery.isPending || optionsQuery.isPending ? <FilterBarSkeleton /> : null}
+      {charactersQuery.isError || optionsQuery.isError ? (
+        <ClipsErrorState isRetrying={charactersQuery.isFetching || optionsQuery.isFetching} onRetry={() => {
+          void charactersQuery.refetch();
+          void optionsQuery.refetch();
+        }} />
+      ) : null}
+      {charactersQuery.data && optionsQuery.data ? (
+        <ClipFilters
+          characters={characters}
+          date={directory.date}
+          day={directory.day}
+          groups={directory.groupSelection}
+          jobs={directory.jobSelection}
+          options={optionsQuery.data}
+          participantIds={directory.participantIds}
+          tagIds={directory.tagIds}
+          streamerAffiliations={streamerAffiliations}
+          onDateChange={directory.changeDate}
+          onDayChange={directory.changeDay}
+          onGroupsApply={directory.applyGroups}
+          onJobsApply={directory.applyJobs}
+          onParticipantsChange={directory.changeParticipants}
+          onTagsChange={directory.changeTags}
+          onReset={directory.resetFilters}
+        />
+      ) : null}
 
-      {clipsQuery.isPending ? (
-        <p className="text-body-sm text-secondary" role="status">
-          클립을 불러오는 중입니다.
-        </p>
-      ) : (
+      {charactersQuery.data && optionsQuery.data && clipsQuery.isPending ? <MediaGridSkeleton /> : null}
+      {charactersQuery.data && optionsQuery.data && !clipsQuery.isPending ? (
         <section aria-labelledby="clip-results-heading" className="space-y-4">
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <div>
@@ -85,7 +81,10 @@ export function ClipsContent({ canAddTags, canManageCollectedMedia }: ClipsConte
                 현재 불러온 클립 <strong className="font-semibold text-brand-text">{clips.length}개</strong>
               </h2>
               {clipsQuery.isFetching && !clipsQuery.isFetchingNextPage ? (
-                <p className="mt-1 text-caption text-tertiary" role="status">필터 결과를 업데이트하는 중입니다.</p>
+                <span aria-label="필터 결과를 업데이트하는 중입니다." className="ml-2 inline-flex align-middle text-tertiary" role="status">
+                  <LoaderCircle aria-hidden="true" className="size-3.5 animate-spin" />
+                  <span className="sr-only">필터 결과를 업데이트하는 중입니다.</span>
+                </span>
               ) : null}
             </div>
             <div className="flex items-center gap-2 self-end sm:self-auto">
@@ -138,7 +137,7 @@ export function ClipsContent({ canAddTags, canManageCollectedMedia }: ClipsConte
             onLoadMore={handleLoadMore}
           />
         </section>
-      )}
+      ) : null}
     </div>
   );
 }
@@ -154,21 +153,9 @@ function ClipsHeading() {
   );
 }
 
-function ClipsLoadingState() {
-  return (
-    <div className="space-y-6">
-      <ClipsHeading />
-      <p className="text-body-sm text-secondary" role="status">
-        클립 탐색 정보를 불러오는 중입니다.
-      </p>
-    </div>
-  );
-}
-
 function ClipsErrorState({ isRetrying, onRetry }: { isRetrying: boolean; onRetry: () => void }) {
   return (
     <div className="space-y-4">
-      <ClipsHeading />
       <p className="text-body-sm text-status-danger" role="alert">
         클립 탐색 정보를 불러오지 못했습니다.
       </p>

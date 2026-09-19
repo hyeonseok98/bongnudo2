@@ -4,8 +4,11 @@ import { useState, type ReactNode } from "react";
 
 import { useInfiniteQuery, useQuery } from "@tanstack/react-query";
 import { parseAsInteger, useQueryState } from "nuqs";
+import { LoaderCircle } from "lucide-react";
 
+import { ArchiveGridSkeleton } from "@/components/archive-grid-skeleton";
 import { Button } from "@/components/ui/button";
+import { FilterBarSkeleton, MediaGridSkeleton } from "@/components/media-grid-skeleton";
 import { RetryButton } from "@/components/ui/retry-button";
 import type { ArchiveListItem } from "@/features/archives/archive";
 import type { ClipItem, ClipListFilters } from "@/features/clips/clip";
@@ -54,7 +57,7 @@ export function ArchiveDayView() {
     }));
 
   if (optionsQuery.isPending) {
-    return <ArchiveDayMessage>봉누도 일차를 불러오는 중입니다.</ArchiveDayMessage>;
+    return <><FilterBarSkeleton /><MediaGridSkeleton /></>;
   }
 
   if (optionsQuery.isError || !optionsQuery.data) {
@@ -84,13 +87,18 @@ export function ArchiveDayView() {
         ))}
       </div>
 
-      {clipsQuery.isPending ? <ArchiveDayMessage>클립을 불러오는 중입니다.</ArchiveDayMessage> : null}
+      {clipsQuery.isPending ? <MediaGridSkeleton /> : null}
       {clipsQuery.isError ? <ArchiveDayMessage>해당 일차의 클립을 불러오지 못했습니다.<RetryButton isPending={clipsQuery.isFetching} onRetry={() => void clipsQuery.refetch()} /></ArchiveDayMessage> : null}
       {!clipsQuery.isPending && !clipsQuery.isError ? (
         <>
           <div className="flex items-center justify-between gap-3">
             <h3 className="text-body font-semibold text-primary">봉누도 {day}일차</h3>
-            <span className="text-caption text-secondary">현재 불러온 클립 {clips.length}개</span>
+            <span className="inline-flex items-center gap-1.5 text-caption text-secondary">
+              현재 불러온 클립 {clips.length}개
+              {clipsQuery.isFetching && !clipsQuery.isFetchingNextPage ? (
+                <span aria-label="일자별 클립을 업데이트하는 중입니다." className="text-tertiary" role="status"><LoaderCircle aria-hidden="true" className="size-3.5 animate-spin" /><span className="sr-only">일자별 클립을 업데이트하는 중입니다.</span></span>
+              ) : null}
+            </span>
           </div>
           {clips.length > 0 ? (
             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5">
@@ -166,7 +174,7 @@ function RelatedArchives({
         <h3 className="text-body font-semibold text-primary" id="day-related-archives-heading">관련 아카이브</h3>
         <p className="mt-1 text-body-sm text-secondary">이 일차의 클립을 포함한 공개 사용자 제작 아카이브입니다.</p>
       </div>
-      {isPending ? <ArchiveDayMessage>관련 아카이브를 불러오는 중입니다.</ArchiveDayMessage> : null}
+      {isPending ? <ArchiveGridSkeleton count={3} /> : null}
       {isError ? <ArchiveDayMessage>관련 아카이브를 불러오지 못했습니다.<RetryButton onRetry={onRetry} /></ArchiveDayMessage> : null}
       {!isPending && !isError && archives.length === 0 ? (
         <ArchiveDayMessage>관련 공개 아카이브가 없습니다.</ArchiveDayMessage>
