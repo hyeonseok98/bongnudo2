@@ -3,7 +3,6 @@
 import Link from "next/link";
 import { CalendarDays, Clapperboard, FolderArchive } from "lucide-react";
 
-import { Badge } from "@/components/ui/badge";
 import type { ArchiveListItem } from "@/features/archives/archive";
 import {
   getDisplayName,
@@ -16,15 +15,6 @@ import { cn } from "@/utils/cn";
 interface ArchiveCardProps {
   archive: ArchiveListItem;
 }
-
-const categoryLabels = {
-  character: "인물",
-  incident: "사건",
-  series: "시리즈",
-  other: "기타",
-} as const;
-
-const statusLabels = { completed: "완료", ongoing: "진행 중" } as const;
 
 const dateFormatter = new Intl.DateTimeFormat("ko-KR", {
   day: "numeric",
@@ -44,10 +34,10 @@ export function ArchiveCard({ archive }: ArchiveCardProps) {
   const shouldBlurThumbnail = shouldBlurMediaPreview(isRpMode, isMediaPreviewBlurEnabled);
 
   return (
-    <article className="group overflow-hidden rounded-xl border border-default bg-surface-raised transition-[background-color,border-color] duration-fast hover:border-brand dark:hover:bg-surface-selected">
+    <article className="group overflow-hidden rounded-xl border border-default bg-surface-raised transition-[background-color,border-color,box-shadow] duration-fast hover:border-brand hover:shadow-md dark:hover:bg-surface-selected">
       <Link
         aria-label={`${title} 열기`}
-        className="block focus-visible:outline-2 focus-visible:outline-focus-ring focus-visible:outline-offset-[-2px]"
+        className="block cursor-pointer focus-visible:outline-2 focus-visible:outline-focus-ring focus-visible:outline-offset-[-2px]"
         href={`/archives/${archive.id}`}
       >
         <div className="relative aspect-[16/9] overflow-hidden bg-surface-muted">
@@ -101,7 +91,7 @@ function SystemArchiveCardContent({
           <p className="mt-0.5 truncate text-caption text-secondary">{displayName.secondaryName}</p>
         ) : null}
       </div>
-      <p className="text-body-sm text-secondary">인물의 전체 클립</p>
+      <p className="text-body-sm text-secondary">이 인물의 봉누도2 클립 기록입니다.</p>
       <p className="inline-flex items-center gap-1.5 text-caption text-tertiary">
         <CalendarDays aria-hidden="true" className="size-3.5" />
         {formatClipRange(archive.firstClipCreatedAt, archive.lastClipCreatedAt)}
@@ -114,15 +104,7 @@ function UserArchiveCardContent({ archive }: { archive: ArchiveListItem }) {
   return (
     <>
       <h2 className="line-clamp-2 text-body font-semibold text-primary">{archive.title}</h2>
-      {archive.description ? (
-        <p className="line-clamp-2 min-h-10 text-caption text-secondary">{archive.description}</p>
-      ) : (
-        <p className="min-h-10 text-caption text-tertiary">설명이 없습니다.</p>
-      )}
-      <div className="flex flex-wrap gap-1.5">
-        <Badge variant="outline">{categoryLabels[archive.category]}</Badge>
-        <Badge variant="outline">{statusLabels[archive.status]}</Badge>
-      </div>
+      {archive.description ? <p className="line-clamp-2 text-body-sm leading-5 text-secondary">{archive.description}</p> : null}
     </>
   );
 }

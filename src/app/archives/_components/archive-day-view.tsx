@@ -66,10 +66,10 @@ export function ArchiveDayView() {
   }
 
   return (
-    <section aria-labelledby="archive-day-heading" className="space-y-5">
+    <section aria-labelledby="archive-day-heading" className="space-y-7">
       <div>
         <h2 className="text-heading font-semibold text-primary" id="archive-day-heading">일자별 탐색</h2>
-        <p className="mt-1 text-body-sm text-secondary">선택한 봉누도 일차의 클립을 살펴보세요.</p>
+        <p className="mt-2 text-body text-secondary">봉누도 운영 일차별로 클립과 관련 아카이브를 살펴보세요.</p>
       </div>
 
       <div className="flex gap-2 overflow-x-auto pb-1" role="tablist" aria-label="봉누도 일차">
@@ -92,10 +92,12 @@ export function ArchiveDayView() {
       {clipsQuery.isError ? <ArchiveDayMessage>해당 일차의 클립을 불러오지 못했습니다.<RetryButton isPending={clipsQuery.isFetching} onRetry={() => void clipsQuery.refetch()} /></ArchiveDayMessage> : null}
       {!clipsQuery.isPending && !clipsQuery.isError ? (
         <>
-          <div className="flex items-center justify-between gap-3">
-            <h3 className="text-body font-semibold text-primary">봉누도 {day}일차</h3>
-            <span className="inline-flex items-center gap-1.5 text-caption text-secondary">
-              현재 불러온 클립 {clips.length}개
+          <section aria-labelledby="archive-day-clips-heading" className="space-y-4">
+            <div className="flex items-center justify-between gap-3">
+              <div>
+                <p className="text-body-sm font-medium text-brand-text">선택한 일차</p>
+                <h3 className="mt-1 text-heading-sm font-semibold text-primary" id="archive-day-clips-heading">봉누도 {day}일차 클립</h3>
+              </div>
               <span
                 aria-label="일자별 클립을 업데이트하는 중입니다."
                 className={cn(
@@ -107,27 +109,27 @@ export function ArchiveDayView() {
                 <LoaderCircle aria-hidden="true" className="size-3.5 animate-spin" />
                 <span className="sr-only">일자별 클립을 업데이트하는 중입니다.</span>
               </span>
-            </span>
-          </div>
-          {clips.length > 0 ? (
-            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5">
-              {clips.map((clip) => (
-                <ArchiveClipCard clip={clip} key={clip.id} onPreview={() => setPreviewClip(clip)} />
-              ))}
             </div>
-          ) : <ArchiveDayMessage>해당 일차에 등록된 클립이 없습니다.</ArchiveDayMessage>}
-          {clipsQuery.hasNextPage ? (
-            <div className="flex justify-center">
-              <Button
-                disabled={clipsQuery.isFetchingNextPage}
-                onClick={() => void clipsQuery.fetchNextPage()}
-                type="button"
-                variant="outline"
-              >
-                {clipsQuery.isFetchingNextPage ? "클립을 더 불러오는 중입니다." : "클립 더 보기"}
-              </Button>
-            </div>
-          ) : null}
+            {clips.length > 0 ? (
+              <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5">
+                {clips.map((clip) => (
+                  <ArchiveClipCard clip={clip} key={clip.id} onPreview={() => setPreviewClip(clip)} />
+                ))}
+              </div>
+            ) : <ArchiveDayMessage>이 일차에 아직 등록된 클립이 없습니다.</ArchiveDayMessage>}
+            {clipsQuery.hasNextPage ? (
+              <div className="flex justify-center">
+                <Button
+                  disabled={clipsQuery.isFetchingNextPage}
+                  onClick={() => void clipsQuery.fetchNextPage()}
+                  type="button"
+                  variant="outline"
+                >
+                  {clipsQuery.isFetchingNextPage ? "클립을 더 불러오는 중입니다." : "클립 더 보기"}
+                </Button>
+              </div>
+            ) : null}
+          </section>
 
           <RelatedArchives
             archives={relatedArchivesQuery.data ?? []}
@@ -178,10 +180,10 @@ function RelatedArchives({
   onRetry: () => void;
 }) {
   return (
-    <section aria-labelledby="day-related-archives-heading" className="space-y-3 pt-3">
+    <section aria-labelledby="day-related-archives-heading" className="space-y-4 border-t border-default pt-7">
       <div>
         <h3 className="text-body font-semibold text-primary" id="day-related-archives-heading">관련 아카이브</h3>
-        <p className="mt-1 text-body-sm text-secondary">이 일차의 클립을 포함한 공개 사용자 제작 아카이브입니다.</p>
+        <p className="mt-2 text-body text-secondary">이 일차의 클립을 포함한 공개 아카이브입니다.</p>
       </div>
       {isPending ? <ArchiveGridSkeleton count={3} /> : null}
       {isError ? <ArchiveDayMessage>관련 아카이브를 불러오지 못했습니다.<RetryButton onRetry={onRetry} /></ArchiveDayMessage> : null}

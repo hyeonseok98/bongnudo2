@@ -22,10 +22,10 @@ export function ArchivePeopleView() {
   const personQuery = useQuery(archiveQueries.person(directory.participantId));
 
   return (
-    <section aria-labelledby="archive-people-heading" className="space-y-5">
+    <section aria-labelledby="archive-people-heading" className="space-y-7">
       <div>
         <h2 className="text-heading font-semibold text-primary" id="archive-people-heading">인물별 탐색</h2>
-        <p className="mt-1 text-body-sm text-secondary">RP명 또는 스트리머명으로 인물을 찾아 기록을 살펴보세요.</p>
+        <p className="mt-2 text-body text-secondary">RP명 또는 스트리머명으로 인물을 찾아 기록을 살펴보세요.</p>
       </div>
 
       <ParticipantFilter
@@ -72,7 +72,7 @@ function ArchivePersonResult({
   onClear: () => void;
 }) {
   return (
-    <div className="space-y-8">
+    <div className="space-y-9">
       <section aria-labelledby="archive-person-info-heading" className="rounded-xl border border-default bg-surface-raised p-5">
         <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
           <div className="flex items-start gap-3">
@@ -126,7 +126,7 @@ function ArchivePersonResult({
         )}
       </section>
 
-      <section aria-labelledby="archive-person-related-heading" className="space-y-4">
+      <section aria-labelledby="archive-person-related-heading" className="space-y-4 border-t border-default pt-7">
         <div>
           <h3 className="text-heading-sm font-semibold text-primary" id="archive-person-related-heading">관련 사용자 아카이브</h3>
           <p className="mt-1 text-body-sm text-secondary">이 인물이 포함된 공개 아카이브입니다.</p>

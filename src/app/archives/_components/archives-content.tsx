@@ -33,7 +33,7 @@ export function ArchivesContent({ isSignedIn }: ArchivesContentProps) {
   const [view, setView] = useQueryState("view", archiveExploreViewParser);
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-8">
       <header className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
         <div>
           <h1 className="text-title font-bold text-primary">아카이브</h1>
@@ -44,8 +44,10 @@ export function ArchivesContent({ isSignedIn }: ArchivesContentProps) {
         <ArchiveCreateCta isSignedIn={isSignedIn} />
       </header>
 
-      <ArchiveScopeTabs isSignedIn={isSignedIn} />
-      <ArchiveViewTabs onViewChange={(nextView) => void setView(nextView, { history: "replace" })} view={view} />
+      <div className="space-y-4">
+        <ArchiveScopeTabs isSignedIn={isSignedIn} />
+        <ArchiveViewTabs onViewChange={(nextView) => void setView(nextView, { history: "replace" })} view={view} />
+      </div>
 
       {view === "all" ? <ArchivePublicList /> : null}
       {view === "day" ? <ArchiveDayView /> : null}
@@ -60,7 +62,7 @@ function ArchiveScopeTabs({ isSignedIn }: { isSignedIn: boolean }) {
   }
 
   return (
-    <div aria-label="아카이브 범위" className="flex flex-wrap gap-2 border-b border-default pb-4" role="tablist">
+    <div aria-label="아카이브 범위" className="flex flex-wrap gap-2 border-b border-default pb-3" role="tablist">
       <Button aria-selected size="sm" type="button">
         전체 공개
       </Button>
@@ -122,7 +124,7 @@ function ArchivePublicList() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-5">
       {charactersQuery.isPending ? <FilterBarSkeleton /> : null}
       {charactersQuery.data ? (
         <ArchiveFilters
@@ -143,8 +145,8 @@ function ArchivePublicList() {
       {archivesQuery.isError ? <ArchiveErrorState onRetry={() => void archivesQuery.refetch()} /> : null}
       {charactersQuery.data && !archivesQuery.isPending && !archivesQuery.isError ? (
         <section aria-labelledby="archive-results-heading" className="space-y-4">
-          <h2 className="flex min-h-5 items-center gap-2 text-body-sm text-secondary" id="archive-results-heading">
-            <span>현재 불러온 아카이브 <strong className="font-semibold text-brand-text">{archives.length}개</strong></span>
+          <div className="flex min-h-5 items-center justify-between gap-3">
+            <h2 className="text-heading-sm font-semibold text-primary" id="archive-results-heading">공개 아카이브</h2>
             <span
               aria-label="아카이브 결과를 업데이트하는 중입니다."
               className={cn(
@@ -153,10 +155,10 @@ function ArchivePublicList() {
               )}
               role="status"
             >
-                <LoaderCircle aria-hidden="true" className="size-3.5 animate-spin" />
-                <span className="sr-only">아카이브 결과를 업데이트하는 중입니다.</span>
+              <LoaderCircle aria-hidden="true" className="size-4 animate-spin" />
+              <span className="sr-only">아카이브 결과를 업데이트하는 중입니다.</span>
             </span>
-          </h2>
+          </div>
 
           {archives.length > 0 ? (
             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5">

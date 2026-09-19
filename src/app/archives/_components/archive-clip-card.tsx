@@ -61,7 +61,7 @@ export function ArchiveClipCard({ clip, note = null, onPreview }: ArchiveClipCar
         </div>
 
         <div className="space-y-2 p-3">
-          <h3 className="line-clamp-2 min-h-10 text-body-sm font-semibold text-primary">
+          <h3 className="line-clamp-2 text-body-sm font-semibold text-primary">
             {clip.title}
           </h3>
           <div className="flex min-w-0 items-center gap-2">
