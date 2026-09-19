@@ -1,13 +1,15 @@
 "use client";
 
-import { Eye, Play, UserRound } from "lucide-react";
+import { CalendarDays, Eye, Play, UserRound } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
 import { CollectedMediaExclusionButton } from "@/components/collected-media-exclusion-button";
 import type { ReplayItem } from "@/features/replays/replay";
 import {
   getDisplayName,
+  getDisplayProfileImageUrl,
   MEDIA_PREVIEW_BLUR_CLASS,
+  type ParticipantProfileImages,
   shouldBlurMediaPreview,
 } from "@/features/rp-mode/rp-mode";
 import { useRpModeSettings } from "@/providers/rp-mode-provider";
@@ -17,6 +19,7 @@ interface ReplayCardProps {
   canManageCollectedMedia?: boolean;
   replay: ReplayItem;
   onExcluded?: () => void;
+  participantProfileImages?: ReadonlyMap<string, ParticipantProfileImages>;
 }
 
 const dateFormatter = new Intl.DateTimeFormat("ko-KR", {
@@ -29,19 +32,25 @@ const dateFormatter = new Intl.DateTimeFormat("ko-KR", {
 
 const viewCountFormatter = new Intl.NumberFormat("ko-KR");
 
-export function ReplayCard({ canManageCollectedMedia = false, onExcluded, replay }: ReplayCardProps) {
+export function ReplayCard({ canManageCollectedMedia = false, onExcluded, participantProfileImages, replay }: ReplayCardProps) {
   const { isMediaPreviewBlurEnabled, isRpMode } = useRpModeSettings();
   const displayName = replay.participant
     ? getDisplayName(replay.participant, "replay-card", isRpMode)
     : { primaryName: "인물 정보 없음", secondaryName: null };
   const replayTime = replay.liveStartedAt ?? replay.publishedAt;
   const shouldBlurThumbnail = shouldBlurMediaPreview(isRpMode, isMediaPreviewBlurEnabled);
+  const profileImageUrl = replay.participant
+    ? getDisplayProfileImageUrl(
+        participantProfileImages?.get(replay.participant.id),
+        isRpMode,
+      )
+    : null;
 
   return (
-    <article className="group min-w-0 overflow-hidden rounded-xl border border-default bg-surface-raised transition-[background-color,border-color] duration-fast hover:border-brand dark:hover:bg-surface-selected">
+    <article className="group min-w-0 overflow-hidden rounded-xl border border-default bg-surface-raised transition-[border-color,box-shadow] duration-fast hover:border-brand hover:shadow-sm focus-within:border-brand focus-within:ring-2 focus-within:ring-focus-ring/40">
       <a
         aria-label={`${replay.title} 다시보기 보기`}
-        className="block h-full focus-visible:outline-2 focus-visible:outline-focus-ring focus-visible:outline-offset-[-2px]"
+        className="block cursor-pointer focus-visible:outline-2 focus-visible:outline-focus-ring focus-visible:outline-offset-[-2px]"
         href={replay.replayUrl}
         rel="noopener noreferrer"
         target="_blank"
@@ -66,17 +75,22 @@ export function ReplayCard({ canManageCollectedMedia = false, onExcluded, replay
               {formatDuration(replay.durationSeconds)}
             </Badge>
           ) : null}
+          {replay.seasonDay ? (
+            <Badge className="absolute top-2 left-2 bg-black/70 text-white">
+              {replay.seasonDay.dayNumber}일차
+            </Badge>
+          ) : null}
         </div>
 
-        <div className="space-y-2.5 p-3">
-          <h2 className="line-clamp-2 text-body-sm font-semibold text-primary">{replay.title}</h2>
+        <div className="space-y-3 p-3">
+          <h2 className="line-clamp-2 text-body font-semibold leading-snug text-primary">{replay.title}</h2>
 
           <div className="flex min-w-0 items-center gap-2">
-            {replay.participant?.profileImageUrl ? (
+            {profileImageUrl ? (
               <span
                 aria-hidden="true"
                 className="size-7 shrink-0 rounded-full bg-cover bg-center"
-                style={{ backgroundImage: `url(${JSON.stringify(replay.participant.profileImageUrl)})` }}
+                style={{ backgroundImage: `url(${JSON.stringify(profileImageUrl)})` }}
               />
             ) : (
               <span className="grid size-7 shrink-0 place-items-center rounded-full bg-surface-muted text-tertiary">
@@ -102,8 +116,11 @@ export function ReplayCard({ canManageCollectedMedia = false, onExcluded, replay
             </div>
           ) : null}
 
-          <div className="flex items-center justify-between gap-2 text-caption text-tertiary">
-            <span>{replayTime ? dateFormatter.format(new Date(replayTime)) : "방송 시각 정보 없음"}</span>
+          <div className="flex items-center justify-between gap-2 text-caption text-secondary">
+            <span className="inline-flex min-w-0 items-center gap-1.5">
+              <CalendarDays aria-hidden="true" className="size-3.5 shrink-0" />
+              {replayTime ? dateFormatter.format(new Date(replayTime)) : "방송 시각 정보 없음"}
+            </span>
             <span className="inline-flex items-center gap-1">
               <Eye aria-hidden="true" className="size-3.5" />
               {replay.viewCount === null ? "조회수 정보 없음" : viewCountFormatter.format(replay.viewCount)}
@@ -121,21 +138,24 @@ export function ReplayCard({ canManageCollectedMedia = false, onExcluded, replay
 interface ReplayCardGridProps {
   canManageCollectedMedia?: boolean;
   onExcluded?: () => void;
+  participantProfileImages?: ReadonlyMap<string, ParticipantProfileImages>;
   replays: ReplayItem[];
 }
 
 export function ReplayCardGrid({
   canManageCollectedMedia = false,
   onExcluded,
+  participantProfileImages,
   replays,
 }: ReplayCardGridProps) {
   return (
-    <div className="grid grid-cols-1 items-stretch gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-6">
+    <div className="grid grid-cols-1 items-start gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5">
       {replays.map((replay) => (
         <ReplayCard
           canManageCollectedMedia={canManageCollectedMedia}
           key={replay.id}
           onExcluded={onExcluded}
+          participantProfileImages={participantProfileImages}
           replay={replay}
         />
       ))}

@@ -31,6 +31,15 @@ export function ClipsContent({ canAddTags, canManageCollectedMedia }: ClipsConte
   const clipsQuery = useClips(directory.filters);
   const characters = charactersQuery.data?.characters ?? [];
   const streamerAffiliations = charactersQuery.data?.streamerAffiliations ?? [];
+  const participantProfileImages = new Map(
+    characters.map((character) => [
+      character.id,
+      {
+        rpProfileImageUrl: character.rpProfileImageUrl ?? null,
+        streamerProfileImageUrl: character.profileImageUrl,
+      },
+    ]),
+  );
   const clips = clipsQuery.data?.pages.flatMap((page) => page.items) ?? [];
 
   function handleLoadMore() {
@@ -75,7 +84,7 @@ export function ClipsContent({ canAddTags, canManageCollectedMedia }: ClipsConte
       {charactersQuery.data && optionsQuery.data && clipsQuery.isPending ? <MediaGridSkeleton /> : null}
       {charactersQuery.data && optionsQuery.data && !clipsQuery.isPending ? (
         <section aria-labelledby="clip-results-heading" className="space-y-4">
-          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex flex-col gap-3 rounded-xl border border-default bg-surface-raised p-3 sm:flex-row sm:items-center sm:justify-between">
             <div className="flex min-h-5 items-center gap-2">
               <h2 className="text-body-sm text-secondary" id="clip-results-heading">
                 현재 불러온 클립 <strong className="font-semibold text-brand-text">{clips.length}개</strong>
@@ -123,6 +132,7 @@ export function ClipsContent({ canAddTags, canManageCollectedMedia }: ClipsConte
                 canManageCollectedMedia={canManageCollectedMedia}
                 clips={clips}
                 onExcluded={() => void queryClient.invalidateQueries({ queryKey: clipQueries.all() })}
+                participantProfileImages={participantProfileImages}
               />
             ) : (
               <ClipCardGrid
@@ -130,6 +140,7 @@ export function ClipsContent({ canAddTags, canManageCollectedMedia }: ClipsConte
                 canManageCollectedMedia={canManageCollectedMedia}
                 clips={clips}
                 onExcluded={() => void queryClient.invalidateQueries({ queryKey: clipQueries.all() })}
+                participantProfileImages={participantProfileImages}
               />
             )
           ) : (
@@ -233,6 +244,10 @@ interface ClipPeopleViewProps {
   canManageCollectedMedia: boolean;
   clips: ClipItem[];
   onExcluded: () => void;
+  participantProfileImages: ReadonlyMap<string, {
+    rpProfileImageUrl: string | null;
+    streamerProfileImageUrl: string | null;
+  }>;
 }
 
 function ClipPeopleView({
@@ -240,6 +255,7 @@ function ClipPeopleView({
   canManageCollectedMedia,
   clips,
   onExcluded,
+  participantProfileImages,
 }: ClipPeopleViewProps) {
   const clipsByParticipant = new Map<string, { clips: ClipItem[]; label: string }>();
 
@@ -273,6 +289,7 @@ function ClipPeopleView({
             canManageCollectedMedia={canManageCollectedMedia}
             clips={group.clips}
             onExcluded={onExcluded}
+            participantProfileImages={participantProfileImages}
           />
         </section>
       ))}

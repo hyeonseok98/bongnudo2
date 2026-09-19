@@ -28,6 +28,15 @@ export function ReplaysContent({ canManageCollectedMedia }: ReplaysContentProps)
   const replaysQuery = useReplays(directory.filters);
   const characters = charactersQuery.data?.characters ?? [];
   const streamerAffiliations = charactersQuery.data?.streamerAffiliations ?? [];
+  const participantProfileImages = new Map(
+    characters.map((character) => [
+      character.id,
+      {
+        rpProfileImageUrl: character.rpProfileImageUrl ?? null,
+        streamerProfileImageUrl: character.profileImageUrl,
+      },
+    ]),
+  );
   const replays = replaysQuery.data?.pages.flatMap((page) => page.items) ?? [];
 
   return (
@@ -61,7 +70,7 @@ export function ReplaysContent({ canManageCollectedMedia }: ReplaysContentProps)
       {charactersQuery.data && optionsQuery.data && replaysQuery.isPending ? <MediaGridSkeleton /> : null}
       {charactersQuery.data && optionsQuery.data && !replaysQuery.isPending ? (
         <section aria-labelledby="replay-results-heading" className="space-y-4">
-          <div className="flex min-h-5 items-center gap-2">
+          <div className="flex min-h-11 items-center gap-2 rounded-xl border border-default bg-surface-raised px-3 py-2">
             <h2 className="text-body-sm text-secondary" id="replay-results-heading">
               현재 불러온 다시보기 <strong className="font-semibold text-brand-text">{replays.length}개</strong>
             </h2>
@@ -87,6 +96,7 @@ export function ReplaysContent({ canManageCollectedMedia }: ReplaysContentProps)
             <ReplayCardGrid
               canManageCollectedMedia={canManageCollectedMedia}
               onExcluded={() => void queryClient.invalidateQueries({ queryKey: replayQueries.all() })}
+              participantProfileImages={participantProfileImages}
               replays={replays}
             />
           ) : <ReplayEmptyState />}

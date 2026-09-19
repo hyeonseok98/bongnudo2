@@ -1,13 +1,15 @@
 "use client";
 
-import { Eye, Play, UserRound } from "lucide-react";
+import { CalendarDays, Eye, Play, UserRound } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
 import { CollectedMediaExclusionButton } from "@/components/collected-media-exclusion-button";
 import type { ClipItem } from "@/features/clips/clip";
 import {
   getDisplayName,
+  getDisplayProfileImageUrl,
   MEDIA_PREVIEW_BLUR_CLASS,
+  type ParticipantProfileImages,
   shouldBlurMediaPreview,
 } from "@/features/rp-mode/rp-mode";
 import { useRpModeSettings } from "@/providers/rp-mode-provider";
@@ -20,6 +22,7 @@ interface ClipCardProps {
   canManageCollectedMedia?: boolean;
   clip: ClipItem;
   onExcluded?: () => void;
+  participantProfileImages?: ReadonlyMap<string, ParticipantProfileImages>;
 }
 
 const dateFormatter = new Intl.DateTimeFormat("ko-KR", {
@@ -35,18 +38,25 @@ export function ClipCard({
   canManageCollectedMedia = false,
   clip,
   onExcluded,
+  participantProfileImages,
 }: ClipCardProps) {
   const { isMediaPreviewBlurEnabled, isRpMode } = useRpModeSettings();
   const displayName = clip.participant
     ? getDisplayName(clip.participant, "clip-card", isRpMode)
     : { primaryName: "인물 정보 없음", secondaryName: null };
   const shouldBlurThumbnail = shouldBlurMediaPreview(isRpMode, isMediaPreviewBlurEnabled);
+  const profileImageUrl = clip.participant
+    ? getDisplayProfileImageUrl(
+        participantProfileImages?.get(clip.participant.id),
+        isRpMode,
+      )
+    : null;
 
   return (
-    <article className="group min-w-0 overflow-hidden rounded-xl border border-default bg-surface-raised transition-[background-color,border-color] duration-fast hover:border-brand dark:hover:bg-surface-selected">
+    <article className="group min-w-0 overflow-hidden rounded-xl border border-default bg-surface-raised transition-[border-color,box-shadow] duration-fast hover:border-brand hover:shadow-sm focus-within:border-brand focus-within:ring-2 focus-within:ring-focus-ring/40">
       <a
         aria-label={`${clip.title} 클립 보기`}
-        className="block h-full focus-visible:outline-2 focus-visible:outline-focus-ring focus-visible:outline-offset-[-2px]"
+        className="block cursor-pointer focus-visible:outline-2 focus-visible:outline-focus-ring focus-visible:outline-offset-[-2px]"
         href={clip.clipUrl}
         rel="noopener noreferrer"
         target="_blank"
@@ -73,18 +83,18 @@ export function ClipCard({
           ) : null}
         </div>
 
-        <div className="space-y-2 p-3">
-          <h2 className="line-clamp-2 text-body-sm font-semibold text-primary">
+        <div className="space-y-3 p-3">
+          <h2 className="line-clamp-2 text-body font-semibold leading-snug text-primary">
             {clip.title}
           </h2>
 
           <div className="flex min-w-0 items-center gap-2">
-            {clip.participant?.profileImageUrl ? (
+            {profileImageUrl ? (
               <span
                 aria-hidden="true"
                 className="size-7 shrink-0 rounded-full bg-cover bg-center"
                 style={{
-                  backgroundImage: `url(${JSON.stringify(clip.participant.profileImageUrl)})`,
+                  backgroundImage: `url(${JSON.stringify(profileImageUrl)})`,
                 }}
               />
             ) : (
@@ -115,8 +125,11 @@ export function ClipCard({
             </div>
           ) : null}
 
-          <div className="flex items-center justify-between gap-2 text-caption text-tertiary">
-            <span>{dateFormatter.format(new Date(clip.clipCreatedAt))}</span>
+          <div className="flex items-center justify-between gap-2 text-caption text-secondary">
+            <span className="inline-flex min-w-0 items-center gap-1.5">
+              <CalendarDays aria-hidden="true" className="size-3.5 shrink-0" />
+              {dateFormatter.format(new Date(clip.clipCreatedAt))}
+            </span>
             <span className="inline-flex items-center gap-1">
               <Eye aria-hidden="true" className="size-3.5" />
               {clip.viewCount === null ? "조회수 정보 없음" : viewCountFormatter.format(clip.viewCount)}
@@ -124,12 +137,14 @@ export function ClipCard({
           </div>
         </div>
       </a>
-      <div className="space-y-2 px-3 pb-3">
-        <ClipTagEditor canAddTags={canAddTags} clipId={clip.id} tags={clip.tags} />
-        {canManageCollectedMedia && onExcluded ? (
-          <CollectedMediaExclusionButton mediaId={clip.id} mediaType="clip" onExcluded={onExcluded} />
-        ) : null}
-      </div>
+      {clip.tags.length > 0 || canAddTags ? (
+        <div className="px-3 pb-3">
+          <ClipTagEditor canAddTags={canAddTags} clipId={clip.id} tags={clip.tags} />
+        </div>
+      ) : null}
+      {canManageCollectedMedia && onExcluded ? (
+        <CollectedMediaExclusionButton mediaId={clip.id} mediaType="clip" onExcluded={onExcluded} />
+      ) : null}
     </article>
   );
 }
@@ -139,6 +154,7 @@ interface ClipCardGridProps {
   canManageCollectedMedia?: boolean;
   clips: ClipItem[];
   onExcluded?: () => void;
+  participantProfileImages?: ReadonlyMap<string, ParticipantProfileImages>;
 }
 
 export function ClipCardGrid({
@@ -146,9 +162,10 @@ export function ClipCardGrid({
   canManageCollectedMedia = false,
   clips,
   onExcluded,
+  participantProfileImages,
 }: ClipCardGridProps) {
   return (
-    <div className="grid grid-cols-1 items-stretch gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-6">
+    <div className="grid grid-cols-1 items-start gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5">
       {clips.map((clip) => (
         <ClipCard
           canAddTags={canAddTags}
@@ -156,6 +173,7 @@ export function ClipCardGrid({
           clip={clip}
           key={clip.id}
           onExcluded={onExcluded}
+          participantProfileImages={participantProfileImages}
         />
       ))}
     </div>

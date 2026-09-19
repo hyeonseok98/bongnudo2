@@ -19,6 +19,11 @@ export interface DisplayName {
   secondaryName: string | null;
 }
 
+export interface ParticipantProfileImages {
+  rpProfileImageUrl: string | null;
+  streamerProfileImageUrl: string | null;
+}
+
 export type DisplayNameContext =
   | "streamer-card"
   | "character-card"
@@ -67,7 +72,7 @@ export function getDisplayName(
         };
   }
 
-  if (context === "live" || context === "clip-card" || context === "replay-card") {
+  if (context === "live") {
     return isRpMode
       ? {
           primaryName: entity.rpName ?? RP_NAME_UNAVAILABLE,
@@ -84,12 +89,37 @@ export function getDisplayName(
           };
   }
 
+  if (context === "clip-card" || context === "replay-card") {
+    return isRpMode
+      ? {
+          primaryName: entity.rpName ?? RP_NAME_UNAVAILABLE,
+          secondaryName: null,
+        }
+      : {
+          primaryName: entity.streamerName,
+          secondaryName: entity.rpName,
+        };
+  }
+
   return {
     primaryName: isRpMode
       ? (entity.rpName ?? RP_NAME_UNAVAILABLE)
       : entity.streamerName,
     secondaryName: null,
   };
+}
+
+export function getDisplayProfileImageUrl(
+  profileImages: ParticipantProfileImages | undefined,
+  isRpMode: boolean,
+): string | null {
+  if (!profileImages) {
+    return null;
+  }
+
+  return isRpMode
+    ? profileImages.rpProfileImageUrl
+    : profileImages.streamerProfileImageUrl;
 }
 
 export function getRpModeSettings(
