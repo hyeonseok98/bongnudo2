@@ -309,6 +309,21 @@
   padding-inline: 0;
 }
 
+.main-container:has([data-archive-editor-workspace]) {
+  height: 100%;
+  min-height: 0;
+  max-width: none;
+  padding-inline: 0;
+}
+
+.main-container:has([data-archive-editor-workspace]) > div {
+  min-height: 0;
+}
+
+[data-app-scroll-container]:has([data-archive-editor-workspace]) {
+  overflow: hidden;
+}
+
 @media (min-width: 48rem) {
   .header-account-menu {
     margin-inline-end: max(

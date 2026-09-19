@@ -77,7 +77,7 @@ export function ArchiveClipPreviewDialog({
         <DialogPrimitive.Backdrop className="fixed inset-0 z-modal bg-black/75" />
         <DialogPrimitive.Popup className={cn(
           "fixed top-1/2 left-1/2 z-modal flex w-[calc(100vw-2rem)] max-h-[calc(100dvh-2rem)] -translate-x-1/2 -translate-y-1/2 flex-col overflow-y-auto rounded-xl border border-default bg-surface-raised shadow-2xl outline-none",
-          size === "viewer" ? "max-w-6xl" : "max-w-4xl",
+          size === "viewer" ? "max-w-6xl" : "max-w-5xl",
         )}>
           {clip ? (
             <>

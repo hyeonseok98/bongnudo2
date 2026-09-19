@@ -7,10 +7,14 @@ function isCharacterDetailPath(pathname: string) {
   return /^\/characters\/(?:streamer|rp)\/[^/]+$/.test(pathname);
 }
 
+function isArchiveEditorPath(pathname: string) {
+  return /^\/archives\/[^/]+\/edit$/.test(pathname);
+}
+
 export function Footer() {
   const pathname = usePathname();
 
-  if (isCharacterDetailPath(pathname)) {
+  if (isCharacterDetailPath(pathname) || isArchiveEditorPath(pathname)) {
     return null;
   }
 

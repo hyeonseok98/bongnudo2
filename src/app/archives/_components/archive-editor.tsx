@@ -1,7 +1,9 @@
 "use client";
 
-import { AlertTriangle, ArrowLeft, Check, ExternalLink, LogIn, Settings2 } from "lucide-react";
+import { DragDropProvider, type DragEndEvent } from "@dnd-kit/react";
+import { AlertTriangle, Check, LogIn, LogOut, Settings2 } from "lucide-react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { type MouseEvent, useEffect, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
@@ -11,7 +13,6 @@ import type { ArchiveClipSummary, ArchiveDetail } from "@/features/archives/arch
 import { archiveMutations, archiveQueries } from "@/queries/archive-queries";
 
 import { ArchiveBuilder } from "./archive-builder";
-import { ArchiveCreationSteps } from "./archive-creation-steps";
 import { ArchiveClipExplorer } from "./archive-clip-explorer";
 import { ArchiveClipPreviewDialog } from "./archive-clip-preview-dialog";
 import {
@@ -22,6 +23,10 @@ import {
   type ArchiveEditorDraft,
 } from "./archive-editor-draft";
 import { ArchiveSettingsDialog } from "./archive-settings-dialog";
+import {
+  isArchiveWorkspaceDragData,
+  type ArchiveWorkspaceDragData,
+} from "./archive-workspace-dnd";
 
 interface ArchiveEditorProps {
   archiveId: string;
@@ -55,6 +60,7 @@ export function ArchiveEditor({ archiveId, isSignedIn }: ArchiveEditorProps) {
 }
 
 function ArchiveEditorWorkspace({ archive }: { archive: ArchiveDetail }) {
+  const router = useRouter();
   const optionsQuery = useQuery(archiveQueries.editorOptions());
   const saveMutation = useMutation(archiveMutations.save());
   const queryClient = useQueryClient();
@@ -63,10 +69,12 @@ function ArchiveEditorWorkspace({ archive }: { archive: ArchiveDetail }) {
   const [savedDraft, setSavedDraft] = useState<ArchiveEditorDraft>(initialDraft);
   const [currentRevision, setCurrentRevision] = useState(archive.currentRevision ?? 1);
   const [activeChapterId, setActiveChapterId] = useState<string | null>(archive.chapters[0]?.id ?? null);
-  const [previewClip, setPreviewClip] = useState<ArchiveClipSummary | null>(null);
+  const [previewItem, setPreviewItem] = useState<{
+    clip: ArchiveClipSummary;
+    note: string | null;
+  } | null>(null);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [isConflictOpen, setIsConflictOpen] = useState(false);
-  const [isSaveComplete, setIsSaveComplete] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
   const isDirty = !isArchiveDraftEqual(draft, savedDraft, archive.canEditMetadata);
   const selectedClipIds = new Set(
@@ -88,8 +96,7 @@ function ArchiveEditorWorkspace({ archive }: { archive: ArchiveDetail }) {
     return () => window.removeEventListener("beforeunload", handleBeforeUnload);
   }, [isDirty]);
 
-  function addClip(clip: ArchiveClipSummary) {
-    setIsSaveComplete(false);
+  function addClip(clip: ArchiveClipSummary, requestedChapterId?: string) {
     if (selectedClipIds.has(clip.id)) {
       return;
     }
@@ -99,7 +106,7 @@ function ArchiveEditorWorkspace({ archive }: { archive: ArchiveDetail }) {
       return;
     }
 
-    let chapterId = activeChapterId;
+    let chapterId = requestedChapterId ?? activeChapterId;
 
     if (draft.metadata.structureMode === "day_based") {
       if (!clip.seasonDay) {
@@ -107,13 +114,22 @@ function ArchiveEditorWorkspace({ archive }: { archive: ArchiveDetail }) {
         return;
       }
 
-      chapterId = draft.chapters.find(
-        (chapter) =>
-          chapter.id === activeChapterId &&
-          chapter.seasonDayId === clip.seasonDay?.id,
-      )?.id ?? draft.chapters.find(
-        (chapter) => chapter.seasonDayId === clip.seasonDay?.id,
-      )?.id ?? null;
+      if (requestedChapterId) {
+        const targetChapter = draft.chapters.find((chapter) => chapter.id === requestedChapterId);
+
+        if (targetChapter?.seasonDayId !== clip.seasonDay.id) {
+          setMessage("같은 봉누도 일차의 챕터에만 클립을 추가할 수 있습니다.");
+          return;
+        }
+      } else {
+        chapterId = draft.chapters.find(
+          (chapter) =>
+            chapter.id === activeChapterId &&
+            chapter.seasonDayId === clip.seasonDay?.id,
+        )?.id ?? draft.chapters.find(
+          (chapter) => chapter.seasonDayId === clip.seasonDay?.id,
+        )?.id ?? null;
+      }
     }
 
     if (!chapterId) {
@@ -138,9 +154,25 @@ function ArchiveEditorWorkspace({ archive }: { archive: ArchiveDetail }) {
     setMessage(null);
   }
 
+  function handleWorkspaceDragEnd(event: DragEndEvent) {
+    const sourceData = event.operation.source?.data;
+    const targetData = event.operation.target?.data;
+
+    if (
+      event.canceled ||
+      !isArchiveWorkspaceDragData(sourceData) ||
+      !isArchiveWorkspaceDragData(targetData) ||
+      sourceData.kind !== "explorer-clip" ||
+      (targetData.kind !== "chapter-drop" && targetData.kind !== "item")
+    ) {
+      return;
+    }
+
+    addClip(sourceData.clip, targetData.chapterId);
+  }
+
   function saveDraft() {
     setMessage(null);
-    setIsSaveComplete(false);
     saveMutation.mutate({
       archiveId: archive.id,
       input: {
@@ -160,8 +192,6 @@ function ArchiveEditorWorkspace({ archive }: { archive: ArchiveDetail }) {
       onSuccess: async (result) => {
         setCurrentRevision(result.currentRevision);
         setSavedDraft(draft);
-        setMessage("저장되었습니다.");
-        setIsSaveComplete(true);
         await Promise.all([
           queryClient.invalidateQueries({ queryKey: archiveQueries.detail(archive.id).queryKey }),
           queryClient.invalidateQueries({
@@ -171,6 +201,7 @@ function ArchiveEditorWorkspace({ archive }: { archive: ArchiveDetail }) {
             ? [queryClient.invalidateQueries({ queryKey: archiveQueries.lists() })]
             : []),
         ]);
+        router.push(`/archives/${archive.id}`);
       },
     });
   }
@@ -192,91 +223,77 @@ function ArchiveEditorWorkspace({ archive }: { archive: ArchiveDetail }) {
   }
 
   return (
-    <div className="space-y-5 py-5 sm:py-6 lg:py-8">
-      <header className="flex flex-col gap-4 border-b border-default pb-5 sm:flex-row sm:items-start sm:justify-between">
-        <div className="min-w-0">
-          <p className="text-body-sm font-medium text-brand-text">사용자 제작 아카이브</p>
-          <h1 className="mt-1 truncate text-title font-bold text-primary">{draft.metadata.title}</h1>
-          <p className="mt-1 text-body-sm text-secondary">
+    <div
+      className="flex h-full min-h-0 flex-col overflow-hidden"
+      data-archive-editor-workspace
+    >
+      <header className="flex shrink-0 flex-wrap items-center gap-3 border-b border-default px-4 py-2.5 md:px-6">
+        <div className="min-w-0 flex-1">
+          <div className="flex min-w-0 items-center gap-2">
+            <span className="shrink-0 text-caption font-semibold text-brand-text">2단계 · 클립 구성</span>
+            <span aria-hidden="true" className="text-tertiary">/</span>
+            <h1 className="truncate text-body font-semibold text-primary">{draft.metadata.title}</h1>
+          </div>
+          <p className="mt-0.5 text-caption text-secondary">
             {draft.metadata.structureMode === "day_based" ? "일차별 구성" : "자유롭게 구성"}
           </p>
         </div>
-        <div className="flex flex-wrap items-center gap-2">
+        <div className="flex items-center gap-2">
           <Link
-            className={buttonVariants({ variant: "ghost" })}
+            className={buttonVariants({ size: "sm", variant: "ghost" })}
             href="/archives"
             onClick={confirmLeave}
           >
-            <ArrowLeft aria-hidden="true" className="size-4" />
-            목록
-          </Link>
-          <Link
-            className={buttonVariants({ variant: "outline" })}
-            href={`/archives/${archive.id}`}
-            onClick={confirmLeave}
-          >
-            <ExternalLink aria-hidden="true" className="size-4" />
-            상세 보기
+            <LogOut aria-hidden="true" className="size-4" />
+            나가기
           </Link>
           {archive.canEditMetadata ? (
-            <Button onClick={() => setIsSettingsOpen(true)} type="button" variant="outline">
+            <Button onClick={() => setIsSettingsOpen(true)} size="sm" type="button" variant="outline">
               <Settings2 aria-hidden="true" className="size-4" />
               설정
             </Button>
           ) : null}
-          <Button disabled={!isDirty || saveMutation.isPending} onClick={saveDraft} type="button">
+          <Button disabled={!isDirty || saveMutation.isPending} onClick={saveDraft} size="sm" type="button">
             <Check aria-hidden="true" className="size-4" />
             {saveMutation.isPending ? "저장 중" : "저장"}
           </Button>
         </div>
       </header>
 
-      <ArchiveCreationSteps currentStep={2} />
-
       {message ? (
-        <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-default bg-surface-muted px-3 py-2 text-body-sm text-secondary" role="status">
+        <div className="shrink-0 border-b border-default bg-surface-muted px-4 py-2 text-body-sm text-secondary md:px-6" role="status">
           <p>{message}</p>
-          {isSaveComplete ? (
-            <div className="flex items-center gap-2">
-              <Button
-                onClick={() => {
-                  setMessage(null);
-                  setIsSaveComplete(false);
-                }}
-                size="sm"
-                type="button"
-                variant="ghost"
-              >
-                계속 편집
-              </Button>
-              <Link className={buttonVariants({ size: "sm" })} href={`/archives/${archive.id}`}>
-                아카이브 보기
-              </Link>
-            </div>
-          ) : null}
         </div>
       ) : null}
 
-      <div className="grid gap-6 lg:h-[calc(100dvh-15rem)] lg:grid-cols-[minmax(0,1.25fr)_minmax(24rem,0.9fr)] lg:overflow-hidden">
-        <div className="min-w-0 rounded-xl border border-default bg-surface-raised p-4 sm:p-5 lg:overflow-y-auto">
-          <ArchiveClipExplorer
-            onAddClip={addClip}
-            onPreviewClip={setPreviewClip}
-            selectedClipIds={selectedClipIds}
-          />
+      <DragDropProvider<ArchiveWorkspaceDragData> onDragEnd={handleWorkspaceDragEnd}>
+        <div className="grid min-h-0 flex-1 gap-3 overflow-hidden p-3 lg:grid-cols-[minmax(22rem,0.85fr)_minmax(0,1.35fr)]">
+          <div className="min-h-0 min-w-0 overflow-y-auto rounded-xl border border-default bg-surface-raised p-4">
+            <ArchiveBuilder
+              activeChapterId={activeChapterId}
+              draft={draft}
+              onActiveChapterChange={setActiveChapterId}
+              onDraftChange={setDraft}
+              onPreviewItem={(item) => setPreviewItem({ clip: item.clip, note: item.note })}
+              seasonDays={optionsQuery.data.seasonDays}
+            />
+          </div>
+          <div className="min-h-0 min-w-0 overflow-y-auto rounded-xl border border-default bg-surface-raised p-4">
+            <ArchiveClipExplorer
+              onAddClip={addClip}
+              onPreviewClip={(clip) => setPreviewItem({ clip, note: null })}
+              selectedClipIds={selectedClipIds}
+            />
+          </div>
         </div>
-        <div className="min-w-0 rounded-xl border border-default bg-surface-raised p-4 sm:p-5 lg:overflow-y-auto">
-          <ArchiveBuilder
-            activeChapterId={activeChapterId}
-            draft={draft}
-            onActiveChapterChange={setActiveChapterId}
-            onDraftChange={setDraft}
-            seasonDays={optionsQuery.data.seasonDays}
-          />
-        </div>
-      </div>
+      </DragDropProvider>
 
-      <ArchiveClipPreviewDialog clip={previewClip} onClose={() => setPreviewClip(null)} size="editor" />
+      <ArchiveClipPreviewDialog
+        clip={previewItem?.clip ?? null}
+        note={previewItem?.note ?? null}
+        onClose={() => setPreviewItem(null)}
+        size="editor"
+      />
       {archive.canEditMetadata ? (
         <ArchiveSettingsDialog
           metadata={draft.metadata}

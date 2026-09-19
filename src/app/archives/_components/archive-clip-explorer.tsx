@@ -1,5 +1,6 @@
 "use client";
 
+import { useDraggable } from "@dnd-kit/react";
 import { Eye, Play, Plus, UserRound } from "lucide-react";
 
 import { useCharacters } from "@/app/characters/_hooks/use-characters";
@@ -18,6 +19,8 @@ import {
 } from "@/features/rp-mode/rp-mode";
 import { useRpModeSettings } from "@/providers/rp-mode-provider";
 import { cn } from "@/utils/cn";
+
+import type { ArchiveWorkspaceDragData } from "./archive-workspace-dnd";
 
 interface ArchiveClipExplorerProps {
   onAddClip: (clip: ArchiveClipSummary) => void;
@@ -60,7 +63,7 @@ export function ArchiveClipExplorer({
             클립 탐색
           </h2>
           <p className="mt-1 text-body-sm text-secondary">
-            클립을 한 개씩 선택하여 아카이브에 담아보세요.
+            버튼으로 추가하거나 원하는 클립을 현재 챕터로 드래그하세요.
           </p>
         </div>
         <Select
@@ -101,7 +104,7 @@ export function ArchiveClipExplorer({
       ) : clips.length === 0 ? (
         <ExplorerNotice>조건에 맞는 클립이 없습니다.</ExplorerNotice>
       ) : (
-        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
+        <div className="grid grid-cols-[repeat(auto-fill,minmax(12rem,1fr))] gap-3">
           {clips.map((clip) => (
             <ArchiveExplorerClipCard
               clip={clip}
@@ -146,13 +149,26 @@ function ArchiveExplorerClipCard({
     ? getDisplayName(clip.participant, "clip-card", isRpMode)
     : { primaryName: "인물 정보 없음", secondaryName: null };
   const shouldBlurThumbnail = shouldBlurMediaPreview(isRpMode, isMediaPreviewBlurEnabled);
+  const archiveClip = toArchiveClipSummary(clip);
+  const { handleRef, isDragging, ref } = useDraggable<ArchiveWorkspaceDragData>({
+    data: { chapterId: null, clip: archiveClip, kind: "explorer-clip" },
+    disabled: isAdded,
+    id: `explorer:${clip.id}`,
+  });
 
   return (
-    <article className="overflow-hidden rounded-xl border border-default bg-surface-raised">
+    <article
+      className={cn(
+        "overflow-hidden rounded-xl border border-default bg-surface-raised transition-opacity",
+        isDragging && "opacity-50",
+      )}
+      ref={ref}
+    >
       <button
         aria-label={`${clip.title} 미리보기`}
-        className="group relative block w-full cursor-pointer text-left focus-visible:outline-2 focus-visible:outline-focus-ring"
-        onClick={() => onPreviewClip(toArchiveClipSummary(clip))}
+        className="group relative block w-full cursor-grab touch-none text-left focus-visible:outline-2 focus-visible:outline-focus-ring active:cursor-grabbing"
+        onClick={() => onPreviewClip(archiveClip)}
+        ref={handleRef}
         type="button"
       >
         <div className="relative aspect-video overflow-hidden bg-surface-muted">
@@ -176,39 +192,41 @@ function ArchiveExplorerClipCard({
             </Badge>
           ) : null}
         </div>
-      </button>
-      <div className="space-y-3 p-3">
-        <h3 className="line-clamp-2 text-body-sm font-semibold text-primary">{clip.title}</h3>
-        <div className="flex min-w-0 items-center gap-2">
-          {clip.participant?.profileImageUrl ? (
-            <span
-              aria-hidden="true"
-              className="size-7 shrink-0 rounded-full bg-cover bg-center"
-              style={{ backgroundImage: `url(${JSON.stringify(clip.participant.profileImageUrl)})` }}
-            />
-          ) : (
-            <span className="grid size-7 shrink-0 place-items-center rounded-full bg-surface-muted text-tertiary">
-              <UserRound aria-hidden="true" className="size-4" />
+        <div className="space-y-3 p-3">
+          <h3 className="line-clamp-2 text-body-sm font-semibold text-primary">{clip.title}</h3>
+          <div className="flex min-w-0 items-center gap-2">
+            {clip.participant?.profileImageUrl ? (
+              <span
+                aria-hidden="true"
+                className="size-7 shrink-0 rounded-full bg-cover bg-center"
+                style={{ backgroundImage: `url(${JSON.stringify(clip.participant.profileImageUrl)})` }}
+              />
+            ) : (
+              <span className="grid size-7 shrink-0 place-items-center rounded-full bg-surface-muted text-tertiary">
+                <UserRound aria-hidden="true" className="size-4" />
+              </span>
+            )}
+            <div className="min-w-0">
+              <p className="truncate text-body-sm font-medium text-primary">{displayName.primaryName}</p>
+              {displayName.secondaryName ? (
+                <p className="truncate text-caption text-secondary">{displayName.secondaryName}</p>
+              ) : null}
+            </div>
+          </div>
+          <div className="flex items-center justify-between gap-2 text-caption text-tertiary">
+            <span>{clipDateFormatter.format(new Date(clip.clipCreatedAt))}</span>
+            <span className="inline-flex items-center gap-1">
+              <Eye aria-hidden="true" className="size-3.5" />
+              {clip.viewCount ?? "-"}
             </span>
-          )}
-          <div className="min-w-0">
-            <p className="truncate text-body-sm font-medium text-primary">{displayName.primaryName}</p>
-            {displayName.secondaryName ? (
-              <p className="truncate text-caption text-secondary">{displayName.secondaryName}</p>
-            ) : null}
           </div>
         </div>
-        <div className="flex items-center justify-between gap-2 text-caption text-tertiary">
-          <span>{clipDateFormatter.format(new Date(clip.clipCreatedAt))}</span>
-          <span className="inline-flex items-center gap-1">
-            <Eye aria-hidden="true" className="size-3.5" />
-            {clip.viewCount ?? "-"}
-          </span>
-        </div>
+      </button>
+      <div className="px-3 pb-3">
         <Button
           className="w-full"
           disabled={isAdded}
-          onClick={() => onAddClip(toArchiveClipSummary(clip))}
+          onClick={() => onAddClip(archiveClip)}
           size="sm"
           type="button"
           variant="outline"
