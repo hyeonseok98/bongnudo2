@@ -1,7 +1,8 @@
 "use client";
 
+import { Dialog as DialogPrimitive } from "@base-ui/react/dialog";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Hash, Plus, X } from "lucide-react";
+import { Hash, X } from "lucide-react";
 import { useState } from "react";
 
 import { addClipTag, deleteClipTag } from "@/apis/clips/get-clip-tags";
@@ -15,17 +16,15 @@ interface ClipTagEditorProps {
   canAddTags: boolean;
   clipId: string;
   tags: ClipItem["tags"];
-  variant?: "card" | "menu";
 }
 
 export function ClipTagEditor({
   canAddTags,
   clipId,
   tags,
-  variant = "card",
 }: ClipTagEditorProps) {
   const queryClient = useQueryClient();
-  const [isAdding, setIsAdding] = useState(false);
+  const [isOpen, setIsOpen] = useState(false);
   const [name, setName] = useState("");
   const debouncedName = useDebouncedValue(name.trim(), 250);
   const suggestionsQuery = useQuery(clipTagQueries.search(debouncedName, []));
@@ -33,7 +32,7 @@ export function ClipTagEditor({
     mutationFn: (nextName: string) => addClipTag(clipId, nextName),
     onSuccess: () => {
       setName("");
-      setIsAdding(false);
+      setIsOpen(false);
       void queryClient.invalidateQueries({ queryKey: clipQueries.all() });
       void queryClient.invalidateQueries({ queryKey: clipTagQueries.all() });
     },
@@ -57,108 +56,111 @@ export function ClipTagEditor({
   }
 
   return (
-    <div
-      className={variant === "menu" ? "space-y-2" : "space-y-2 border-t border-default pt-2"}
-      onClick={(event) => event.stopPropagation()}
-    >
-      <div className="flex flex-wrap gap-1">
-        {tags.map((tag) => (
-          <span
-            className="inline-flex items-center gap-1 rounded-full bg-surface-muted px-2 py-1 text-caption font-medium text-secondary"
-            key={tag.id}
-          >
-            <Hash aria-hidden="true" className="size-3" />
-            {tag.name}
-            {tag.canDelete ? (
-              <button
-                aria-label={`${tag.name} 태그 삭제`}
-                className="cursor-pointer rounded-sm text-tertiary hover:text-status-danger"
-                disabled={deleteTagMutation.isPending}
-                onClick={() => deleteTagMutation.mutate(tag.id)}
-                type="button"
-              >
-                <X aria-hidden="true" className="size-3" />
-              </button>
-            ) : null}
-          </span>
-        ))}
-      </div>
+    <DialogPrimitive.Root onOpenChange={setIsOpen} open={isOpen}>
+      <button
+        className="flex h-9 w-full cursor-pointer items-center rounded-md px-2.5 text-left text-body-sm text-secondary hover:bg-surface-muted hover:text-primary focus-visible:outline-2 focus-visible:outline-focus-ring"
+        onClick={() => setIsOpen(true)}
+        type="button"
+      >
+        태그 추가
+      </button>
+      <DialogPrimitive.Portal>
+        <DialogPrimitive.Backdrop className="fixed inset-0 z-modal bg-black/60" />
+        <DialogPrimitive.Popup className="fixed top-1/2 left-1/2 z-modal w-[calc(100vw-2rem)] max-w-md -translate-x-1/2 -translate-y-1/2 rounded-xl border border-default bg-surface-raised p-5 shadow-2xl outline-none">
+          <DialogPrimitive.Title className="text-heading-sm font-semibold text-primary">
+            태그 추가
+          </DialogPrimitive.Title>
+          <DialogPrimitive.Description className="mt-1 text-body-sm text-secondary">
+            이 클립에 연결할 태그를 선택하거나 새로 입력하세요.
+          </DialogPrimitive.Description>
 
-      {canAddTags && isAdding ? (
-        <div>
-          <div className="relative flex gap-1">
-            <input
-              aria-label="클립 태그"
-              autoComplete="off"
-              className="h-8 min-w-0 flex-1 rounded-md border border-default bg-background px-2 text-caption text-primary outline-none focus-visible:border-focus-ring"
-              maxLength={20}
-              onChange={(event) => setName(event.target.value)}
-              onKeyDown={(event) => {
-                if (event.key === "Enter") {
-                  event.preventDefault();
-                  submitTag();
-                }
-              }}
-              placeholder="태그 입력"
-              value={name}
-            />
-            <Button
-              disabled={!name.trim() || addTagMutation.isPending}
-              onClick={() => submitTag()}
-              size="sm"
-              type="button"
-            >
-              저장
-            </Button>
+          <div className="mt-5 space-y-4">
+            <div className="space-y-2">
+              <p className="text-body-sm font-medium text-primary">기존 태그</p>
+              {tags.length > 0 ? (
+                <div className="flex flex-wrap gap-1.5">
+                  {tags.map((tag) => (
+                    <span
+                      className="inline-flex items-center gap-1 rounded-full bg-surface-muted px-2 py-1 text-caption font-medium text-secondary"
+                      key={tag.id}
+                    >
+                      <Hash aria-hidden="true" className="size-3" />
+                      {tag.name}
+                      {tag.canDelete ? (
+                        <button
+                          aria-label={`${tag.name} 태그 삭제`}
+                          className="cursor-pointer rounded-sm text-tertiary hover:text-status-danger focus-visible:outline-2 focus-visible:outline-focus-ring"
+                          disabled={deleteTagMutation.isPending}
+                          onClick={() => deleteTagMutation.mutate(tag.id)}
+                          type="button"
+                        >
+                          <X aria-hidden="true" className="size-3" />
+                        </button>
+                      ) : null}
+                    </span>
+                  ))}
+                </div>
+              ) : <p className="text-body-sm text-secondary">아직 등록된 태그가 없습니다.</p>}
+            </div>
+
+            <div className="space-y-2">
+              <label className="text-body-sm font-medium text-primary" htmlFor={`clip-tag-${clipId}`}>
+                태그 검색/선택
+              </label>
+              <div className="relative">
+                <input
+                  autoComplete="off"
+                  className="h-10 w-full rounded-lg border border-default bg-background px-3 text-body-sm text-primary outline-none focus-visible:border-focus-ring"
+                  id={`clip-tag-${clipId}`}
+                  maxLength={20}
+                  onChange={(event) => setName(event.target.value)}
+                  onKeyDown={(event) => {
+                    if (event.key === "Enter") {
+                      event.preventDefault();
+                      submitTag();
+                    }
+                  }}
+                  placeholder="태그를 입력하세요"
+                  value={name}
+                />
+                {name && suggestionsQuery.data?.length ? (
+                  <div className="absolute top-11 z-popover max-h-40 w-full overflow-y-auto rounded-lg border border-default bg-surface-raised p-1 shadow-lg">
+                    {suggestionsQuery.data.map((tag) => (
+                      <button
+                        className="block w-full cursor-pointer rounded-md px-2.5 py-2 text-left text-body-sm text-primary hover:bg-surface-muted focus-visible:bg-surface-muted"
+                        key={tag.id}
+                        onClick={() => submitTag(tag.name)}
+                        type="button"
+                      >
+                        #{tag.name}
+                      </button>
+                    ))}
+                  </div>
+                ) : null}
+              </div>
+            </div>
+            {addTagMutation.isError ? <p className="text-caption text-status-danger" role="alert">{addTagMutation.error.message}</p> : null}
+            {deleteTagMutation.isError ? <p className="text-caption text-status-danger" role="alert">{deleteTagMutation.error.message}</p> : null}
+          </div>
+
+          <div className="mt-5 flex justify-end gap-2 border-t border-default pt-4">
             <Button
               disabled={addTagMutation.isPending}
               onClick={() => {
                 setName("");
-                setIsAdding(false);
+                setIsOpen(false);
               }}
-              size="sm"
               type="button"
-              variant="ghost"
+              variant="outline"
             >
               취소
             </Button>
-            {name && suggestionsQuery.data?.length ? (
-              <div className="absolute top-9 z-popover max-h-40 w-full overflow-y-auto rounded-md border border-default bg-surface-raised p-1 shadow-lg">
-                {suggestionsQuery.data.map((tag) => (
-                  <button
-                    className="block w-full cursor-pointer rounded px-2 py-1.5 text-left text-caption text-primary hover:bg-surface-muted"
-                    key={tag.id}
-                    onClick={() => submitTag(tag.name)}
-                    type="button"
-                  >
-                    #{tag.name}
-                  </button>
-                ))}
-              </div>
-            ) : null}
+            <Button disabled={!canAddTags || !name.trim() || addTagMutation.isPending} onClick={() => submitTag()} type="button">
+              저장
+            </Button>
           </div>
-        </div>
-      ) : canAddTags ? (
-        <button
-          className="inline-flex cursor-pointer items-center gap-1 text-caption font-medium text-secondary hover:text-primary"
-          onClick={() => setIsAdding(true)}
-          type="button"
-        >
-          <Plus aria-hidden="true" className="size-3.5" />
-          태그 추가
-        </button>
-      ) : null}
-
-      {addTagMutation.isError ? (
-        <p className="text-caption text-status-danger" role="alert">
-          {addTagMutation.error.message}
-        </p>
-      ) : null}
-      {deleteTagMutation.isError ? (
-        <p className="text-caption text-status-danger" role="alert">
-          {deleteTagMutation.error.message}
-        </p>
-      ) : null}
-    </div>
+        </DialogPrimitive.Popup>
+      </DialogPrimitive.Portal>
+    </DialogPrimitive.Root>
   );
 }

@@ -96,12 +96,12 @@ export function ClipCard({
           ) : null}
         </div>
 
-        <div className="grid grid-rows-[3rem_2.5rem_1.5rem_1.25rem] gap-2 p-3">
-          <h2 className="line-clamp-2 text-body font-semibold leading-6 text-primary">
+        <div className="grid grid-rows-[3rem_2.5rem_1.5rem_1.25rem] gap-2 p-3 text-center">
+          <h2 className="line-clamp-2 flex items-center justify-center text-body font-semibold leading-6 text-primary">
             {clip.title}
           </h2>
 
-          <div className="flex min-w-0 items-center gap-2">
+          <div className="flex min-w-0 items-center justify-center gap-2">
             {profileImageUrl ? (
               <span
                 aria-hidden="true"
@@ -115,7 +115,7 @@ export function ClipCard({
                 <UserRound aria-hidden="true" className="size-4" />
               </span>
             )}
-            <div className="min-w-0">
+            <div className="min-w-0 text-left">
               <p className="truncate text-body-sm font-semibold text-primary">
                 {displayName.primaryName}
               </p>
@@ -127,7 +127,7 @@ export function ClipCard({
             </div>
           </div>
 
-          <div className="flex min-w-0 gap-1 overflow-hidden">
+          <div className="flex min-w-0 justify-center gap-1 overflow-hidden">
             {clip.historicalAffiliations.length > 0 ? (
               clip.historicalAffiliations.map((affiliation) => (
                 <div className="flex shrink-0 gap-1" key={`${affiliation.organizationSlug}:${affiliation.role ?? ""}`}>
@@ -162,7 +162,7 @@ export function ClipCard({
             )}
           </div>
 
-          <div className="flex items-center justify-between gap-2 text-caption text-secondary">
+          <div className="flex items-center justify-center gap-3 text-caption text-secondary">
             <span className="inline-flex min-w-0 items-center gap-1.5">
               <CalendarDays aria-hidden="true" className="size-3.5 shrink-0" />
               {dateFormatter.format(new Date(clip.clipCreatedAt))}
@@ -180,7 +180,6 @@ export function ClipCard({
             canAddTags={canAddTags}
             clipId={clip.id}
             tags={clip.tags}
-            variant="menu"
           />
           {canManageCollectedMedia && onExcluded ? (
             <CollectedMediaExclusionButton

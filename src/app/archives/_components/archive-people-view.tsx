@@ -137,6 +137,7 @@ export function ArchivePeopleView() {
               participant={section.participant}
             />
           ))}
+          {peopleQuery.isFetchingNextPage ? <ArchivePeopleNextPageSkeleton /> : null}
           <ClipInfiniteScrollTrigger
             hasNextPage={peopleQuery.hasNextPage}
             idleMessage={null}
@@ -165,6 +166,19 @@ function findFilterLabel(
   }
 
   return id;
+}
+
+function ArchivePeopleNextPageSkeleton() {
+  return (
+    <div aria-label="다음 인물별 아카이브를 불러오는 중입니다." className="space-y-10" role="status">
+      {Array.from({ length: 3 }, (_, index) => (
+        <section className="space-y-4" key={index}>
+          <div className="h-6 w-32 animate-pulse rounded-md bg-surface-muted" />
+          <ArchiveGridSkeleton count={3} />
+        </section>
+      ))}
+    </div>
+  );
 }
 
 function ArchivePeopleLoadingState() {

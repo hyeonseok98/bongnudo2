@@ -57,7 +57,7 @@ export function CollectedMediaExclusionButton({
         type="button"
         variant={variant === "menu" ? "ghost" : "outline"}
       >
-        {isPending ? "제외하는 중입니다." : "봉누도2에서 제외"}
+        {isPending ? "숨기는 중입니다." : "숨기기"}
       </Button>
       {errorMessage ? <p className="mt-1 text-caption text-status-danger">{errorMessage}</p> : null}
     </div>

@@ -4,6 +4,7 @@ import { useQuery } from "@tanstack/react-query";
 
 import { archiveQueries } from "@/queries/archive-queries";
 import { RetryButton } from "@/components/ui/retry-button";
+import { Skeleton } from "@/components/ui/skeleton";
 
 import { ArchiveDetailHeader } from "./archive-detail-header";
 import { ArchiveUserContent } from "./archive-user-content";
@@ -42,12 +43,34 @@ export function ArchiveDetailContent({ archiveId }: ArchiveDetailContentProps) {
 function ArchiveDetailLoading() {
   return (
     <div className="space-y-8 py-8 sm:py-10" aria-label="아카이브를 불러오는 중입니다.">
-      <div className="h-8 w-28 animate-pulse rounded bg-surface-muted" />
-      <div className="h-12 max-w-xl animate-pulse rounded bg-surface-muted" />
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-        {Array.from({ length: 4 }, (_, index) => (
-          <div className="aspect-[4/3] animate-pulse rounded-xl bg-surface-muted" key={index} />
-        ))}
+      <header className="space-y-4 border-b border-default pb-8">
+        <Skeleton className="h-4 w-40" />
+        <Skeleton className="h-10 w-2/3 max-w-xl" />
+        <Skeleton className="h-4 w-full max-w-3xl" />
+        <Skeleton className="h-4 w-4/5 max-w-2xl" />
+      </header>
+      <div className="grid items-start gap-10 lg:grid-cols-[minmax(0,1fr)_15rem]">
+        <div className="space-y-12">
+          {Array.from({ length: 2 }, (_, sectionIndex) => (
+            <section className="space-y-5" key={sectionIndex}>
+              <div className="space-y-2">
+                <Skeleton className="h-7 w-52" />
+                <Skeleton className="h-4 w-3/5" />
+              </div>
+              <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+                {Array.from({ length: 3 }, (_, cardIndex) => (
+                  <Skeleton className="aspect-video w-full rounded-xl" key={cardIndex} />
+                ))}
+              </div>
+            </section>
+          ))}
+        </div>
+        <aside className="hidden space-y-3 rounded-xl border border-default p-3 lg:block">
+          <Skeleton className="h-4 w-20" />
+          <Skeleton className="h-8 w-full" />
+          <Skeleton className="h-8 w-4/5" />
+          <Skeleton className="h-8 w-11/12" />
+        </aside>
       </div>
     </div>
   );

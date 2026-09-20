@@ -247,8 +247,8 @@ function FilterTriggerContent({
 }) {
   return (
     <>
-      <span className="text-caption font-medium text-tertiary">{label}</span>
-      <span className="min-w-0 max-w-48 truncate text-body-sm font-semibold text-primary">
+      <span className="shrink-0 whitespace-nowrap text-caption font-medium text-tertiary">{label}</span>
+      <span className="min-w-0 flex-1 truncate whitespace-nowrap text-body-sm font-semibold text-primary">
         {value}
       </span>
       <ChevronDown aria-hidden="true" className="ml-auto size-4 text-tertiary" />

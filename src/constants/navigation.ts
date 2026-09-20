@@ -52,7 +52,7 @@ export const SIDEBAR_NAV: SidebarNavigationGroup[] = [
       { label: "제보하기", href: "/reports", icon: FilePenLine },
       {
         label: "공식 위키",
-        href: "https://bongnudo.super.site/",
+        href: "https://www.bongnudo.site/",
         icon: BookOpen,
         isExternal: true,
       },

@@ -5,5 +5,5 @@ interface FilterBarProps {
 }
 
 export function FilterBar({ children }: FilterBarProps) {
-  return <div className="flex flex-wrap items-center gap-3">{children}</div>;
+  return <div className="flex flex-wrap items-center gap-4">{children}</div>;
 }
