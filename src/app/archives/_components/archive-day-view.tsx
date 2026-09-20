@@ -12,7 +12,7 @@ import { FilterBarSkeleton, MediaGridSkeleton } from "@/components/media-grid-sk
 import { RetryButton } from "@/components/ui/retry-button";
 import type { ArchiveListItem } from "@/features/archives/archive";
 import type { ClipItem, ClipListFilters } from "@/features/clips/clip";
-import { getDefaultSeasonDayByDateTime } from "@/features/seasons/season-day";
+import { getLatestCompletedSeasonDayByDateTime } from "@/features/seasons/season-day";
 import { archiveQueries } from "@/queries/archive-queries";
 import { clipQueries } from "@/queries/clip-queries";
 import { cn } from "@/utils/cn";
@@ -38,7 +38,7 @@ export function ArchiveDayView() {
   const [selectedDay, setSelectedDay] = useQueryState("day", parseAsInteger);
   const [previewClip, setPreviewClip] = useState<ClipItem | null>(null);
   const optionsQuery = useQuery(archiveQueries.editorOptions());
-  const day = selectedDay ?? getDefaultSeasonDayByDateTime(
+  const day = selectedDay ?? getLatestCompletedSeasonDayByDateTime(
     optionsQuery.data?.seasonDays ?? [],
     new Date(),
   )?.dayNumber ?? null;

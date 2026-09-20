@@ -11,6 +11,7 @@ import type {
   MyArchiveTab,
   ArchivePage,
   ArchivePeopleSection,
+  ArchivePeoplePage,
   ArchivePersonDetail,
   ArchiveSaveInput,
   ArchiveSaveResult,
@@ -352,14 +353,29 @@ export async function getArchivePersonDetail(
   return archivePersonDetailSchema.parse(await response.json());
 }
 
-export async function getArchivePeopleSections(): Promise<ArchivePeopleSection[]> {
-  const response = await fetch("/api/archives/people", { cache: "no-store" });
+const ARCHIVE_PEOPLE_PAGE_SIZE = 24;
+
+export async function getArchivePeopleSections(
+  participantIds: string[],
+  offset: number,
+): Promise<ArchivePeoplePage> {
+  const batch = participantIds.slice(offset, offset + ARCHIVE_PEOPLE_PAGE_SIZE);
+  const searchParams = new URLSearchParams();
+  batch.forEach((participantId) => searchParams.append("participant", participantId));
+  const response = await fetch(`/api/archives/people?${searchParams.toString()}`, {
+    cache: "no-store",
+  });
 
   if (!response.ok) {
     throw new Error(await getArchiveErrorMessage(response, "인물별 아카이브를 불러오지 못했습니다."));
   }
 
-  return archivePeopleSectionsSchema.parse(await response.json());
+  return {
+    items: archivePeopleSectionsSchema.parse(await response.json()),
+    nextOffset: offset + batch.length < participantIds.length
+      ? offset + batch.length
+      : null,
+  };
 }
 
 export async function getMyArchives(

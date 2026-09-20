@@ -1,11 +1,23 @@
 import { NextResponse } from "next/server";
+import { z } from "zod";
 
 import { createArchiveErrorResponse } from "@/features/archives/archive-route";
+import { ArchiveRequestError } from "@/features/archives/archive-error";
 import { getArchivePeopleSections } from "@/features/archives/archive-service";
 
-export async function GET() {
+const participantIdsSchema = z.array(z.uuid()).min(1).max(24);
+
+export async function GET(request: Request) {
   try {
-    const sections = await getArchivePeopleSections();
+    const result = participantIdsSchema.safeParse(
+      new URL(request.url).searchParams.getAll("participant"),
+    );
+
+    if (!result.success) {
+      throw new ArchiveRequestError("인물 선택 정보가 올바르지 않습니다.", 400);
+    }
+
+    const sections = await getArchivePeopleSections(result.data);
 
     return NextResponse.json(sections, {
       headers: { "Cache-Control": "no-store" },

@@ -180,6 +180,11 @@ export interface ArchivePeopleSection {
   };
 }
 
+export interface ArchivePeoplePage {
+  items: ArchivePeopleSection[];
+  nextOffset: number | null;
+}
+
 export interface ArchiveSystemClipSummary {
   clipCount: number;
   firstClipCreatedAt: string | null;

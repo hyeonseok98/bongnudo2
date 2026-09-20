@@ -1,19 +1,68 @@
 "use client";
 
-import { useQuery } from "@tanstack/react-query";
-import { Archive, UserRound } from "lucide-react";
+import { useInfiniteQuery, useQuery } from "@tanstack/react-query";
+import { Archive, LoaderCircle, UserRound } from "lucide-react";
+import { useState } from "react";
 
 import { ArchiveGridSkeleton } from "@/components/archive-grid-skeleton";
+import type { HierarchicalFilterSelection } from "@/components/filters/hierarchical-filter";
+import { Button } from "@/components/ui/button";
 import { RetryButton } from "@/components/ui/retry-button";
 import type { ArchivePeopleSection } from "@/features/archives/archive";
 import { getDisplayName } from "@/features/rp-mode/rp-mode";
 import { useRpModeSettings } from "@/providers/rp-mode-provider";
 import { archiveQueries } from "@/queries/archive-queries";
+import { characterQueries } from "@/queries/character-queries";
 
+import { CharacterFilters } from "../../characters/_components/character-filters";
+import { SelectedFilterSummary } from "../../characters/_components/selected-filter-summary";
+import {
+  buildCharacterFilterFacetData,
+  buildJobAffiliationFilterNodes,
+  buildStreamerAffiliationFilterData,
+  filterCharacters,
+  getStreamerAffiliationFilterLabel,
+} from "../../characters/_utils/character-directory";
 import { ArchiveCard } from "./archive-card";
 
+const EMPTY_SELECTION: HierarchicalFilterSelection = { ids: [] };
+
 export function ArchivePeopleView() {
-  const peopleQuery = useQuery(archiveQueries.people());
+  const [query, setQuery] = useState("");
+  const [jobSelection, setJobSelection] = useState(EMPTY_SELECTION);
+  const [streamerAffiliationSelection, setStreamerAffiliationSelection] = useState(EMPTY_SELECTION);
+  const charactersQuery = useQuery(characterQueries.list());
+  const characters = charactersQuery.data?.characters ?? [];
+  const streamerAffiliations = charactersQuery.data?.streamerAffiliations ?? [];
+  const criteria = { query, jobSelection, streamerAffiliationSelection };
+  const filteredCharacters = filterCharacters(characters, criteria, streamerAffiliations)
+    .sort((left, right) => (left.rpName ?? left.streamerName).localeCompare(
+      right.rpName ?? right.streamerName,
+      "ko",
+    ));
+  const participantIds = filteredCharacters.map((character) => character.id);
+  const peopleQuery = useInfiniteQuery({
+    ...archiveQueries.people(participantIds),
+    enabled: charactersQuery.isSuccess && participantIds.length > 0,
+  });
+  const sections = peopleQuery.data?.pages.flatMap((page) => page.items) ?? [];
+  const allJobNodes = buildJobAffiliationFilterNodes(characters);
+  const allStreamerAffiliationFilterData = buildStreamerAffiliationFilterData(
+    characters,
+    streamerAffiliations,
+  );
+  const facetData = buildCharacterFilterFacetData(characters, streamerAffiliations, criteria);
+
+  function getResultCount(
+    nextJobSelection: HierarchicalFilterSelection,
+    nextStreamerAffiliationSelection: HierarchicalFilterSelection,
+  ) {
+    return filterCharacters(characters, {
+      query,
+      jobSelection: nextJobSelection,
+      streamerAffiliationSelection: nextStreamerAffiliationSelection,
+    }, streamerAffiliations).length;
+  }
 
   return (
     <section aria-labelledby="archive-people-heading" className="space-y-7">
@@ -22,29 +71,108 @@ export function ArchivePeopleView() {
         <p className="mt-2 text-body text-secondary">인물과 함께 남은 공개 아카이브를 살펴보세요.</p>
       </div>
 
-      {peopleQuery.isPending ? <ArchivePeopleLoadingState /> : null}
-      {peopleQuery.isError ? (
+      {charactersQuery.data ? (
+        <>
+          <CharacterFilters
+            getJobResultCount={(selection) => getResultCount(selection, streamerAffiliationSelection)}
+            getStreamerAffiliationResultCount={(selection) => getResultCount(jobSelection, selection)}
+            jobLabelNodes={allJobNodes}
+            jobNodes={facetData.jobNodes}
+            jobValue={jobSelection}
+            onJobApply={setJobSelection}
+            onQueryChange={setQuery}
+            onStreamerAffiliationsApply={setStreamerAffiliationSelection}
+            query={query}
+            streamerAffiliationLabelNodes={allStreamerAffiliationFilterData.nodes}
+            streamerAffiliationNodes={facetData.streamerAffiliations.nodes}
+            streamerAffiliationQuickOptions={facetData.streamerAffiliations.quickOptions}
+            streamerAffiliationSelection={streamerAffiliationSelection}
+          />
+          <SelectedFilterSummary
+            onClearAll={() => {
+              setJobSelection(EMPTY_SELECTION);
+              setStreamerAffiliationSelection(EMPTY_SELECTION);
+            }}
+            onRemoveJob={(jobId) => setJobSelection({
+              ids: jobSelection.ids.filter((id) => id !== jobId),
+            })}
+            onRemoveStreamerAffiliation={(slug) => setStreamerAffiliationSelection({
+              ids: streamerAffiliationSelection.ids.filter((id) => id !== slug),
+            })}
+            selectedJobs={jobSelection.ids.map((id) => ({
+              id,
+              label: findFilterLabel(allJobNodes, id),
+            }))}
+            selectedStreamerAffiliations={streamerAffiliationSelection.ids.map((slug) => ({
+              label: getStreamerAffiliationFilterLabel(streamerAffiliations, slug) ?? slug,
+              slug,
+            }))}
+          />
+        </>
+      ) : null}
+
+      {charactersQuery.isPending || peopleQuery.isPending ? <ArchivePeopleLoadingState /> : null}
+      {charactersQuery.isError || peopleQuery.isError ? (
         <ArchivePeopleError
-          isRetrying={peopleQuery.isFetching}
-          onRetry={() => void peopleQuery.refetch()}
+          isRetrying={charactersQuery.isFetching || peopleQuery.isFetching}
+          onRetry={() => {
+            void charactersQuery.refetch();
+            void peopleQuery.refetch();
+          }}
         />
       ) : null}
-      {peopleQuery.data && peopleQuery.data.length > 0 ? (
+      {sections.length > 0 ? (
         <div className="space-y-10">
-          {peopleQuery.data.map((section) => (
+          <div className="flex min-h-5 justify-end">
+            <LoaderCircle
+              aria-label="인물별 아카이브를 업데이트하는 중입니다."
+              className={peopleQuery.isFetching && !peopleQuery.isFetchingNextPage
+                ? "size-4 animate-spin text-tertiary"
+                : "invisible size-4"}
+            />
+          </div>
+          {sections.map((section) => (
             <ArchivePersonSection
               archives={section.archives}
               key={section.participant.id}
               participant={section.participant}
             />
           ))}
+          {peopleQuery.hasNextPage ? (
+            <div className="flex justify-center">
+              <Button
+                disabled={peopleQuery.isFetchingNextPage}
+                onClick={() => void peopleQuery.fetchNextPage()}
+                type="button"
+                variant="outline"
+              >
+                {peopleQuery.isFetchingNextPage ? "인물을 더 불러오는 중입니다." : "인물 더 보기"}
+              </Button>
+            </div>
+          ) : null}
         </div>
       ) : null}
-      {peopleQuery.data && peopleQuery.data.length === 0 ? (
+      {charactersQuery.isSuccess && participantIds.length === 0 ? (
+        <ArchivePeopleMessage>조건에 맞는 인물이 없습니다.</ArchivePeopleMessage>
+      ) : null}
+      {peopleQuery.isSuccess && participantIds.length > 0 && sections.length === 0 ? (
         <ArchivePeopleMessage>인물과 연결된 공개 아카이브가 없습니다.</ArchivePeopleMessage>
       ) : null}
     </section>
   );
+}
+
+function findFilterLabel(
+  nodes: Array<{ children?: Array<{ id: string; label: string }>; id: string; label: string }>,
+  id: string,
+): string {
+  for (const node of nodes) {
+    if (node.id === id) return node.label;
+    const child = node.children?.find((candidate) => candidate.id === id);
+    if (child) return child.label;
+  }
+
+  return id;
 }
 
 function ArchivePeopleLoadingState() {
@@ -64,6 +192,8 @@ function ArchivePersonSection({ archives, participant }: ArchivePeopleSection) {
   const { isRpMode } = useRpModeSettings();
   const displayName = getDisplayName(participant, "clip-card", isRpMode);
 
+  if (archives.length === 0) return null;
+
   return (
     <section aria-labelledby={`archive-person-${participant.id}`} className="space-y-4">
       <div className="flex items-center gap-2.5">
@@ -79,13 +209,9 @@ function ArchivePersonSection({ archives, participant }: ArchivePeopleSection) {
           ) : null}
         </div>
       </div>
-      {archives.length > 0 ? (
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5">
-          {archives.map((archive) => <ArchiveCard archive={archive} key={archive.id} />)}
-        </div>
-      ) : (
-        <p className="text-body-sm text-secondary">관련 공개 아카이브가 없습니다.</p>
-      )}
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5">
+        {archives.map((archive) => <ArchiveCard archive={archive} key={archive.id} />)}
+      </div>
     </section>
   );
 }

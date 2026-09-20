@@ -454,131 +454,282 @@ export async function getArchivePersonDetail(
   };
 }
 
-export async function getArchivePeopleSections(): Promise<ArchivePeopleSection[]> {
+export async function getArchivePeopleSections(
+  participantIds: string[],
+): Promise<ArchivePeopleSection[]> {
   const supabase = getSupabaseAdminClient();
-  const [participantsResult, systemArchives, userArchives] = await Promise.all([
+  const [participantsResult, systemArchivesResult, clips, relatedItems] = await Promise.all([
     supabase
       .from("season_participants")
       .select(`
         id,
         rp_name,
-        season:seasons!inner (
-          is_active
-        ),
+        portrait_image_key,
         streamer:streamers!inner (
           name
         )
       `)
-      .eq("seasons.is_active", true),
-    getAllPublicArchivesByType("system"),
-    getAllPublicArchivesByType("user"),
+      .in("id", participantIds),
+    supabase
+      .from("archives")
+      .select("id, category, description, published_at, status, system_participant_id, title, updated_at")
+      .eq("archive_kind", "system_character")
+      .eq("visibility", "public")
+      .is("deleted_at", null)
+      .in("system_participant_id", participantIds),
+    getArchivePeopleClips(participantIds),
+    getArchivePeopleRelatedItems(participantIds),
   ]);
 
-  if (participantsResult.error) {
+  if (participantsResult.error || systemArchivesResult.error) {
     throw new ArchiveRequestError("인물별 아카이브를 불러오지 못했습니다.", 500, {
-      cause: participantsResult.error,
+      cause: participantsResult.error ?? systemArchivesResult.error ?? undefined,
     });
   }
 
-  const archiveIdsByParticipantId = await getArchiveIdsByParticipant(
-    userArchives.map((archive) => archive.id),
-  );
-  const userArchivesById = new Map(userArchives.map((archive) => [archive.id, archive]));
-  const systemArchiveByParticipantId = new Map(
-    systemArchives.flatMap((archive) => (
-      archive.systemParticipant ? [[archive.systemParticipant.id, archive] as const] : []
-    )),
-  );
-
-  return (participantsResult.data ?? [])
-    .map((participant) => ({
-      id: participant.id,
-      rpName: participant.rp_name,
-      streamerName: participant.streamer.name,
-    }))
-    .sort((left, right) => (left.rpName ?? left.streamerName).localeCompare(
-      right.rpName ?? right.streamerName,
-      "ko",
-    ))
-    .flatMap((participant) => {
-      const relatedUserArchives = Array.from(archiveIdsByParticipantId.get(participant.id) ?? [])
-        .flatMap((archiveId) => userArchivesById.get(archiveId) ?? [])
-        .sort((left, right) => right.sortAt.localeCompare(left.sortAt));
-      const systemArchive = systemArchiveByParticipantId.get(participant.id);
-      const archives = systemArchive
-        ? [systemArchive, ...relatedUserArchives]
-        : relatedUserArchives;
-
-      return [{ archives, participant }];
-    });
-}
-
-async function getAllPublicArchivesByType(
-  type: "system" | "user",
-): Promise<ArchiveListItem[]> {
-  const archives: ArchiveListItem[] = [];
-  let cursor: ArchiveListCursor | null = null;
-
-  do {
-    const page = await getPublicArchivePage({
-      category: null,
-      participantId: null,
-      query: "",
-      sort: "updated",
-      status: null,
-      type,
-    }, cursor);
-    archives.push(...page.items);
-    cursor = page.nextCursor;
-  } while (cursor !== null);
-
-  return archives;
-}
-
-async function getArchiveIdsByParticipant(
-  archiveIds: string[],
-): Promise<Map<string, Set<string>>> {
   const archiveIdsByParticipantId = new Map<string, Set<string>>();
-
-  if (archiveIds.length === 0) {
-    return archiveIdsByParticipantId;
-  }
-
-  const supabase = getSupabaseAdminClient();
-  const pageSize = 1_000;
-
-  for (let from = 0; ; from += pageSize) {
-    const result = await supabase
-      .from("archive_items")
-      .select(`
-        archive_id,
-        clip:clips!inner (
-          season_participant_id
-        )
-      `)
-      .in("archive_id", archiveIds)
-      .range(from, from + pageSize - 1);
-
-    if (result.error) {
-      throw new ArchiveRequestError("인물별 아카이브를 불러오지 못했습니다.", 500, {
-        cause: result.error,
-      });
-    }
-
-    for (const item of result.data ?? []) {
-      const participantId = item.clip?.season_participant_id;
-
-      if (!participantId) continue;
-
+  for (const item of relatedItems) {
+    const participantId = item.clip?.season_participant_id;
+    if (participantId) {
       const participantArchiveIds = archiveIdsByParticipantId.get(participantId) ?? new Set<string>();
       participantArchiveIds.add(item.archive_id);
       archiveIdsByParticipantId.set(participantId, participantArchiveIds);
     }
-
-    if ((result.data?.length ?? 0) < pageSize) break;
   }
 
-  return archiveIdsByParticipantId;
+  const relatedArchiveIds = Array.from(new Set(relatedItems.map((item) => item.archive_id)));
+  const userArchives = await getArchivePeopleUserArchives(relatedArchiveIds);
+  const userArchivesById = new Map(userArchives.map((archive) => [archive.id, archive]));
+  const participantsById = new Map((participantsResult.data ?? []).map((participant) => [
+    participant.id,
+    participant,
+  ]));
+  const clipStatsByParticipantId = getClipStatsByParticipant(clips);
+  const systemArchiveByParticipantId = new Map(
+    (systemArchivesResult.data ?? []).flatMap((archive) => {
+      const participantId = archive.system_participant_id;
+      const participant = participantId ? participantsById.get(participantId) : null;
+
+      if (!participantId || !participant) return [];
+
+      const stats = clipStatsByParticipantId.get(participantId);
+      const item: ArchiveListItem = {
+        archiveKind: "system_character",
+        category: toArchiveCategory(archive.category),
+        clipCount: stats?.clipCount ?? 0,
+        description: archive.description,
+        firstClipCreatedAt: stats?.firstClipCreatedAt ?? null,
+        id: archive.id,
+        lastClipCreatedAt: stats?.lastClipCreatedAt ?? null,
+        ownerName: null,
+        publishedAt: archive.published_at,
+        representativeImageUrl:
+          getR2PublicUrl(participant.portrait_image_key) ?? stats?.representativeImageUrl ?? null,
+        sortAt: stats?.lastClipCreatedAt ?? archive.updated_at,
+        status: toArchiveStatus(archive.status),
+        systemParticipant: {
+          id: participant.id,
+          profileImageUrl: getR2PublicUrl(participant.portrait_image_key),
+          rpName: participant.rp_name,
+          streamerName: participant.streamer.name,
+        },
+        title: archive.title,
+        updatedAt: archive.updated_at,
+      };
+
+      return [[participantId, item] as const];
+    }),
+  );
+
+  return participantIds.flatMap((participantId) => {
+    const participant = participantsById.get(participantId);
+    if (!participant) return [];
+
+    const relatedUserArchives = Array.from(archiveIdsByParticipantId.get(participantId) ?? [])
+      .flatMap((archiveId) => userArchivesById.get(archiveId) ?? [])
+      .sort((left, right) => right.sortAt.localeCompare(left.sortAt));
+    const systemArchive = systemArchiveByParticipantId.get(participantId);
+
+    return [{
+      archives: systemArchive ? [systemArchive, ...relatedUserArchives] : relatedUserArchives,
+      participant: {
+        id: participant.id,
+        rpName: participant.rp_name,
+        streamerName: participant.streamer.name,
+      },
+    }];
+  });
+}
+
+interface ArchivePeopleClipRow {
+  clip_created_at: string;
+  season_participant_id: string;
+  thumbnail_url: string | null;
+}
+
+async function getArchivePeopleClips(participantIds: string[]): Promise<ArchivePeopleClipRow[]> {
+  const supabase = getSupabaseAdminClient();
+  const rows: ArchivePeopleClipRow[] = [];
+  const pageSize = 1_000;
+
+  for (let from = 0; ; from += pageSize) {
+    const result = await supabase
+      .from("clips")
+      .select("season_participant_id, clip_created_at, thumbnail_url")
+      .in("season_participant_id", participantIds)
+      .is("excluded_at", null)
+      .order("clip_created_at", { ascending: false })
+      .range(from, from + pageSize - 1);
+
+    if (result.error) {
+      throw new ArchiveRequestError("인물별 클립 정보를 불러오지 못했습니다.", 500, {
+        cause: result.error,
+      });
+    }
+
+    rows.push(...result.data.flatMap((clip) => (
+      clip.season_participant_id === null ? [] : [{
+        clip_created_at: clip.clip_created_at,
+        season_participant_id: clip.season_participant_id,
+        thumbnail_url: clip.thumbnail_url,
+      }]
+    )));
+    if (result.data.length < pageSize) break;
+  }
+
+  return rows;
+}
+
+async function getArchivePeopleRelatedItems(participantIds: string[]) {
+  const supabase = getSupabaseAdminClient();
+  const result = await supabase
+    .from("archive_items")
+    .select(`
+      archive_id,
+      clip:clips!inner (
+        season_participant_id
+      )
+    `)
+    .in("clips.season_participant_id", participantIds);
+
+  if (result.error) {
+    throw new ArchiveRequestError("관련 아카이브 정보를 불러오지 못했습니다.", 500, {
+      cause: result.error,
+    });
+  }
+
+  return result.data;
+}
+
+function getClipStatsByParticipant(clips: ArchivePeopleClipRow[]) {
+  const stats = new Map<string, {
+    clipCount: number;
+    firstClipCreatedAt: string;
+    lastClipCreatedAt: string;
+    representativeImageUrl: string | null;
+  }>();
+
+  for (const clip of clips) {
+    const existing = stats.get(clip.season_participant_id);
+
+    if (!existing) {
+      stats.set(clip.season_participant_id, {
+        clipCount: 1,
+        firstClipCreatedAt: clip.clip_created_at,
+        lastClipCreatedAt: clip.clip_created_at,
+        representativeImageUrl: clip.thumbnail_url,
+      });
+      continue;
+    }
+
+    existing.clipCount += 1;
+    existing.firstClipCreatedAt = existing.firstClipCreatedAt < clip.clip_created_at
+      ? existing.firstClipCreatedAt
+      : clip.clip_created_at;
+    existing.lastClipCreatedAt = existing.lastClipCreatedAt > clip.clip_created_at
+      ? existing.lastClipCreatedAt
+      : clip.clip_created_at;
+    existing.representativeImageUrl ??= clip.thumbnail_url;
+  }
+
+  return stats;
+}
+
+async function getArchivePeopleUserArchives(archiveIds: string[]): Promise<ArchiveListItem[]> {
+  if (archiveIds.length === 0) return [];
+
+  const supabase = getSupabaseAdminClient();
+  const [archivesResult, itemsResult] = await Promise.all([
+    supabase
+      .from("archives")
+      .select("id, category, description, published_at, status, title, updated_at")
+      .in("id", archiveIds)
+      .eq("archive_kind", "user")
+      .eq("visibility", "public")
+      .is("deleted_at", null),
+    supabase
+      .from("archive_items")
+      .select("archive_id, clip:clips!inner(clip_created_at, thumbnail_url)")
+      .in("archive_id", archiveIds),
+  ]);
+
+  if (archivesResult.error || itemsResult.error) {
+    throw new ArchiveRequestError("관련 공개 아카이브를 불러오지 못했습니다.", 500, {
+      cause: archivesResult.error ?? itemsResult.error ?? undefined,
+    });
+  }
+
+  const statsByArchiveId = new Map<string, {
+    clipCount: number;
+    firstClipCreatedAt: string;
+    lastClipCreatedAt: string;
+    representativeImageUrl: string | null;
+  }>();
+
+  for (const item of itemsResult.data) {
+    const existing = statsByArchiveId.get(item.archive_id);
+    if (!existing) {
+      statsByArchiveId.set(item.archive_id, {
+        clipCount: 1,
+        firstClipCreatedAt: item.clip.clip_created_at,
+        lastClipCreatedAt: item.clip.clip_created_at,
+        representativeImageUrl: item.clip.thumbnail_url,
+      });
+      continue;
+    }
+
+    existing.clipCount += 1;
+    existing.firstClipCreatedAt = existing.firstClipCreatedAt < item.clip.clip_created_at
+      ? existing.firstClipCreatedAt
+      : item.clip.clip_created_at;
+    existing.lastClipCreatedAt = existing.lastClipCreatedAt > item.clip.clip_created_at
+      ? existing.lastClipCreatedAt
+      : item.clip.clip_created_at;
+    existing.representativeImageUrl ??= item.clip.thumbnail_url;
+  }
+
+  return archivesResult.data.flatMap((archive) => {
+    const stats = statsByArchiveId.get(archive.id);
+    if (!stats) return [];
+
+    return [{
+      archiveKind: "user" as const,
+      category: toArchiveCategory(archive.category),
+      clipCount: stats.clipCount,
+      description: archive.description,
+      firstClipCreatedAt: stats.firstClipCreatedAt,
+      id: archive.id,
+      lastClipCreatedAt: stats.lastClipCreatedAt,
+      ownerName: null,
+      publishedAt: archive.published_at,
+      representativeImageUrl: stats.representativeImageUrl,
+      sortAt: archive.updated_at,
+      status: toArchiveStatus(archive.status),
+      systemParticipant: null,
+      title: archive.title,
+      updatedAt: archive.updated_at,
+    }];
+  });
 }
 
 async function getMyArchiveDisplayDetails(archiveIds: string[]): Promise<Map<string, {

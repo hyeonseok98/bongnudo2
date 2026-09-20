@@ -27,6 +27,7 @@ import type {
   ArchiveListCursor,
   ArchiveListFilters,
   ArchivePage,
+  ArchivePeoplePage,
   ArchiveSaveInput,
   MyArchiveCursor,
   MyArchivePage,
@@ -106,10 +107,19 @@ export const archiveQueries = {
         return getArchivePersonDetail(participantId);
       },
     }),
-  people: () =>
-    queryOptions({
-      queryKey: [...archiveQueries.all(), "people"] as const,
-      queryFn: getArchivePeopleSections,
+  people: (participantIds: string[]) =>
+    infiniteQueryOptions<
+      ArchivePeoplePage,
+      Error,
+      InfiniteData<ArchivePeoplePage, number>,
+      readonly ["archives", "people", string[]],
+      number
+    >({
+      queryKey: [...archiveQueries.all(), "people", participantIds] as const,
+      queryFn: ({ pageParam }) => getArchivePeopleSections(participantIds, pageParam),
+      initialPageParam: 0,
+      getNextPageParam: (page) => page.nextOffset,
+      placeholderData: keepPreviousData,
     }),
   systemClipSummary: (archiveId: string) =>
     queryOptions({

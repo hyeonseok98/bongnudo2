@@ -73,6 +73,28 @@ export function getDefaultSeasonDayByDateTime<
     .sort((left, right) => left.startsAt - right.startsAt)[0]?.seasonDay ?? null;
 }
 
+export function getLatestCompletedSeasonDayByDateTime<
+  T extends Pick<SeasonDay, "endsAt" | "startsAt">,
+>(seasonDays: readonly T[], targetTime: Date | string): T | null {
+  const targetTimestamp = getTimestamp(targetTime);
+
+  if (targetTimestamp === null || seasonDays.length === 0) return null;
+
+  const completedSeasonDays = seasonDays
+    .map((seasonDay) => ({ seasonDay, endsAt: getTimestamp(seasonDay.endsAt) }))
+    .filter((item): item is { seasonDay: T; endsAt: number } => (
+      item.endsAt !== null && item.endsAt <= targetTimestamp
+    ))
+    .sort((left, right) => right.endsAt - left.endsAt);
+
+  if (completedSeasonDays[0]) return completedSeasonDays[0].seasonDay;
+
+  return seasonDays
+    .map((seasonDay) => ({ seasonDay, startsAt: getTimestamp(seasonDay.startsAt) }))
+    .filter((item): item is { seasonDay: T; startsAt: number } => item.startsAt !== null)
+    .sort((left, right) => left.startsAt - right.startsAt)[0]?.seasonDay ?? null;
+}
+
 function getTimestamp(value: Date | string): number | null {
   const timestamp = value instanceof Date ? value.getTime() : Date.parse(value);
 

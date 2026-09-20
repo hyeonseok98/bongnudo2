@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import {
   getDefaultSeasonDayByDateTime,
+  getLatestCompletedSeasonDayByDateTime,
   getSeasonDayByDateTime,
   getSeasonDayById,
   type SeasonDay,
@@ -74,5 +75,19 @@ describe("season day", () => {
       seasonDays,
       "2026-09-20T00:00:00.000Z",
     )).toMatchObject({ id: "day-2" });
+  });
+
+  it("아카이브 기본 일차는 진행 중 일차가 아닌 최근 완료 일차를 선택함", () => {
+    expect(getLatestCompletedSeasonDayByDateTime(
+      seasonDays,
+      "2026-09-15T10:00:00.000Z",
+    )).toMatchObject({ id: "day-1" });
+  });
+
+  it("완료된 일차가 없으면 첫 운영 일차를 선택함", () => {
+    expect(getLatestCompletedSeasonDayByDateTime(
+      seasonDays,
+      "2026-09-14T10:00:00.000Z",
+    )).toMatchObject({ id: "day-1" });
   });
 });
