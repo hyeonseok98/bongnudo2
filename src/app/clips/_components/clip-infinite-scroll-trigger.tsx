@@ -7,15 +7,23 @@ import { LoaderCircle } from "lucide-react";
 interface ClipInfiniteScrollTriggerProps {
   hasNextPage: boolean;
   isFetchingNextPage: boolean;
+  idleMessage?: string | null;
+  loadingMessage?: string;
   onLoadMore: () => void;
+  requireUserScroll?: boolean;
 }
 
 export function ClipInfiniteScrollTrigger({
   hasNextPage,
   isFetchingNextPage,
+  idleMessage = "아래로 스크롤하면 클립을 더 불러옵니다.",
+  loadingMessage = "클립을 더 불러오는 중입니다.",
   onLoadMore,
+  requireUserScroll = false,
 }: ClipInfiniteScrollTriggerProps) {
   const targetRef = useRef<HTMLDivElement>(null);
+  const hasUserScrolledRef = useRef(!requireUserScroll);
+  const lastRequestedScrollPositionRef = useRef<number | null>(null);
   const handleLoadMore = useEffectEvent(onLoadMore);
 
   useEffect(() => {
@@ -25,19 +33,41 @@ export function ClipInfiniteScrollTrigger({
       return;
     }
 
+    const scrollRoot = getScrollRoot(target);
+    const scrollTarget = scrollRoot ?? window;
+    const getScrollPosition = () => scrollRoot ? scrollRoot.scrollTop : window.scrollY;
+
+    function handleScroll() {
+      hasUserScrolledRef.current = true;
+    }
+
+    scrollTarget.addEventListener("scroll", handleScroll, { passive: true });
+
     const observer = new IntersectionObserver(
       ([entry]) => {
         if (entry?.isIntersecting) {
+          if (
+            requireUserScroll &&
+            (!hasUserScrolledRef.current ||
+              lastRequestedScrollPositionRef.current === getScrollPosition())
+          ) {
+            return;
+          }
+
+          lastRequestedScrollPositionRef.current = getScrollPosition();
           handleLoadMore();
         }
       },
-      { rootMargin: "320px 0px" },
+      { root: scrollRoot, rootMargin: "320px 0px" },
     );
 
     observer.observe(target);
 
-    return () => observer.disconnect();
-  }, [hasNextPage, isFetchingNextPage]);
+    return () => {
+      scrollTarget.removeEventListener("scroll", handleScroll);
+      observer.disconnect();
+    };
+  }, [hasNextPage, isFetchingNextPage, requireUserScroll]);
 
   if (!hasNextPage) {
     return null;
@@ -52,9 +82,25 @@ export function ClipInfiniteScrollTrigger({
       {isFetchingNextPage ? (
         <span className="inline-flex items-center gap-2" role="status">
           <LoaderCircle aria-hidden="true" className="size-4 animate-spin" />
-          클립을 더 불러오는 중입니다.
+          {loadingMessage}
         </span>
-      ) : "아래로 스크롤하면 클립을 더 불러옵니다."}
+      ) : idleMessage}
     </div>
   );
+}
+
+function getScrollRoot(target: HTMLElement): HTMLElement | null {
+  let parent = target.parentElement;
+
+  while (parent) {
+    const overflowY = window.getComputedStyle(parent).overflowY;
+
+    if (overflowY === "auto" || overflowY === "scroll") {
+      return parent;
+    }
+
+    parent = parent.parentElement;
+  }
+
+  return null;
 }

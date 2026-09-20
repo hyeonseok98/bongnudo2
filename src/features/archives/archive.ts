@@ -182,7 +182,13 @@ export interface ArchivePeopleSection {
 
 export interface ArchivePeoplePage {
   items: ArchivePeopleSection[];
-  nextOffset: number | null;
+  nextCursor: string | null;
+}
+
+export interface ArchivePeopleFilters {
+  affiliations: string[];
+  jobs: string[];
+  query: string;
 }
 
 export interface ArchiveSystemClipSummary {

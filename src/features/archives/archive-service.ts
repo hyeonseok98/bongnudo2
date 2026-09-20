@@ -23,6 +23,8 @@ import type {
   ArchiveListItem,
   ArchivePage,
   ArchivePersonDetail,
+  ArchivePeopleFilters,
+  ArchivePeoplePage,
   ArchivePeopleSection,
   ArchiveSaveResult,
   ArchiveStatus,
@@ -559,6 +561,300 @@ export async function getArchivePeopleSections(
       },
     }];
   });
+}
+
+const ARCHIVE_PEOPLE_PAGE_SIZE = 12;
+
+export async function getArchivePeoplePage(
+  filters: ArchivePeopleFilters,
+  cursor: string | null,
+  limit = ARCHIVE_PEOPLE_PAGE_SIZE,
+): Promise<ArchivePeoplePage> {
+  const supabase = getSupabaseAdminClient();
+  const seasonId = await getArchivePeopleSeasonId();
+  const participantIds = await resolveArchivePeopleParticipantIds(supabase, seasonId, filters);
+
+  if (participantIds?.length === 0) {
+    return { items: [], nextCursor: null };
+  }
+
+  let query = supabase
+    .from("season_participants")
+    .select("id")
+    .eq("season_id", seasonId)
+    .order("id", { ascending: true })
+    .limit(limit + 1);
+
+  if (participantIds) {
+    query = query.in("id", participantIds);
+  }
+
+  if (cursor) {
+    query = query.gt("id", cursor);
+  }
+
+  const result = await query;
+
+  if (result.error) {
+    throw new ArchiveRequestError("인물별 아카이브를 불러오지 못했습니다.", 500, {
+      cause: result.error,
+    });
+  }
+
+  const rows = result.data.slice(0, limit);
+  const items = await getArchivePeopleSections(rows.map((participant) => participant.id));
+
+  return {
+    items,
+    nextCursor: result.data.length > limit ? rows.at(-1)?.id ?? null : null,
+  };
+}
+
+async function getArchivePeopleSeasonId(): Promise<number> {
+  const result = await getSupabaseAdminClient()
+    .from("seasons")
+    .select("id")
+    .eq("is_active", true)
+    .limit(2);
+
+  if (result.error || result.data.length !== 1) {
+    throw new ArchiveRequestError("활성 시즌을 확인하지 못했습니다.", 500, {
+      cause: result.error ?? undefined,
+    });
+  }
+
+  return result.data[0].id;
+}
+
+async function resolveArchivePeopleParticipantIds(
+  supabase: ReturnType<typeof getSupabaseAdminClient>,
+  seasonId: number,
+  filters: ArchivePeopleFilters,
+): Promise<string[] | null> {
+  const candidateSets = await Promise.all([
+    resolveArchivePeopleQueryIds(supabase, seasonId, filters.query),
+    resolveArchivePeopleJobIds(supabase, seasonId, filters.jobs),
+    resolveArchivePeopleAffiliationIds(supabase, seasonId, filters.affiliations),
+  ]);
+  const appliedSets = candidateSets.filter((candidateSet): candidateSet is string[] => candidateSet !== null);
+
+  if (appliedSets.length === 0) return null;
+
+  const [firstSet, ...remainingSets] = appliedSets;
+  const matchedIds = new Set(firstSet);
+
+  for (const candidateSet of remainingSets) {
+    const candidateIdSet = new Set(candidateSet);
+    for (const participantId of matchedIds) {
+      if (!candidateIdSet.has(participantId)) {
+        matchedIds.delete(participantId);
+      }
+    }
+  }
+
+  return Array.from(matchedIds);
+}
+
+async function resolveArchivePeopleQueryIds(
+  supabase: ReturnType<typeof getSupabaseAdminClient>,
+  seasonId: number,
+  rawQuery: string,
+): Promise<string[] | null> {
+  if (!rawQuery) return null;
+
+  const [participantResult, streamerResult] = await Promise.all([
+    supabase
+      .from("season_participants")
+      .select("id")
+      .eq("season_id", seasonId)
+      .ilike("rp_name", `%${rawQuery}%`),
+    supabase
+      .from("streamers")
+      .select("id")
+      .ilike("name", `%${rawQuery}%`),
+  ]);
+
+  if (participantResult.error || streamerResult.error) {
+    throw new ArchiveRequestError("인물 검색 조건을 확인하지 못했습니다.", 500, {
+      cause: participantResult.error ?? streamerResult.error ?? undefined,
+    });
+  }
+
+  const streamerIds = streamerResult.data.map((streamer) => streamer.id);
+  const streamerParticipantResult = streamerIds.length === 0
+    ? { data: [] as Array<{ id: string }>, error: null }
+    : await supabase
+      .from("season_participants")
+      .select("id")
+      .eq("season_id", seasonId)
+      .in("streamer_id", streamerIds);
+
+  if (streamerParticipantResult.error) {
+    throw new ArchiveRequestError("인물 검색 조건을 확인하지 못했습니다.", 500, {
+      cause: streamerParticipantResult.error,
+    });
+  }
+
+  return Array.from(new Set([
+    ...participantResult.data.map((participant) => participant.id),
+    ...streamerParticipantResult.data.map((participant) => participant.id),
+  ]));
+}
+
+const JOB_CATEGORY_ORGANIZATION_TYPES: Record<string, string[]> = {
+  "public-service": ["institution", "public-service"],
+  business: ["business"],
+  "illegal-business": ["illegal-business"],
+  gang: ["gang"],
+  crew: ["crew"],
+};
+
+async function resolveArchivePeopleJobIds(
+  supabase: ReturnType<typeof getSupabaseAdminClient>,
+  seasonId: number,
+  jobs: string[],
+): Promise<string[] | null> {
+  if (jobs.length === 0) return null;
+
+  const organizationTypes = jobs.flatMap((job) => JOB_CATEGORY_ORGANIZATION_TYPES[job] ?? []);
+  const organizationSlugs = jobs.filter((job) => JOB_CATEGORY_ORGANIZATION_TYPES[job] === undefined);
+  const organizationResults = await Promise.all([
+    organizationSlugs.length > 0
+      ? supabase.from("organizations").select("id").eq("season_id", seasonId).in("slug", organizationSlugs)
+      : Promise.resolve({ data: [] as Array<{ id: string }>, error: null }),
+    organizationTypes.length > 0
+      ? supabase.from("organizations").select("id").eq("season_id", seasonId).in("type", organizationTypes)
+      : Promise.resolve({ data: [] as Array<{ id: string }>, error: null }),
+  ]);
+  const organizationError = organizationResults.find((result) => result.error)?.error;
+
+  if (organizationError) {
+    throw new ArchiveRequestError("직업 조건을 확인하지 못했습니다.", 500, {
+      cause: organizationError,
+    });
+  }
+
+  const organizationIds = Array.from(new Set(
+    organizationResults.flatMap((result) => (result.data ?? []).map((organization) => organization.id)),
+  ));
+
+  if (organizationIds.length === 0) return [];
+
+  const membershipsResult = await supabase
+    .from("organization_memberships")
+    .select("id, participant_id")
+    .in("organization_id", organizationIds);
+
+  if (membershipsResult.error) {
+    throw new ArchiveRequestError("직업 조건을 확인하지 못했습니다.", 500, {
+      cause: membershipsResult.error,
+    });
+  }
+
+  if (membershipsResult.data.length === 0) return [];
+
+  const roleHistoriesResult = await supabase
+    .from("organization_role_histories")
+    .select("membership_id")
+    .in("membership_id", membershipsResult.data.map((membership) => membership.id))
+    .is("end_date", null);
+
+  if (roleHistoriesResult.error) {
+    throw new ArchiveRequestError("직업 조건을 확인하지 못했습니다.", 500, {
+      cause: roleHistoriesResult.error,
+    });
+  }
+
+  const activeMembershipIds = new Set(roleHistoriesResult.data.map((history) => history.membership_id));
+  return membershipsResult.data
+    .filter((membership) => activeMembershipIds.has(membership.id))
+    .map((membership) => membership.participant_id);
+}
+
+async function resolveArchivePeopleAffiliationIds(
+  supabase: ReturnType<typeof getSupabaseAdminClient>,
+  seasonId: number,
+  affiliations: string[],
+): Promise<string[] | null> {
+  if (affiliations.length === 0) return null;
+
+  const affiliationsResult = await supabase
+    .from("streamer_affiliations")
+    .select("id, slug, parent_affiliation_id");
+
+  if (affiliationsResult.error) {
+    throw new ArchiveRequestError("소속 조건을 확인하지 못했습니다.", 500, {
+      cause: affiliationsResult.error,
+    });
+  }
+
+  const selectedAffiliationIds = resolveSelectedAffiliationIds(
+    affiliationsResult.data,
+    affiliations,
+  );
+
+  if (selectedAffiliationIds.length === 0) return [];
+
+  const membershipsResult = await supabase
+    .from("streamer_affiliation_memberships")
+    .select("streamer_id")
+    .in("affiliation_id", selectedAffiliationIds);
+
+  if (membershipsResult.error) {
+    throw new ArchiveRequestError("소속 조건을 확인하지 못했습니다.", 500, {
+      cause: membershipsResult.error,
+    });
+  }
+
+  const streamerIds = Array.from(new Set(membershipsResult.data.map((membership) => membership.streamer_id)));
+  if (streamerIds.length === 0) return [];
+
+  const participantsResult = await supabase
+    .from("season_participants")
+    .select("id")
+    .eq("season_id", seasonId)
+    .in("streamer_id", streamerIds);
+
+  if (participantsResult.error) {
+    throw new ArchiveRequestError("소속 조건을 확인하지 못했습니다.", 500, {
+      cause: participantsResult.error,
+    });
+  }
+
+  return participantsResult.data.map((participant) => participant.id);
+}
+
+function resolveSelectedAffiliationIds(
+  affiliations: Array<{ id: string; parent_affiliation_id: string | null; slug: string }>,
+  selectedSlugs: string[],
+): string[] {
+  const affiliationsBySlug = new Map(affiliations.map((affiliation) => [affiliation.slug, affiliation]));
+  const childrenByParentId = new Map<string, string[]>();
+
+  for (const affiliation of affiliations) {
+    if (!affiliation.parent_affiliation_id) continue;
+
+    const children = childrenByParentId.get(affiliation.parent_affiliation_id) ?? [];
+    children.push(affiliation.id);
+    childrenByParentId.set(affiliation.parent_affiliation_id, children);
+  }
+
+  const selectedIds = new Set<string>();
+  const addDescendants = (affiliationId: string) => {
+    if (selectedIds.has(affiliationId)) return;
+
+    selectedIds.add(affiliationId);
+    for (const childId of childrenByParentId.get(affiliationId) ?? []) {
+      addDescendants(childId);
+    }
+  };
+
+  for (const slug of selectedSlugs) {
+    const affiliation = affiliationsBySlug.get(slug);
+    if (affiliation) addDescendants(affiliation.id);
+  }
+
+  return Array.from(selectedIds);
 }
 
 interface ArchivePeopleClipRow {

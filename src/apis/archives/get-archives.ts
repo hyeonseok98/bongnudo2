@@ -11,6 +11,7 @@ import type {
   MyArchiveTab,
   ArchivePage,
   ArchivePeopleSection,
+  ArchivePeopleFilters,
   ArchivePeoplePage,
   ArchivePersonDetail,
   ArchiveSaveInput,
@@ -225,6 +226,11 @@ const archivePeopleSectionsSchema = z.array(z.object({
   }),
 }));
 
+const archivePeoplePageSchema = z.object({
+  items: archivePeopleSectionsSchema,
+  nextCursor: z.uuid().nullable(),
+});
+
 const myArchivePageSchema = z.object({
   items: z.array(z.object({
     canEditContent: z.boolean(),
@@ -353,15 +359,21 @@ export async function getArchivePersonDetail(
   return archivePersonDetailSchema.parse(await response.json());
 }
 
-const ARCHIVE_PEOPLE_PAGE_SIZE = 24;
+const ARCHIVE_PEOPLE_PAGE_SIZE = 12;
 
 export async function getArchivePeopleSections(
-  participantIds: string[],
-  offset: number,
+  filters: ArchivePeopleFilters,
+  cursor: string | null,
 ): Promise<ArchivePeoplePage> {
-  const batch = participantIds.slice(offset, offset + ARCHIVE_PEOPLE_PAGE_SIZE);
-  const searchParams = new URLSearchParams();
-  batch.forEach((participantId) => searchParams.append("participant", participantId));
+  const searchParams = new URLSearchParams({
+    limit: String(ARCHIVE_PEOPLE_PAGE_SIZE),
+  });
+
+  if (filters.query) searchParams.set("q", filters.query);
+  if (cursor) searchParams.set("cursor", cursor);
+  filters.jobs.forEach((job) => searchParams.append("job", job));
+  filters.affiliations.forEach((affiliation) => searchParams.append("affiliation", affiliation));
+
   const response = await fetch(`/api/archives/people?${searchParams.toString()}`, {
     cache: "no-store",
   });
@@ -370,12 +382,7 @@ export async function getArchivePeopleSections(
     throw new Error(await getArchiveErrorMessage(response, "인물별 아카이브를 불러오지 못했습니다."));
   }
 
-  return {
-    items: archivePeopleSectionsSchema.parse(await response.json()),
-    nextOffset: offset + batch.length < participantIds.length
-      ? offset + batch.length
-      : null,
-  };
+  return archivePeoplePageSchema.parse(await response.json());
 }
 
 export async function getMyArchives(

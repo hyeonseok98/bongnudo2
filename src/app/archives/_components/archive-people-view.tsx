@@ -6,13 +6,13 @@ import { useState } from "react";
 
 import { ArchiveGridSkeleton } from "@/components/archive-grid-skeleton";
 import type { HierarchicalFilterSelection } from "@/components/filters/hierarchical-filter";
-import { Button } from "@/components/ui/button";
 import { RetryButton } from "@/components/ui/retry-button";
 import type { ArchivePeopleSection } from "@/features/archives/archive";
 import { getDisplayName } from "@/features/rp-mode/rp-mode";
 import { useRpModeSettings } from "@/providers/rp-mode-provider";
 import { archiveQueries } from "@/queries/archive-queries";
 import { characterQueries } from "@/queries/character-queries";
+import { ClipInfiniteScrollTrigger } from "@/app/clips/_components/clip-infinite-scroll-trigger";
 
 import { CharacterFilters } from "../../characters/_components/character-filters";
 import { SelectedFilterSummary } from "../../characters/_components/selected-filter-summary";
@@ -35,17 +35,16 @@ export function ArchivePeopleView() {
   const characters = charactersQuery.data?.characters ?? [];
   const streamerAffiliations = charactersQuery.data?.streamerAffiliations ?? [];
   const criteria = { query, jobSelection, streamerAffiliationSelection };
-  const filteredCharacters = filterCharacters(characters, criteria, streamerAffiliations)
-    .sort((left, right) => (left.rpName ?? left.streamerName).localeCompare(
-      right.rpName ?? right.streamerName,
-      "ko",
-    ));
-  const participantIds = filteredCharacters.map((character) => character.id);
   const peopleQuery = useInfiniteQuery({
-    ...archiveQueries.people(participantIds),
-    enabled: charactersQuery.isSuccess && participantIds.length > 0,
+    ...archiveQueries.people({
+      affiliations: streamerAffiliationSelection.ids,
+      jobs: jobSelection.ids,
+      query: query.trim(),
+    }),
+    enabled: charactersQuery.isSuccess,
   });
   const sections = peopleQuery.data?.pages.flatMap((page) => page.items) ?? [];
+  const visibleSections = sections.filter((section) => section.archives.length > 0);
   const allJobNodes = buildJobAffiliationFilterNodes(characters);
   const allStreamerAffiliationFilterData = buildStreamerAffiliationFilterData(
     characters,
@@ -131,31 +130,24 @@ export function ArchivePeopleView() {
                 : "invisible size-4"}
             />
           </div>
-          {sections.map((section) => (
+          {visibleSections.map((section) => (
             <ArchivePersonSection
               archives={section.archives}
               key={section.participant.id}
               participant={section.participant}
             />
           ))}
-          {peopleQuery.hasNextPage ? (
-            <div className="flex justify-center">
-              <Button
-                disabled={peopleQuery.isFetchingNextPage}
-                onClick={() => void peopleQuery.fetchNextPage()}
-                type="button"
-                variant="outline"
-              >
-                {peopleQuery.isFetchingNextPage ? "인물을 더 불러오는 중입니다." : "인물 더 보기"}
-              </Button>
-            </div>
-          ) : null}
+          <ClipInfiniteScrollTrigger
+            hasNextPage={peopleQuery.hasNextPage}
+            idleMessage={null}
+            isFetchingNextPage={peopleQuery.isFetchingNextPage}
+            loadingMessage="다음 인물별 아카이브를 불러오는 중입니다."
+            onLoadMore={() => void peopleQuery.fetchNextPage()}
+            requireUserScroll
+          />
         </div>
       ) : null}
-      {charactersQuery.isSuccess && participantIds.length === 0 ? (
-        <ArchivePeopleMessage>조건에 맞는 인물이 없습니다.</ArchivePeopleMessage>
-      ) : null}
-      {peopleQuery.isSuccess && participantIds.length > 0 && sections.length === 0 ? (
+      {peopleQuery.isSuccess && !peopleQuery.hasNextPage && sections.length === 0 ? (
         <ArchivePeopleMessage>인물과 연결된 공개 아카이브가 없습니다.</ArchivePeopleMessage>
       ) : null}
     </section>
