@@ -1,0 +1,3 @@
+
+[functions.media-collector]
+verify_jwt = false

@@ -95,6 +95,8 @@ supabase/migrations/*
 !supabase/migrations/20260919001453_optimize_clips_query_and_replay_overlap.sql
 !supabase/migrations/20260919002333_optimize_clip_job_filter_evaluation.sql
 !supabase/migrations/20260919002501_restore_clip_cursor_index_order.sql
+!supabase/migrations/20260920113559_create_media_collector_runs.sql
+!supabase/migrations/20260920115723_fix_media_collector_run_status_ambiguity.sql
 supabase/.temp/
 
 # test
