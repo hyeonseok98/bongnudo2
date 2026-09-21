@@ -58,7 +58,7 @@ export const SIDEBAR_NAV: SidebarNavigationGroup[] = [
       },
       {
         label: "봉누도2 따라가기",
-        href: "https://www.bongnudo.site/",
+        href: "https://bnd2-fanwiki.app/",
         icon: Heart,
         isExternal: true,
       },
