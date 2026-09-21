@@ -45,7 +45,7 @@ export function Select<Value extends string>({
           className,
         )}
       >
-        <span className="min-w-0 flex-1 truncate">{options.find((option) => option.value === value)?.label}</span>
+        <span className="min-w-0 flex-1 truncate text-left">{options.find((option) => option.value === value)?.label}</span>
         <ChevronDown aria-hidden="true" className="size-4 shrink-0 text-tertiary" />
       </Popover.Trigger>
       <Popover.Portal>
