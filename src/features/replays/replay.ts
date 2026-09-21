@@ -44,8 +44,15 @@ export interface ReplayItem {
 }
 
 export interface ReplayPage {
-  items: ReplayItem[];
+  items: ReplaySession[];
   nextCursor: ReplayCursor | null;
+}
+
+export interface ReplaySession {
+  id: string;
+  startedAt: string | null;
+  endedAt: string | null;
+  replays: ReplayItem[];
 }
 
 export interface ReplayOptions {

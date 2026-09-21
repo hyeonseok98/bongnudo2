@@ -8,35 +8,40 @@ const replayCursorSchema = z.object({
   sortAt: z.string().datetime({ offset: true }).nullable(),
 });
 
+const replayItemSchema = z.object({
+  durationSeconds: z.number().int().nonnegative().nullable(),
+  historicalAffiliations: z.array(z.object({
+    organizationName: z.string(),
+    organizationSlug: z.string(),
+    role: z.string().nullable(),
+  })),
+  id: z.uuid(),
+  liveStartedAt: z.string().datetime({ offset: true }).nullable(),
+  participant: z.object({
+    id: z.uuid(),
+    profileImageUrl: z.string().url().nullable(),
+    rpName: z.string().nullable(),
+    streamerName: z.string(),
+  }).nullable(),
+  publishedAt: z.string().datetime({ offset: true }).nullable(),
+  replayUrl: z.string().url(),
+  seasonDay: z.object({
+    dayNumber: z.number().int().positive(),
+    id: z.uuid(),
+    sessionDate: z.string().date(),
+  }).nullable(),
+  thumbnailUrl: z.string().url().nullable(),
+  title: z.string(),
+  viewCount: z.number().int().nonnegative().nullable(),
+});
+
 const replayPageSchema = z.object({
-  items: z.array(
-    z.object({
-      durationSeconds: z.number().int().nonnegative().nullable(),
-      historicalAffiliations: z.array(z.object({
-        organizationName: z.string(),
-        organizationSlug: z.string(),
-        role: z.string().nullable(),
-      })),
-      id: z.uuid(),
-      liveStartedAt: z.string().datetime({ offset: true }).nullable(),
-      participant: z.object({
-        id: z.uuid(),
-        profileImageUrl: z.string().url().nullable(),
-        rpName: z.string().nullable(),
-        streamerName: z.string(),
-      }).nullable(),
-      publishedAt: z.string().datetime({ offset: true }).nullable(),
-      replayUrl: z.string().url(),
-      seasonDay: z.object({
-        dayNumber: z.number().int().positive(),
-        id: z.uuid(),
-        sessionDate: z.string().date(),
-      }).nullable(),
-      thumbnailUrl: z.string().url().nullable(),
-      title: z.string(),
-      viewCount: z.number().int().nonnegative().nullable(),
-    }),
-  ),
+  items: z.array(z.object({
+    id: z.uuid(),
+    startedAt: z.string().datetime({ offset: true }).nullable(),
+    endedAt: z.string().datetime({ offset: true }).nullable(),
+    replays: z.array(replayItemSchema).min(1),
+  })),
   nextCursor: replayCursorSchema.nullable(),
 });
 

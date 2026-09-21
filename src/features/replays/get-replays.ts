@@ -19,11 +19,12 @@ import type {
   ReplayListFilters,
   ReplayOptions,
   ReplayPage,
+  ReplaySession,
 } from "./replay";
+import { groupReplaySessions, pageReplaySessions, type ReplaySessionSource } from "./replay-sessions";
 
 const PAGE_SIZE = 24;
-const SOURCE_BATCH_SIZE = 48;
-const MAX_SCAN_BATCHES = 6;
+const SOURCE_BATCH_SIZE = 500;
 
 function createActiveSeasonQuery(client: SupabaseClient<Database>) {
   return client.from("seasons").select("id").eq("is_active", true).limit(2);
@@ -74,6 +75,18 @@ function createReplayRowsQuery(client: SupabaseClient<Database>) {
   `);
 }
 
+function createReplaySessionSourceQuery(client: SupabaseClient<Database>) {
+  return client.from("replays").select(`
+    id,
+    duration_seconds,
+    live_started_at,
+    published_at,
+    season_day_id,
+    season_participant_id,
+    sort_at
+  `);
+}
+
 function createCareerEventsQuery(client: SupabaseClient<Database>) {
   return client.from("character_career_events").select(`
     id,
@@ -104,6 +117,7 @@ function createCareerEventsQuery(client: SupabaseClient<Database>) {
 
 type ParticipantCandidate = QueryData<ReturnType<typeof createParticipantCandidatesQuery>>[number];
 type ReplaySourceRow = QueryData<ReturnType<typeof createReplayRowsQuery>>[number];
+type ReplayTimingRow = QueryData<ReturnType<typeof createReplaySessionSourceQuery>>[number];
 type CareerEventRow = QueryData<ReturnType<typeof createCareerEventsQuery>>[number];
 
 interface CareerEventsByParticipant {
@@ -152,17 +166,16 @@ export async function getReplayPage(
   }
 
   const dateRange = filters.date ? getKstDateRange(filters.date) : null;
-  const items: ReplayItem[] = [];
-  let sourceCursor = cursor;
-  const sourceBatchSize = filters.jobs.length > 0 ? SOURCE_BATCH_SIZE : PAGE_SIZE + 1;
+  const sourceRows: ReplayTimingRow[] = [];
 
-  for (let scanBatch = 0; scanBatch < MAX_SCAN_BATCHES; scanBatch += 1) {
-    let query = createReplayRowsQuery(client)
+  for (let offset = 0; ; offset += SOURCE_BATCH_SIZE) {
+    let query = createReplaySessionSourceQuery(client)
       .eq("season_id", seasonId)
       .not("season_day_id", "is", null)
+      .is("excluded_at", null)
       .order("sort_at", { ascending: false, nullsFirst: false })
       .order("id", { ascending: false })
-      .limit(sourceBatchSize);
+      .range(offset, offset + SOURCE_BATCH_SIZE - 1);
 
     if (participantIds !== null) {
       query = query.in("season_participant_id", participantIds);
@@ -176,56 +189,63 @@ export async function getReplayPage(
       query = query.gte("sort_at", dateRange.start).lt("sort_at", dateRange.end);
     }
 
-    if (sourceCursor !== null) {
-      query = sourceCursor.sortAt === null
-        ? query.is("sort_at", null).lt("id", sourceCursor.id)
-        : query.or(getReplayCursorFilter(sourceCursor.sortAt, sourceCursor.id));
-    }
-
     const { data, error } = await query;
 
     if (error) {
       throw new Error("다시보기를 불러오지 못함.", { cause: error });
     }
 
-    if (data.length === 0) {
-      return { items, nextCursor: null };
-    }
-
-    const careerEventsByParticipant = await getCareerEventsByParticipant(
-      client,
-      seasonId,
-      data,
-    );
-
-    for (let index = 0; index < data.length; index += 1) {
-      const row = data[index];
-      sourceCursor = { id: row.id, sortAt: row.sort_at };
-      const replay = toReplayItem(row, careerEventsByParticipant);
-
-      if (!matchesJobFilters(replay, filters.jobs, careerEventsByParticipant)) {
-        continue;
-      }
-
-      items.push(replay);
-
-      if (items.length === PAGE_SIZE) {
-        const hasUnscannedSourceRows = index < data.length - 1;
-        const mayHaveMoreRows = hasUnscannedSourceRows || data.length === sourceBatchSize;
-
-        return {
-          items,
-          nextCursor: mayHaveMoreRows ? sourceCursor : null,
-        };
-      }
-    }
-
-    if (data.length < sourceBatchSize) {
-      return { items, nextCursor: null };
-    }
+    sourceRows.push(...data);
+    if (data.length < SOURCE_BATCH_SIZE) break;
   }
 
-  return { items, nextCursor: sourceCursor };
+  if (sourceRows.length === 0) return { items: [], nextCursor: null };
+
+  const careerEventsByParticipant = filters.jobs.length > 0
+    ? await getCareerEventsByParticipant(client, seasonId, sourceRows)
+    : new Map<string, CareerEventsByParticipant>();
+  const matchedRows = filters.jobs.length > 0
+    ? sourceRows.filter((row) => matchesJobFilters(row, filters.jobs, careerEventsByParticipant))
+    : sourceRows;
+  const sessionPage = pageReplaySessions(
+    groupReplaySessions(matchedRows satisfies ReplaySessionSource[]),
+    cursor,
+    PAGE_SIZE,
+  );
+  const replayIds = sessionPage.items.flatMap((session) => session.replayIds);
+
+  if (replayIds.length === 0) return { items: [], nextCursor: null };
+
+  const replayRows: ReplaySourceRow[] = [];
+
+  for (let offset = 0; offset < replayIds.length; offset += 100) {
+    const { data, error } = await createReplayRowsQuery(client)
+      .eq("season_id", seasonId)
+      .is("excluded_at", null)
+      .in("id", replayIds.slice(offset, offset + 100));
+
+    if (error) throw new Error("다시보기를 불러오지 못함.", { cause: error });
+    replayRows.push(...data);
+  }
+
+  const displayCareerEvents = filters.jobs.length > 0
+    ? careerEventsByParticipant
+    : await getCareerEventsByParticipant(client, seasonId, replayRows);
+  const replayById = new Map(
+    replayRows.map((row) => [row.id, toReplayItem(row, displayCareerEvents)]),
+  );
+  const items: ReplaySession[] = sessionPage.items.flatMap((session) => {
+    const replays = session.replayIds.flatMap((id) => {
+      const replay = replayById.get(id);
+      return replay ? [replay] : [];
+    });
+
+    return replays.length > 0
+      ? [{ id: session.id, startedAt: session.startedAt, endedAt: session.endedAt, replays }]
+      : [];
+  });
+
+  return { items, nextCursor: sessionPage.nextCursor };
 }
 
 async function getActiveSeasonId(client: SupabaseClient<Database>): Promise<number> {
@@ -354,7 +374,7 @@ function resolveSelectedGroupSlugs(
 async function getCareerEventsByParticipant(
   client: SupabaseClient<Database>,
   seasonId: number,
-  replays: ReplaySourceRow[],
+  replays: Array<{ season_participant_id: string | null }>,
 ): Promise<Map<string, CareerEventsByParticipant>> {
   const participantIds = Array.from(
     new Set(
@@ -511,15 +531,15 @@ function toReplayItem(
 }
 
 function matchesJobFilters(
-  replay: ReplayItem,
+  replay: ReplayTimingRow,
   selectedJobs: string[],
   careerEventsByParticipant: Map<string, CareerEventsByParticipant>,
 ): boolean {
   if (selectedJobs.length === 0) return true;
-  if (!replay.participant) return false;
+  if (!replay.season_participant_id) return false;
 
-  const replayTime = getReplaySortAt(replay);
-  const career = careerEventsByParticipant.get(replay.participant.id);
+  const replayTime = replay.live_started_at ?? replay.published_at;
+  const career = careerEventsByParticipant.get(replay.season_participant_id);
 
   if (!replayTime || !career || career.events.length === 0) return false;
 
@@ -533,14 +553,4 @@ function matchesJobFilters(
     selected.has(affiliation.organization.slug) ||
     selected.has(career.categoriesByOrganizationId.get(affiliation.organization.id) ?? ""),
   );
-}
-
-function getReplaySortAt(replay: ReplayItem): string | null {
-  return replay.liveStartedAt ?? replay.publishedAt;
-}
-
-function getReplayCursorFilter(sortAt: string, id: string): string {
-  const cursorSortAt = new Date(sortAt).toISOString();
-
-  return `sort_at.lt.${cursorSortAt},and(sort_at.eq.${cursorSortAt},id.lt.${id}),sort_at.is.null`;
 }
