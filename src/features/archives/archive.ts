@@ -19,6 +19,8 @@ export interface ArchiveMetadataInput {
   category: ArchiveCategory;
   description: string | null;
   editPolicy: ArchiveEditPolicy;
+  relatedParticipantIds: string[];
+  relatedSeasonDayIds: string[];
   status: ArchiveStatus;
   structureMode: ArchiveStructureMode;
   title: string;
@@ -44,7 +46,15 @@ export interface ArchiveItemInput {
 
 export interface ArchiveSnapshot {
   chapters: ArchiveSnapshotChapter[];
-  metadata: Pick<ArchiveMetadataInput, "category" | "description" | "status" | "title">;
+  metadata: Pick<
+    ArchiveMetadataInput,
+    | "category"
+    | "description"
+    | "relatedParticipantIds"
+    | "relatedSeasonDayIds"
+    | "status"
+    | "title"
+  >;
 }
 
 export interface ArchiveSnapshotChapter extends ArchiveChapterInput {
@@ -82,6 +92,8 @@ export interface ArchiveDetail {
   editPolicy: ArchiveEditPolicy;
   id: string;
   isOwner: boolean;
+  relatedParticipants: ArchiveRelatedParticipant[];
+  relatedSeasonDays: ArchiveSeasonDay[];
   seasonId: number;
   status: ArchiveStatus;
   structureMode: ArchiveStructureMode | null;
@@ -106,6 +118,12 @@ export interface ArchiveSeasonDay {
   dayNumber: number;
   id: string;
   sessionDate: string;
+}
+
+export interface ArchiveRelatedParticipant {
+  id: string;
+  rpName: string | null;
+  streamerName: string;
 }
 
 export interface ArchiveDetailItem {

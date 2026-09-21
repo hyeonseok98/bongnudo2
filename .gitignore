@@ -97,6 +97,7 @@ supabase/migrations/*
 !supabase/migrations/20260919002501_restore_clip_cursor_index_order.sql
 !supabase/migrations/20260920113559_create_media_collector_runs.sql
 !supabase/migrations/20260920115723_fix_media_collector_run_status_ambiguity.sql
+!supabase/migrations/20260920190823_add_archive_metadata_relations.sql
 supabase/.temp/
 
 # test

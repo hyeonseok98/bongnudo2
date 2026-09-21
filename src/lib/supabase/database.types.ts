@@ -65,6 +65,42 @@ export type Database = {
           },
         ]
       }
+      archive_day_relations: {
+        Row: {
+          archive_id: string
+          created_at: string
+          season_day_id: string
+          season_id: number
+        }
+        Insert: {
+          archive_id: string
+          created_at?: string
+          season_day_id: string
+          season_id: number
+        }
+        Update: {
+          archive_id?: string
+          created_at?: string
+          season_day_id?: string
+          season_id?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "archive_day_relations_archive_same_season_fkey"
+            columns: ["archive_id", "season_id"]
+            isOneToOne: false
+            referencedRelation: "archives"
+            referencedColumns: ["id", "season_id"]
+          },
+          {
+            foreignKeyName: "archive_day_relations_day_same_season_fkey"
+            columns: ["season_day_id", "season_id"]
+            isOneToOne: false
+            referencedRelation: "season_days"
+            referencedColumns: ["id", "season_id"]
+          },
+        ]
+      }
       archive_items: {
         Row: {
           archive_id: string
@@ -110,6 +146,42 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "clips"
             referencedColumns: ["id"]
+          },
+        ]
+      }
+      archive_participant_relations: {
+        Row: {
+          archive_id: string
+          created_at: string
+          season_id: number
+          season_participant_id: string
+        }
+        Insert: {
+          archive_id: string
+          created_at?: string
+          season_id: number
+          season_participant_id: string
+        }
+        Update: {
+          archive_id?: string
+          created_at?: string
+          season_id?: number
+          season_participant_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "archive_participant_relations_archive_same_season_fkey"
+            columns: ["archive_id", "season_id"]
+            isOneToOne: false
+            referencedRelation: "archives"
+            referencedColumns: ["id", "season_id"]
+          },
+          {
+            foreignKeyName: "archive_participant_relations_participant_same_season_fkey"
+            columns: ["season_participant_id", "season_id"]
+            isOneToOne: false
+            referencedRelation: "season_participants"
+            referencedColumns: ["id", "season_id"]
           },
         ]
       }
@@ -735,6 +807,74 @@ export type Database = {
             columns: ["season_participant_id"]
             isOneToOne: false
             referencedRelation: "season_participants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      media_collector_runs: {
+        Row: {
+          collector_kind: string
+          completed_at: string | null
+          error_message: string | null
+          failed_count: number
+          found_count: number
+          id: string
+          inserted_count: number
+          lease_expires_at: string | null
+          lease_token: string | null
+          next_offset: number
+          page_count: number
+          processed_participant_count: number
+          season_id: number
+          started_at: string
+          status: string
+          target_count: number
+          updated_count: number
+        }
+        Insert: {
+          collector_kind: string
+          completed_at?: string | null
+          error_message?: string | null
+          failed_count?: number
+          found_count?: number
+          id?: string
+          inserted_count?: number
+          lease_expires_at?: string | null
+          lease_token?: string | null
+          next_offset?: number
+          page_count?: number
+          processed_participant_count?: number
+          season_id: number
+          started_at?: string
+          status?: string
+          target_count: number
+          updated_count?: number
+        }
+        Update: {
+          collector_kind?: string
+          completed_at?: string | null
+          error_message?: string | null
+          failed_count?: number
+          found_count?: number
+          id?: string
+          inserted_count?: number
+          lease_expires_at?: string | null
+          lease_token?: string | null
+          next_offset?: number
+          page_count?: number
+          processed_participant_count?: number
+          season_id?: number
+          started_at?: string
+          status?: string
+          target_count?: number
+          updated_count?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "media_collector_runs_season_id_fkey"
+            columns: ["season_id"]
+            isOneToOne: false
+            referencedRelation: "seasons"
             referencedColumns: ["id"]
           },
         ]
@@ -1979,6 +2119,33 @@ export type Database = {
       }
     }
     Functions: {
+      claim_media_collector_batch: {
+        Args: { p_collector_kind: string }
+        Returns: {
+          lease_token: string
+          next_offset: number
+          run_id: string
+          season_id: number
+          target_count: number
+        }[]
+      }
+      complete_media_collector_batch: {
+        Args: {
+          p_failed_count: number
+          p_found_count: number
+          p_inserted_count: number
+          p_is_last_batch: boolean
+          p_lease_token: string
+          p_page_count: number
+          p_processed_participant_count: number
+          p_run_id: string
+          p_updated_count: number
+        }
+        Returns: {
+          has_more: boolean
+          status: string
+        }[]
+      }
       create_archive: {
         Args: {
           p_actor_user_id: string
@@ -2021,6 +2188,18 @@ export type Database = {
               created_timeline_event_id: string
             }[]
           }
+      dispatch_media_collector_batch: {
+        Args: { p_run_id: string }
+        Returns: number
+      }
+      fail_media_collector_run: {
+        Args: {
+          p_error_message: string
+          p_lease_token: string
+          p_run_id: string
+        }
+        Returns: undefined
+      }
       get_clip_historical_affiliations: {
         Args: {
           p_participant_id: string

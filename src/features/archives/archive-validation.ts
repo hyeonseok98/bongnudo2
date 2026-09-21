@@ -16,14 +16,53 @@ const archiveMetadataSchema = z.strictObject({
   category: z.enum(["character", "incident", "series", "other"]),
   description: z.string().trim().max(500).nullable(),
   editPolicy: z.enum(["owner_only", "public_edit"]),
+  relatedParticipantIds: z.array(z.uuid("관련 인물 정보가 올바르지 않습니다.")).max(500),
+  relatedSeasonDayIds: z.array(z.uuid("관련 일차 정보가 올바르지 않습니다.")).max(100),
   status: z.enum(["ongoing", "completed"]),
   structureMode: z.enum(["day_based", "freeform"]),
   title: z.string().trim().min(1, "제목을 입력해주세요.").max(60),
   visibility: z.enum(["private", "public"]),
-}).refine(
-  (metadata) => metadata.visibility !== "private" || metadata.editPolicy === "owner_only",
-  "비공개 아카이브는 소유자만 편집할 수 있습니다.",
-);
+}).superRefine((metadata, context) => {
+  if (metadata.visibility === "private" && metadata.editPolicy !== "owner_only") {
+    context.addIssue({
+      code: "custom",
+      message: "비공개 아카이브는 소유자만 편집할 수 있습니다.",
+      path: ["editPolicy"],
+    });
+  }
+
+  if (new Set(metadata.relatedParticipantIds).size !== metadata.relatedParticipantIds.length) {
+    context.addIssue({
+      code: "custom",
+      message: "같은 인물을 중복해서 선택할 수 없습니다.",
+      path: ["relatedParticipantIds"],
+    });
+  }
+
+  if (new Set(metadata.relatedSeasonDayIds).size !== metadata.relatedSeasonDayIds.length) {
+    context.addIssue({
+      code: "custom",
+      message: "같은 일차를 중복해서 선택할 수 없습니다.",
+      path: ["relatedSeasonDayIds"],
+    });
+  }
+
+  if (metadata.category === "character" && metadata.relatedParticipantIds.length === 0) {
+    context.addIssue({
+      code: "custom",
+      message: "인물 아카이브는 관련 인물을 한 명 이상 선택해주세요.",
+      path: ["relatedParticipantIds"],
+    });
+  }
+
+  if (metadata.category === "incident" && metadata.relatedSeasonDayIds.length === 0) {
+    context.addIssue({
+      code: "custom",
+      message: "사건 아카이브는 관련 일차를 한 개 이상 선택해주세요.",
+      path: ["relatedSeasonDayIds"],
+    });
+  }
+});
 
 const archiveItemSchema = z.strictObject({
   clipId: z.uuid("클립 정보가 올바르지 않습니다."),
@@ -132,6 +171,8 @@ const archiveSnapshotSchema = z.strictObject({
   metadata: z.strictObject({
     category: z.enum(["character", "incident", "series", "other"]),
     description: z.string().nullable(),
+    relatedParticipantIds: z.array(z.uuid()),
+    relatedSeasonDayIds: z.array(z.uuid()),
     status: z.enum(["ongoing", "completed"]),
     title: z.string(),
   }),

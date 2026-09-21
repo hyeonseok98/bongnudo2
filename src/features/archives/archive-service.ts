@@ -242,14 +242,9 @@ export async function getPublicUserArchivesForSeasonDay(
 ): Promise<ArchiveListItem[]> {
   const supabase = getSupabaseAdminClient();
   const matchingItemsResult = await supabase
-    .from("archive_items")
-    .select(`
-      archive_id,
-      clip:clips!inner (
-        id
-      )
-    `)
-    .eq("clips.season_day_id", seasonDayId);
+    .from("archive_day_relations")
+    .select("archive_id")
+    .eq("season_day_id", seasonDayId);
 
   if (matchingItemsResult.error) {
     throw new ArchiveRequestError("관련 아카이브를 불러오지 못했습니다.", 500, {
@@ -338,30 +333,26 @@ export async function getPublicUserArchivesForSeasonDay(
     existing.representativeImageUrl ??= item.clip.thumbnail_url;
   }
 
-  return (archivesResult.data ?? []).flatMap((archive) => {
+  return (archivesResult.data ?? []).map((archive) => {
     const stats = statsByArchiveId.get(archive.id);
 
-    if (!stats) {
-      return [];
-    }
-
-    return [{
+    return {
       archiveKind: "user" as const,
       category: toArchiveCategory(archive.category),
-      clipCount: stats.clipCount,
+      clipCount: stats?.clipCount ?? 0,
       description: archive.description,
-      firstClipCreatedAt: stats.firstClipCreatedAt,
+      firstClipCreatedAt: stats?.firstClipCreatedAt ?? null,
       id: archive.id,
-      lastClipCreatedAt: stats.lastClipCreatedAt,
+      lastClipCreatedAt: stats?.lastClipCreatedAt ?? null,
       ownerName: null,
       publishedAt: archive.published_at,
-      representativeImageUrl: stats.representativeImageUrl,
+      representativeImageUrl: stats?.representativeImageUrl ?? null,
       sortAt: archive.updated_at,
       status: toArchiveStatus(archive.status),
       systemParticipant: null,
       title: archive.title,
       updatedAt: archive.updated_at,
-    }];
+    };
   });
 }
 
@@ -369,7 +360,7 @@ export async function getArchivePersonDetail(
   participantId: string,
 ): Promise<ArchivePersonDetail | null> {
   const supabase = getSupabaseAdminClient();
-  const [participantResult, systemArchiveResult, relatedArchivesResult] = await Promise.all([
+  const [participantResult, systemArchiveResult, relatedRelationsResult] = await Promise.all([
     supabase
       .from("season_participants")
       .select(`
@@ -399,14 +390,10 @@ export async function getArchivePersonDetail(
       .eq("visibility", "public")
       .is("deleted_at", null)
       .maybeSingle(),
-    getPublicArchivePage({
-      category: null,
-      participantId,
-      query: "",
-      sort: "updated",
-      status: null,
-      type: "user",
-    }, null),
+    supabase
+      .from("archive_participant_relations")
+      .select("archive_id")
+      .eq("season_participant_id", participantId),
   ]);
 
   if (participantResult.error) {
@@ -418,6 +405,12 @@ export async function getArchivePersonDetail(
   if (systemArchiveResult.error) {
     throw new ArchiveRequestError("전체 클립 아카이브를 불러오지 못했습니다.", 500, {
       cause: systemArchiveResult.error,
+    });
+  }
+
+  if (relatedRelationsResult.error) {
+    throw new ArchiveRequestError("관련 아카이브를 불러오지 못했습니다.", 500, {
+      cause: relatedRelationsResult.error,
     });
   }
 
@@ -451,7 +444,9 @@ export async function getArchivePersonDetail(
       rpName: participant.rp_name,
       streamerName: participant.streamer.name,
     },
-    relatedArchives: relatedArchivesResult.items,
+    relatedArchives: await getArchivePeopleUserArchives(
+      relatedRelationsResult.data.map((relation) => relation.archive_id),
+    ),
     systemArchiveId: systemArchiveResult.data?.id ?? null,
   };
 }
@@ -460,7 +455,7 @@ export async function getArchivePeopleSections(
   participantIds: string[],
 ): Promise<ArchivePeopleSection[]> {
   const supabase = getSupabaseAdminClient();
-  const [participantsResult, systemArchivesResult, clips, relatedItems] = await Promise.all([
+  const [participantsResult, systemArchivesResult, clips, relatedRelationsResult] = await Promise.all([
     supabase
       .from("season_participants")
       .select(`
@@ -480,26 +475,28 @@ export async function getArchivePeopleSections(
       .is("deleted_at", null)
       .in("system_participant_id", participantIds),
     getArchivePeopleClips(participantIds),
-    getArchivePeopleRelatedItems(participantIds),
+    supabase
+      .from("archive_participant_relations")
+      .select("archive_id, season_participant_id")
+      .in("season_participant_id", participantIds),
   ]);
 
-  if (participantsResult.error || systemArchivesResult.error) {
+  if (participantsResult.error || systemArchivesResult.error || relatedRelationsResult.error) {
     throw new ArchiveRequestError("인물별 아카이브를 불러오지 못했습니다.", 500, {
-      cause: participantsResult.error ?? systemArchivesResult.error ?? undefined,
+      cause: participantsResult.error ?? systemArchivesResult.error ?? relatedRelationsResult.error ?? undefined,
     });
   }
 
   const archiveIdsByParticipantId = new Map<string, Set<string>>();
-  for (const item of relatedItems) {
-    const participantId = item.clip?.season_participant_id;
-    if (participantId) {
-      const participantArchiveIds = archiveIdsByParticipantId.get(participantId) ?? new Set<string>();
-      participantArchiveIds.add(item.archive_id);
-      archiveIdsByParticipantId.set(participantId, participantArchiveIds);
-    }
+  for (const relation of relatedRelationsResult.data) {
+    const participantArchiveIds = archiveIdsByParticipantId.get(relation.season_participant_id) ?? new Set<string>();
+    participantArchiveIds.add(relation.archive_id);
+    archiveIdsByParticipantId.set(relation.season_participant_id, participantArchiveIds);
   }
 
-  const relatedArchiveIds = Array.from(new Set(relatedItems.map((item) => item.archive_id)));
+  const relatedArchiveIds = Array.from(new Set(
+    relatedRelationsResult.data.map((relation) => relation.archive_id),
+  ));
   const userArchives = await getArchivePeopleUserArchives(relatedArchiveIds);
   const userArchivesById = new Map(userArchives.map((archive) => [archive.id, archive]));
   const participantsById = new Map((participantsResult.data ?? []).map((participant) => [
@@ -896,27 +893,6 @@ async function getArchivePeopleClips(participantIds: string[]): Promise<ArchiveP
   return rows;
 }
 
-async function getArchivePeopleRelatedItems(participantIds: string[]) {
-  const supabase = getSupabaseAdminClient();
-  const result = await supabase
-    .from("archive_items")
-    .select(`
-      archive_id,
-      clip:clips!inner (
-        season_participant_id
-      )
-    `)
-    .in("clips.season_participant_id", participantIds);
-
-  if (result.error) {
-    throw new ArchiveRequestError("관련 아카이브 정보를 불러오지 못했습니다.", 500, {
-      cause: result.error,
-    });
-  }
-
-  return result.data;
-}
-
 function getClipStatsByParticipant(clips: ArchivePeopleClipRow[]) {
   const stats = new Map<string, {
     clipCount: number;
@@ -1004,27 +980,26 @@ async function getArchivePeopleUserArchives(archiveIds: string[]): Promise<Archi
     existing.representativeImageUrl ??= item.clip.thumbnail_url;
   }
 
-  return archivesResult.data.flatMap((archive) => {
+  return archivesResult.data.map((archive) => {
     const stats = statsByArchiveId.get(archive.id);
-    if (!stats) return [];
 
-    return [{
+    return {
       archiveKind: "user" as const,
       category: toArchiveCategory(archive.category),
-      clipCount: stats.clipCount,
+      clipCount: stats?.clipCount ?? 0,
       description: archive.description,
-      firstClipCreatedAt: stats.firstClipCreatedAt,
+      firstClipCreatedAt: stats?.firstClipCreatedAt ?? null,
       id: archive.id,
-      lastClipCreatedAt: stats.lastClipCreatedAt,
+      lastClipCreatedAt: stats?.lastClipCreatedAt ?? null,
       ownerName: null,
       publishedAt: archive.published_at,
-      representativeImageUrl: stats.representativeImageUrl,
+      representativeImageUrl: stats?.representativeImageUrl ?? null,
       sortAt: archive.updated_at,
       status: toArchiveStatus(archive.status),
       systemParticipant: null,
       title: archive.title,
       updatedAt: archive.updated_at,
-    }];
+    };
   });
 }
 
@@ -1171,7 +1146,7 @@ export async function getArchiveDetail(
     return null;
   }
 
-  const [chaptersResult, itemsResult] = await Promise.all([
+  const [chaptersResult, itemsResult, dayRelationsResult, participantRelationsResult] = await Promise.all([
     supabase
       .from("archive_chapters")
       .select(`
@@ -1194,11 +1169,38 @@ export async function getArchiveDetail(
       .select("id, chapter_id, clip_id, note, sort_order")
       .eq("archive_id", archive.id)
       .order("sort_order", { ascending: true }),
+    supabase
+      .from("archive_day_relations")
+      .select(`
+        season_day:season_days!archive_day_relations_day_same_season_fkey (
+          id,
+          day_number,
+          session_date
+        )
+      `)
+      .eq("archive_id", archive.id),
+    supabase
+      .from("archive_participant_relations")
+      .select(`
+        participant:season_participants!archive_participant_relations_participant_same_season_fkey (
+          id,
+          rp_name,
+          streamer:streamers!inner (
+            name
+          )
+        )
+      `)
+      .eq("archive_id", archive.id),
   ]);
 
-  if (chaptersResult.error || itemsResult.error) {
+  if (
+    chaptersResult.error ||
+    itemsResult.error ||
+    dayRelationsResult.error ||
+    participantRelationsResult.error
+  ) {
     throw new ArchiveRequestError("아카이브 콘텐츠를 불러오지 못했습니다.", 500, {
-      cause: chaptersResult.error ?? itemsResult.error,
+      cause: chaptersResult.error ?? itemsResult.error ?? dayRelationsResult.error ?? participantRelationsResult.error,
     });
   }
 
@@ -1270,6 +1272,27 @@ export async function getArchiveDetail(
     editPolicy: toArchiveEditPolicy(archive.edit_policy),
     id: archive.id,
     isOwner: archive.owner_id === viewer?.id,
+    relatedParticipants: participantRelationsResult.data
+      .map((relation) => relation.participant)
+      .filter((participant) => participant !== null)
+      .map((participant) => ({
+        id: participant.id,
+        rpName: participant.rp_name,
+        streamerName: participant.streamer.name,
+      }))
+      .sort((left, right) => (left.rpName ?? left.streamerName).localeCompare(
+        right.rpName ?? right.streamerName,
+        "ko",
+      )),
+    relatedSeasonDays: dayRelationsResult.data
+      .map((relation) => relation.season_day)
+      .filter((seasonDay) => seasonDay !== null)
+      .map((seasonDay) => ({
+        dayNumber: seasonDay.day_number,
+        id: seasonDay.id,
+        sessionDate: seasonDay.session_date,
+      }))
+      .sort((left, right) => left.dayNumber - right.dayNumber),
     seasonId: archive.season_id,
     status: toArchiveStatus(archive.status),
     structureMode: toArchiveStructureMode(archive.structure_mode),
@@ -1540,6 +1563,8 @@ function toArchiveMetadataJson(metadata: ReturnType<typeof toArchiveMetadataInpu
     category: metadata.category,
     description: metadata.description,
     editPolicy: metadata.editPolicy,
+    relatedParticipantIds: metadata.relatedParticipantIds,
+    relatedSeasonDayIds: metadata.relatedSeasonDayIds,
     status: metadata.status,
     structureMode: metadata.structureMode,
     title: metadata.title,
@@ -1584,6 +1609,18 @@ function throwArchiveRpcError(error: ArchiveRpcError): never {
       });
     case "archive_day_based_clip_mismatch":
       throw new ArchiveRequestError("클립의 봉누도 일차와 챕터 일차가 일치하지 않습니다.", 400, {
+        cause: error,
+      });
+    case "archive_character_participant_required":
+      throw new ArchiveRequestError("인물 아카이브는 관련 인물을 한 명 이상 선택해주세요.", 400, {
+        cause: error,
+      });
+    case "archive_incident_day_required":
+      throw new ArchiveRequestError("사건 아카이브는 관련 일차를 한 개 이상 선택해주세요.", 400, {
+        cause: error,
+      });
+    case "archive_relation_season_mismatch":
+      throw new ArchiveRequestError("현재 시즌에 속한 일차와 인물만 선택할 수 있습니다.", 400, {
         cause: error,
       });
     default:

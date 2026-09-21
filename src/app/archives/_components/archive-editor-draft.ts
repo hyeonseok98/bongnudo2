@@ -55,6 +55,8 @@ export function createArchiveDraft(detail: ArchiveDetail): ArchiveEditorDraft {
       category: detail.category,
       description: detail.description,
       editPolicy: detail.editPolicy,
+      relatedParticipantIds: detail.relatedParticipants.map((participant) => participant.id),
+      relatedSeasonDayIds: detail.relatedSeasonDays.map((seasonDay) => seasonDay.id),
       status: detail.status,
       structureMode: detail.structureMode,
       title: detail.title,

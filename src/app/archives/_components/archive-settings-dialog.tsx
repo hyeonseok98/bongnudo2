@@ -9,10 +9,18 @@ import { FormField } from "@/components/ui/form-field";
 import { Input } from "@/components/ui/input";
 import { Select } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
-import type { ArchiveMetadataInput } from "@/features/archives/archive";
+import type {
+  ArchiveEditorOptions,
+  ArchiveMetadataInput,
+  ArchiveRelatedParticipant,
+} from "@/features/archives/archive";
+
+import { ArchiveRelationFields } from "./archive-relation-fields";
 
 interface ArchiveSettingsDialogProps {
   metadata: ArchiveMetadataInput;
+  relatedParticipants: ArchiveRelatedParticipant[];
+  seasonDays: ArchiveEditorOptions["seasonDays"];
   onChange: (metadata: ArchiveMetadataInput) => void;
   onClose: () => void;
   open: boolean;
@@ -20,11 +28,18 @@ interface ArchiveSettingsDialogProps {
 
 export function ArchiveSettingsDialog({
   metadata,
+  relatedParticipants,
+  seasonDays,
   onChange,
   onClose,
   open,
 }: ArchiveSettingsDialogProps) {
   const [draft, setDraft] = useState(metadata);
+  const [draftParticipants, setDraftParticipants] = useState(relatedParticipants);
+  const [relationErrors, setRelationErrors] = useState<{
+    participants?: string;
+    seasonDays?: string;
+  }>({});
 
   function updateMetadata(update: Partial<ArchiveMetadataInput>) {
     const nextMetadata = { ...draft, ...update };
@@ -37,7 +52,25 @@ export function ArchiveSettingsDialog({
   }
 
   function saveSettings() {
-    onChange(draft);
+    const errors: typeof relationErrors = {};
+
+    if (draft.category === "character" && draftParticipants.length === 0) {
+      errors.participants = "인물 아카이브는 관련 인물을 한 명 이상 선택해주세요.";
+    }
+
+    if (draft.category === "incident" && draft.relatedSeasonDayIds.length === 0) {
+      errors.seasonDays = "사건 아카이브는 관련 일차를 한 개 이상 선택해주세요.";
+    }
+
+    if (Object.keys(errors).length > 0) {
+      setRelationErrors(errors);
+      return;
+    }
+
+    onChange({
+      ...draft,
+      relatedParticipantIds: draftParticipants.map((participant) => participant.id),
+    });
     onClose();
   }
 
@@ -45,7 +78,7 @@ export function ArchiveSettingsDialog({
     <DialogPrimitive.Root onOpenChange={(nextOpen) => !nextOpen && onClose()} open={open}>
       <DialogPrimitive.Portal>
         <DialogPrimitive.Backdrop className="fixed inset-0 z-modal bg-black/60" />
-        <DialogPrimitive.Popup className="fixed top-1/2 left-1/2 z-modal w-[calc(100vw-2rem)] max-w-lg -translate-x-1/2 -translate-y-1/2 rounded-xl border border-default bg-surface-raised p-5 shadow-2xl outline-none">
+        <DialogPrimitive.Popup className="fixed top-1/2 left-1/2 z-modal max-h-[calc(100dvh-2rem)] w-[calc(100vw-2rem)] max-w-lg -translate-x-1/2 -translate-y-1/2 overflow-y-auto rounded-xl border border-default bg-surface-raised p-5 shadow-2xl outline-none">
           <div className="flex items-start gap-3">
             <div className="min-w-0 flex-1">
               <DialogPrimitive.Title className="text-heading-sm font-semibold text-primary">
@@ -73,10 +106,10 @@ export function ArchiveSettingsDialog({
               />
             </FormField>
             <div className="grid gap-3 sm:grid-cols-2">
-              <FormField label="분류">
+              <FormField label="주제">
                 <Select
                   className="w-full"
-                  label="아카이브 분류"
+                  label="아카이브 주제"
                   onValueChange={(category) => updateMetadata({ category })}
                   options={[
                     { label: "인물", value: "character" },
@@ -100,6 +133,21 @@ export function ArchiveSettingsDialog({
                 />
               </FormField>
             </div>
+            <ArchiveRelationFields
+              onParticipantsChange={(participants) => {
+                setDraftParticipants(participants);
+                setRelationErrors((current) => ({ ...current, participants: undefined }));
+              }}
+              onSeasonDayIdsChange={(relatedSeasonDayIds) => {
+                updateMetadata({ relatedSeasonDayIds });
+                setRelationErrors((current) => ({ ...current, seasonDays: undefined }));
+              }}
+              participantError={relationErrors.participants}
+              participants={draftParticipants}
+              seasonDayError={relationErrors.seasonDays}
+              seasonDayIds={draft.relatedSeasonDayIds}
+              seasonDays={seasonDays}
+            />
             <div className="grid gap-3 sm:grid-cols-2">
               <FormField label="공개 범위">
                 <Select

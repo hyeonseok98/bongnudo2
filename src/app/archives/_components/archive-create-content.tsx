@@ -15,6 +15,7 @@ import { Textarea } from "@/components/ui/textarea";
 import type {
   ArchiveCategory,
   ArchiveEditPolicy,
+  ArchiveRelatedParticipant,
   ArchiveStructureMode,
   ArchiveVisibility,
 } from "@/features/archives/archive";
@@ -24,12 +25,15 @@ import { cn } from "@/utils/cn";
 import { createNewArchiveContent } from "./archive-editor-draft";
 import { ArchiveCreationSteps } from "./archive-creation-steps";
 import { ArchiveCreateSkeleton } from "./archive-create-skeleton";
+import { ArchiveRelationFields } from "./archive-relation-fields";
 
 interface ArchiveCreateContentProps {
   isSignedIn: boolean;
 }
 
 interface ArchiveCreateErrors {
+  participants?: string;
+  seasonDays?: string;
   title?: string;
 }
 
@@ -41,6 +45,8 @@ export function ArchiveCreateContent({ isSignedIn }: ArchiveCreateContentProps) 
   const [category, setCategory] = useState<ArchiveCategory>("other");
   const [visibility, setVisibility] = useState<ArchiveVisibility>("public");
   const [editPolicy, setEditPolicy] = useState<ArchiveEditPolicy>("owner_only");
+  const [relatedParticipants, setRelatedParticipants] = useState<ArchiveRelatedParticipant[]>([]);
+  const [relatedSeasonDayIds, setRelatedSeasonDayIds] = useState<string[]>([]);
   const [errors, setErrors] = useState<ArchiveCreateErrors>({});
   const [message, setMessage] = useState<string | null>(null);
 
@@ -59,9 +65,24 @@ export function ArchiveCreateContent({ isSignedIn }: ArchiveCreateContentProps) 
 
     const title = formData.get("title");
     const description = formData.get("description");
+    const normalizedTitle = typeof title === "string" ? title.trim() : "";
 
-    if (typeof title !== "string" || !title.trim()) {
-      setErrors({ title: "제목을 입력해주세요." });
+    const nextErrors: ArchiveCreateErrors = {};
+
+    if (!normalizedTitle) {
+      nextErrors.title = "제목을 입력해주세요.";
+    }
+
+    if (category === "character" && relatedParticipants.length === 0) {
+      nextErrors.participants = "인물 아카이브는 관련 인물을 한 명 이상 선택해주세요.";
+    }
+
+    if (category === "incident" && relatedSeasonDayIds.length === 0) {
+      nextErrors.seasonDays = "사건 아카이브는 관련 일차를 한 개 이상 선택해주세요.";
+    }
+
+    if (Object.keys(nextErrors).length > 0) {
+      setErrors(nextErrors);
       return;
     }
 
@@ -73,9 +94,11 @@ export function ArchiveCreateContent({ isSignedIn }: ArchiveCreateContentProps) 
         category,
         description: typeof description === "string" && description.trim() ? description : null,
         editPolicy,
+        relatedParticipantIds: relatedParticipants.map((participant) => participant.id),
+        relatedSeasonDayIds,
         status: "ongoing",
         structureMode,
-        title,
+        title: normalizedTitle,
         visibility,
       },
       seasonId: optionsQuery.data.seasonId,
@@ -141,10 +164,10 @@ export function ArchiveCreateContent({ isSignedIn }: ArchiveCreateContentProps) 
           <FormField label="설명 (선택)">
             <Textarea maxLength={500} name="description" placeholder="아카이브를 소개해주세요." />
           </FormField>
-          <FormField label="분류">
+          <FormField label="주제">
             <Select
               className="w-full sm:w-52"
-              label="아카이브 분류"
+              label="아카이브 주제"
               onValueChange={setCategory}
               options={[
                 { label: "인물", value: "character" },
@@ -155,6 +178,22 @@ export function ArchiveCreateContent({ isSignedIn }: ArchiveCreateContentProps) 
               value={category}
             />
           </FormField>
+
+          <ArchiveRelationFields
+            onParticipantsChange={(participants) => {
+              setRelatedParticipants(participants);
+              setErrors((current) => ({ ...current, participants: undefined }));
+            }}
+            onSeasonDayIdsChange={(seasonDayIds) => {
+              setRelatedSeasonDayIds(seasonDayIds);
+              setErrors((current) => ({ ...current, seasonDays: undefined }));
+            }}
+            participantError={errors.participants}
+            participants={relatedParticipants}
+            seasonDayError={errors.seasonDays}
+            seasonDayIds={relatedSeasonDayIds}
+            seasonDays={optionsQuery.data.seasonDays}
+          />
 
           <fieldset className="space-y-3">
             <legend className="text-body-sm font-medium text-primary">구성 방법</legend>

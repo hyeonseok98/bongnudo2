@@ -78,6 +78,10 @@ function ArchiveEditorWorkspace({ archive }: { archive: ArchiveDetail }) {
   const [isConflictOpen, setIsConflictOpen] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
   const isDirty = !isArchiveDraftEqual(draft, savedDraft, archive.canEditMetadata);
+  const isMetadataDirty = archive.canEditMetadata && (
+    JSON.stringify(toArchiveMetadataInput(draft)) !==
+    JSON.stringify(toArchiveMetadataInput(savedDraft))
+  );
   const selectedClipIds = new Set(
     draft.chapters.flatMap((chapter) => chapter.items.map((item) => item.clip.id)),
   );
@@ -235,7 +239,7 @@ function ArchiveEditorWorkspace({ archive }: { archive: ArchiveDetail }) {
       input: {
         baseRevision: currentRevision,
         content: toArchiveContentInput(draft),
-        metadata: archive.canEditMetadata ? toArchiveMetadataInput(draft) : undefined,
+        metadata: isMetadataDirty ? toArchiveMetadataInput(draft) : undefined,
       },
     }, {
       onError: (error) => {
@@ -357,6 +361,8 @@ function ArchiveEditorWorkspace({ archive }: { archive: ArchiveDetail }) {
           onChange={(metadata) => setDraft({ ...draft, metadata })}
           onClose={() => setIsSettingsOpen(false)}
           open={isSettingsOpen}
+          relatedParticipants={archive.relatedParticipants}
+          seasonDays={optionsQuery.data.seasonDays}
         />
       ) : null}
       {isConflictOpen ? (

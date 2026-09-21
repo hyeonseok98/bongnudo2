@@ -51,7 +51,7 @@ export function ArchiveFilters({
         }]
       : []),
     ...(category
-      ? [{ id: "category", label: category, onRemove: () => onCategoryChange(null) }]
+      ? [{ id: "category", label: getCategoryLabel(category), onRemove: () => onCategoryChange(null) }]
       : []),
     ...(status
       ? [{ id: "status", label: status === "ongoing" ? "진행 중" : "완료", onRemove: () => onStatusChange(null) }]
@@ -79,10 +79,10 @@ export function ArchiveFilters({
         />
 
         <Select
-          label="아카이브 분류"
+          label="아카이브 주제"
           onValueChange={(value) => onCategoryChange(value === "all" ? null : value)}
           options={[
-            { label: "분류 전체", value: "all" },
+            { label: "주제 전체", value: "all" },
             { label: "인물", value: "character" },
             { label: "사건", value: "incident" },
             { label: "시리즈", value: "series" },
@@ -104,4 +104,13 @@ export function ArchiveFilters({
       <AppliedFilterSummary items={items} onClearAll={onReset} />
     </section>
   );
+}
+
+function getCategoryLabel(category: ArchiveCategory): string {
+  return {
+    character: "인물",
+    incident: "사건",
+    other: "기타",
+    series: "시리즈",
+  }[category];
 }
