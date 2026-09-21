@@ -58,7 +58,7 @@ export function ClipTagEditor({
   return (
     <DialogPrimitive.Root onOpenChange={setIsOpen} open={isOpen}>
       <button
-        className="flex h-9 w-full cursor-pointer items-center rounded-md px-2.5 text-left text-body-sm text-secondary hover:bg-surface-muted hover:text-primary focus-visible:outline-2 focus-visible:outline-focus-ring"
+        className="flex h-8 w-full cursor-pointer items-center rounded-md px-2 text-left text-caption text-secondary hover:bg-surface-muted hover:text-primary focus-visible:outline-2 focus-visible:outline-focus-ring"
         onClick={() => setIsOpen(true)}
         type="button"
       >
@@ -110,7 +110,7 @@ export function ClipTagEditor({
               <div className="relative">
                 <input
                   autoComplete="off"
-                  className="h-10 w-full rounded-lg border border-default bg-background px-3 text-body-sm text-primary outline-none focus-visible:border-focus-ring"
+                  className="h-9 w-full rounded-lg border border-default bg-background px-3 text-body-sm text-primary outline-none focus-visible:border-focus-ring"
                   id={`clip-tag-${clipId}`}
                   maxLength={20}
                   onChange={(event) => setName(event.target.value)}
@@ -124,7 +124,7 @@ export function ClipTagEditor({
                   value={name}
                 />
                 {name && suggestionsQuery.data?.length ? (
-                  <div className="absolute top-11 z-popover max-h-40 w-full overflow-y-auto rounded-lg border border-default bg-surface-raised p-1 shadow-lg">
+                  <div className="absolute top-10 z-popover max-h-40 w-full overflow-y-auto rounded-lg border border-default bg-surface-raised p-1 shadow-lg">
                     {suggestionsQuery.data.map((tag) => (
                       <button
                         className="block w-full cursor-pointer rounded-md px-2.5 py-2 text-left text-body-sm text-primary hover:bg-surface-muted focus-visible:bg-surface-muted"

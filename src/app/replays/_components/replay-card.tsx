@@ -153,7 +153,7 @@ export function ReplayCard({ canManageCollectedMedia = false, onExcluded, partic
             )}
           </div>
 
-          <div className="flex items-center justify-start gap-3 text-caption text-secondary">
+          <div className="flex items-center justify-between gap-3 text-caption text-secondary">
             <span className="inline-flex min-w-0 items-center gap-1.5">
               <CalendarDays aria-hidden="true" className="size-3.5 shrink-0" />
               {session.replays.length > 1 && session.startedAt && session.endedAt
@@ -161,7 +161,7 @@ export function ReplayCard({ canManageCollectedMedia = false, onExcluded, partic
                 : replayTime ? dateFormatter.format(new Date(replayTime)) : "방송 시각 정보 없음"}
             </span>
             {session.replays.length === 1 ? (
-              <span className="inline-flex items-center gap-1">
+              <span className="inline-flex shrink-0 items-center gap-1">
                 <Eye aria-hidden="true" className="size-3.5" />
                 {replay.viewCount === null ? "조회수 정보 없음" : viewCountFormatter.format(replay.viewCount)}
               </span>

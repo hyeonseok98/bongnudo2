@@ -162,12 +162,12 @@ export function ClipCard({
             )}
           </div>
 
-          <div className="flex items-center justify-start gap-3 text-caption text-secondary">
+          <div className="flex items-center justify-between gap-3 text-caption text-secondary">
             <span className="inline-flex min-w-0 items-center gap-1.5">
               <CalendarDays aria-hidden="true" className="size-3.5 shrink-0" />
               {dateFormatter.format(new Date(clip.clipCreatedAt))}
             </span>
-            <span className="inline-flex items-center gap-1">
+            <span className="inline-flex shrink-0 items-center gap-1">
               <Eye aria-hidden="true" className="size-3.5" />
               {clip.viewCount === null ? "조회수 정보 없음" : viewCountFormatter.format(clip.viewCount)}
             </span>

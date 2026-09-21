@@ -15,6 +15,7 @@ export function SearchField({
   containerClassName,
   label,
   onClear,
+  role,
   value,
   ...props
 }: SearchFieldProps) {
@@ -31,7 +32,7 @@ export function SearchField({
         aria-label={label}
         autoComplete={props.autoComplete ?? "off"}
         className={cn(onClear ? "pr-11 pl-11" : "pr-4 pl-11", className)}
-        role="searchbox"
+        role={role ?? "searchbox"}
         type="text"
         value={value}
       />

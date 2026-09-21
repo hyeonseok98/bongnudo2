@@ -11,10 +11,8 @@ import {
 import type { HierarchicalFilterSelection } from "@/components/filters/hierarchical-filter";
 import {
   CLIP_SORT_VALUES,
-  CLIP_VIEW_VALUES,
   type ClipListFilters,
   type ClipSort,
-  type ClipView,
 } from "@/features/clips/clip";
 
 const clipQueryParsers = {
@@ -28,7 +26,6 @@ const clipQueryParsers = {
   dateFrom: parseAsString,
   dateTo: parseAsString,
   sort: parseAsStringLiteral(CLIP_SORT_VALUES).withDefault("latest"),
-  view: parseAsStringLiteral(CLIP_VIEW_VALUES).withDefault("timeline"),
 };
 
 export interface ClipDirectory {
@@ -43,7 +40,6 @@ export interface ClipDirectory {
   tagIds: string[];
   query: string;
   sort: ClipSort;
-  view: ClipView;
   applyGroups: (selection: HierarchicalFilterSelection) => void;
   applyJobs: (selection: HierarchicalFilterSelection) => void;
   changeDate: (date: string | null) => void;
@@ -53,12 +49,11 @@ export interface ClipDirectory {
   changeTags: (tagIds: string[]) => void;
   changeQuery: (query: string) => void;
   changeSort: (sort: ClipSort) => void;
-  changeView: (view: ClipView) => void;
   resetFilters: () => void;
 }
 
-export function useClipDirectory(): ClipDirectory {
-  const [{ q, groups, jobs, participant, tags, day, date, dateFrom, dateTo, sort, view }, setQueryState] =
+export function useClipDirectory({ supportsTagFilter = true }: { supportsTagFilter?: boolean } = {}): ClipDirectory {
+  const [{ q, groups, jobs, participant, tags, day, date, dateFrom, dateTo, sort }, setQueryState] =
     useQueryStates(clipQueryParsers);
 
   function changeQuery(query: string) {
@@ -126,15 +121,6 @@ export function useClipDirectory(): ClipDirectory {
     );
   }
 
-  function changeView(nextView: ClipView) {
-    void setQueryState(
-      {
-        view: nextView === "timeline" ? null : nextView,
-      },
-      { history: "replace" },
-    );
-  }
-
   function resetFilters() {
     void setQueryState(
       {
@@ -165,17 +151,16 @@ export function useClipDirectory(): ClipDirectory {
       groups,
       jobs,
       participantIds: participant,
-      tagIds: tags,
+      tagIds: supportsTagFilter ? tags : [],
       query: q,
       sort,
     },
     groupSelection: { ids: groups },
     jobSelection: { ids: jobs },
     participantIds: participant,
-    tagIds: tags,
+    tagIds: supportsTagFilter ? tags : [],
     query: q,
     sort,
-    view,
     applyGroups,
     applyJobs,
     changeDate,
@@ -185,7 +170,6 @@ export function useClipDirectory(): ClipDirectory {
     changeTags,
     changeQuery,
     changeSort,
-    changeView,
     resetFilters,
   };
 }

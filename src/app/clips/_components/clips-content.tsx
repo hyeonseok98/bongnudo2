@@ -1,6 +1,6 @@
 "use client";
 
-import { List, LoaderCircle, UsersRound } from "lucide-react";
+import { LoaderCircle } from "lucide-react";
 import { useState } from "react";
 
 import { useQueryClient } from "@tanstack/react-query";
@@ -30,7 +30,7 @@ interface ClipsContentProps {
 
 export function ClipsContent({ canAddTags, canManageCollectedMedia }: ClipsContentProps) {
   const queryClient = useQueryClient();
-  const directory = useClipDirectory();
+  const directory = useClipDirectory({ supportsTagFilter: false });
   const charactersQuery = useCharacters();
   const optionsQuery = useClipOptions();
   const clipsQuery = useClips(directory.filters);
@@ -69,7 +69,7 @@ export function ClipsContent({ canAddTags, canManageCollectedMedia }: ClipsConte
   return (
     <div className="space-y-6">
       <ClipsHeading />
-      {charactersQuery.isPending || optionsQuery.isPending ? <FilterBarSkeleton includeTagFilter /> : null}
+      {charactersQuery.isPending || optionsQuery.isPending ? <FilterBarSkeleton /> : null}
       {charactersQuery.isError || optionsQuery.isError ? (
         <ClipsErrorState isRetrying={charactersQuery.isFetching || optionsQuery.isFetching} onRetry={() => {
           void charactersQuery.refetch();
@@ -85,14 +85,12 @@ export function ClipsContent({ canAddTags, canManageCollectedMedia }: ClipsConte
           jobs={directory.jobSelection}
           options={optionsQuery.data}
           participantIds={directory.participantIds}
-          tagIds={directory.tagIds}
           streamerAffiliations={streamerAffiliations}
           onDateChange={directory.changeDate}
           onDayChange={directory.changeDay}
           onGroupsApply={directory.applyGroups}
           onJobsApply={directory.applyJobs}
           onParticipantsChange={directory.changeParticipants}
-          onTagsChange={directory.changeTags}
           onReset={directory.resetFilters}
         />
       ) : null}
@@ -118,23 +116,17 @@ export function ClipsContent({ canAddTags, canManageCollectedMedia }: ClipsConte
               </span>
             </div>
             <div className="flex items-center gap-3 self-end sm:self-auto">
-              <ClipViewToggle
-                view={directory.view}
-                onViewChange={directory.changeView}
+              <span className="text-body-sm text-secondary">정렬</span>
+              <Select
+                className="w-32"
+                label="클립 정렬"
+                onValueChange={directory.changeSort}
+                options={[
+                  { label: "최신순", value: "latest" },
+                  { label: "오래된순", value: "oldest" },
+                ]}
+                value={directory.sort}
               />
-              <>
-                <span className="text-body-sm text-secondary">정렬</span>
-                <Select
-                  className="w-32"
-                  label="클립 정렬"
-                  onValueChange={directory.changeSort}
-                  options={[
-                    { label: "최신순", value: "latest" },
-                    { label: "오래된순", value: "oldest" },
-                  ]}
-                  value={directory.sort}
-                />
-              </>
             </div>
           </div>
 
@@ -143,25 +135,14 @@ export function ClipsContent({ canAddTags, canManageCollectedMedia }: ClipsConte
           ) : null}
 
           {clips.length > 0 ? (
-            directory.view === "people" ? (
-              <ClipPeopleView
-                canAddTags={canAddTags}
-                canManageCollectedMedia={canManageCollectedMedia}
-                clips={clips}
-                onExcluded={() => void queryClient.invalidateQueries({ queryKey: clipQueries.all() })}
-                onPreview={setPreviewClip}
-                participantProfileImages={participantProfileImages}
-              />
-            ) : (
-              <ClipCardGrid
-                canAddTags={canAddTags}
-                canManageCollectedMedia={canManageCollectedMedia}
-                clips={clips}
-                onExcluded={() => void queryClient.invalidateQueries({ queryKey: clipQueries.all() })}
-                onPreview={setPreviewClip}
-                participantProfileImages={participantProfileImages}
-              />
-            )
+            <ClipCardGrid
+              canAddTags={canAddTags}
+              canManageCollectedMedia={canManageCollectedMedia}
+              clips={clips}
+              onExcluded={() => void queryClient.invalidateQueries({ queryKey: clipQueries.all() })}
+              onPreview={setPreviewClip}
+              participantProfileImages={participantProfileImages}
+            />
           ) : (
             <ClipEmptyState />
           )}
@@ -241,104 +222,6 @@ function ClipEmptyState() {
       <p className="mt-1 text-body-sm text-secondary">
         검색어나 선택한 필터를 변경해보세요.
       </p>
-    </div>
-  );
-}
-
-function ClipViewToggle({
-  view,
-  onViewChange,
-}: {
-  view: "timeline" | "people";
-  onViewChange: (view: "timeline" | "people") => void;
-}) {
-  return (
-    <div aria-label="클립 보기 방식" className="flex rounded-lg border border-default bg-background p-1">
-      <button
-        aria-pressed={view === "timeline"}
-        className={cn(
-          "inline-flex h-8 cursor-pointer items-center gap-1.5 rounded-md px-2.5 text-body-sm font-medium text-secondary",
-          view === "timeline" && "bg-surface-muted text-primary",
-        )}
-        onClick={() => onViewChange("timeline")}
-        type="button"
-      >
-        <List aria-hidden="true" className="size-4" />
-        전체
-      </button>
-      <button
-        aria-pressed={view === "people"}
-        className={cn(
-          "inline-flex h-8 cursor-pointer items-center gap-1.5 rounded-md px-2.5 text-body-sm font-medium text-secondary",
-          view === "people" && "bg-surface-muted text-primary",
-        )}
-        onClick={() => onViewChange("people")}
-        type="button"
-      >
-        <UsersRound aria-hidden="true" className="size-4" />
-        인물별
-      </button>
-    </div>
-  );
-}
-
-interface ClipPeopleViewProps {
-  canAddTags: boolean;
-  canManageCollectedMedia: boolean;
-  clips: ClipItem[];
-  onExcluded: () => void;
-  onPreview: (clip: ClipItem) => void;
-  participantProfileImages: ReadonlyMap<string, {
-    rpProfileImageUrl: string | null;
-    streamerProfileImageUrl: string | null;
-  }>;
-}
-
-function ClipPeopleView({
-  canAddTags,
-  canManageCollectedMedia,
-  clips,
-  onExcluded,
-  onPreview,
-  participantProfileImages,
-}: ClipPeopleViewProps) {
-  const clipsByParticipant = new Map<string, { clips: ClipItem[]; label: string }>();
-
-  for (const clip of clips) {
-    const participantId = clip.participant?.id ?? `unknown:${clip.id}`;
-    const entry = clipsByParticipant.get(participantId);
-
-    if (entry) {
-      entry.clips.push(clip);
-      continue;
-    }
-
-    clipsByParticipant.set(participantId, {
-      clips: [clip],
-      label: clip.participant?.rpName ?? clip.participant?.streamerName ?? "인물 정보 없음",
-    });
-  }
-
-  return (
-    <div className="space-y-8">
-      {Array.from(clipsByParticipant.entries()).map(([participantId, group]) => (
-        <section aria-labelledby={`clip-person-${participantId}`} className="space-y-3" key={participantId}>
-          <h3 className="text-heading-sm font-semibold text-primary" id={`clip-person-${participantId}`}>
-            {group.label}
-            <span className="ml-2 text-body-sm font-medium text-secondary">
-              {group.clips.length}개
-            </span>
-          </h3>
-          <ClipCardGrid
-            canAddTags={canAddTags}
-            canManageCollectedMedia={canManageCollectedMedia}
-            clips={group.clips}
-            onExcluded={onExcluded}
-            onPreview={onPreview}
-            participantProfileImages={participantProfileImages}
-          />
-        </section>
-      ))}
     </div>
   );
 }

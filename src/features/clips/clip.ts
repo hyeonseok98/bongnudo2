@@ -1,8 +1,6 @@
 export const CLIP_SORT_VALUES = ["latest", "oldest"] as const;
-export const CLIP_VIEW_VALUES = ["timeline", "people"] as const;
 
 export type ClipSort = (typeof CLIP_SORT_VALUES)[number];
-export type ClipView = (typeof CLIP_VIEW_VALUES)[number];
 
 export interface ClipListFilters {
   date: string | null;
@@ -72,8 +70,4 @@ export interface ClipOptions {
 
 export function isClipSort(value: string): value is ClipSort {
   return CLIP_SORT_VALUES.some((sort) => sort === value);
-}
-
-export function isClipView(value: string): value is ClipView {
-  return CLIP_VIEW_VALUES.some((view) => view === value);
 }
