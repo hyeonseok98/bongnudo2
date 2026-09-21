@@ -18,6 +18,8 @@ const HOME_CLIP_COUNT = 4;
 
 const HOME_CLIP_FILTERS: ClipListFilters = {
   date: null,
+  dateFrom: null,
+  dateTo: null,
   day: null,
   groups: [],
   jobs: [],

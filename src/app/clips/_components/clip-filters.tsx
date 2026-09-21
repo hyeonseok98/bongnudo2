@@ -17,6 +17,7 @@ import {
 import { ParticipantFilter } from "@/components/filters/participant-filter";
 import { TagFilter } from "@/components/filters/tag-filter";
 import { DatePicker } from "@/components/ui/date-picker";
+import { DateRangePicker, type DateRangeValue } from "@/components/ui/date-range-picker";
 import { Select } from "@/components/ui/select";
 import type { ClipOptions } from "@/features/clips/clip";
 import type {
@@ -30,6 +31,7 @@ import { useQuery } from "@tanstack/react-query";
 interface ClipFiltersProps {
   characters: CharacterListItem[];
   date: string | null;
+  dateRange?: DateRangeValue | null;
   day: number | null;
   groups: HierarchicalFilterSelection;
   jobs: HierarchicalFilterSelection;
@@ -39,6 +41,7 @@ interface ClipFiltersProps {
   searchLabel?: string;
   streamerAffiliations: StreamerAffiliation[];
   onDateChange: (date: string | null) => void;
+  onDateRangeChange?: (range: DateRangeValue | null) => void;
   onDayChange: (day: number | null) => void;
   onGroupsApply: (selection: HierarchicalFilterSelection) => void;
   onJobsApply: (selection: HierarchicalFilterSelection) => void;
@@ -50,6 +53,7 @@ interface ClipFiltersProps {
 export function ClipFilters({
   characters,
   date,
+  dateRange,
   day,
   groups,
   jobs,
@@ -59,6 +63,7 @@ export function ClipFilters({
   searchLabel = "인물 검색",
   streamerAffiliations,
   onDateChange,
+  onDateRangeChange,
   onDayChange,
   onGroupsApply,
   onJobsApply,
@@ -84,6 +89,13 @@ export function ClipFilters({
     ...(date === null
       ? []
       : [{ id: "date", label: date, onRemove: () => onDateChange(null) }]),
+    ...(dateRange === null || dateRange === undefined
+      ? []
+      : [{
+          id: "date-range",
+          label: `${dateRange.from} ~ ${dateRange.to}`,
+          onRemove: () => onDateRangeChange?.(null),
+        }]),
     ...jobs.ids.map((id) => ({
       id: `job:${id}`,
       label: findFilterLabel(jobNodes, id),
@@ -131,14 +143,24 @@ export function ClipFilters({
           ]}
           value={day === null ? "all" : String(day)}
         />
-        <DatePicker
-          className="w-48"
-          label="날짜"
-          max={getCurrentKstDate()}
-          onValueChange={onDateChange}
-          placeholder="날짜 선택"
-          value={date}
-        />
+        {onDateRangeChange ? (
+          <DateRangePicker
+            className="w-[22rem]"
+            max={getSelectableMaxDate(options.seasonDays)}
+            min={options.seasonDays[0]?.sessionDate ?? getCurrentKstDate()}
+            onValueChange={onDateRangeChange}
+            value={dateRange ?? null}
+          />
+        ) : (
+          <DatePicker
+            className="w-48"
+            label="날짜"
+            max={getCurrentKstDate()}
+            onValueChange={onDateChange}
+            placeholder="날짜 선택"
+            value={date}
+          />
+        )}
         <HierarchicalFilter
           className="w-36"
           getResultCount={getResultCount}
@@ -173,6 +195,13 @@ export function ClipFilters({
       <AppliedFilterSummary items={items} onClearAll={onReset} />
     </section>
   );
+}
+
+function getSelectableMaxDate(seasonDays: ClipOptions["seasonDays"]): string {
+  const seasonEnd = seasonDays.at(-1)?.sessionDate;
+  const currentDate = getCurrentKstDate();
+
+  return seasonEnd && seasonEnd < currentDate ? seasonEnd : currentDate;
 }
 
 function findFilterLabel(

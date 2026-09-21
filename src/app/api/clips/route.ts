@@ -55,6 +55,8 @@ function parseFilters(searchParams: URLSearchParams): ClipListFilters | null {
   const tagIds = parseParticipantIds(searchParams.get("tags"));
   const dayValue = searchParams.get("day");
   const date = searchParams.get("date");
+  const dateFrom = searchParams.get("dateFrom");
+  const dateTo = searchParams.get("dateTo");
   const sort = searchParams.get("sort") ?? "latest";
 
   if (
@@ -68,7 +70,12 @@ function parseFilters(searchParams: URLSearchParams): ClipListFilters | null {
         !Number.isSafeInteger(Number(dayValue)) ||
         Number(dayValue) < 1)) ||
     (date !== null && !isKstDate(date)) ||
-    (dayValue !== null && date !== null) ||
+    (dateFrom !== null && !isKstDate(dateFrom)) ||
+    (dateTo !== null && !isKstDate(dateTo)) ||
+    (dateFrom === null) !== (dateTo === null) ||
+    (dateFrom !== null && dateTo !== null && dateFrom > dateTo) ||
+    (dayValue !== null && (date !== null || dateFrom !== null)) ||
+    (date !== null && dateFrom !== null) ||
     !isClipSort(sort)
   ) {
     return null;
@@ -76,6 +83,8 @@ function parseFilters(searchParams: URLSearchParams): ClipListFilters | null {
 
   return {
     date,
+    dateFrom,
+    dateTo,
     day: dayValue === null ? null : Number(dayValue),
     groups,
     jobs,

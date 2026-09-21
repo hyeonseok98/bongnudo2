@@ -79,6 +79,8 @@ export async function getClips(
   if (filters.tagIds.length > 0) searchParams.set("tags", filters.tagIds.join(","));
   if (filters.day !== null) searchParams.set("day", String(filters.day));
   if (filters.date !== null) searchParams.set("date", filters.date);
+  if (filters.dateFrom !== null) searchParams.set("dateFrom", filters.dateFrom);
+  if (filters.dateTo !== null) searchParams.set("dateTo", filters.dateTo);
   if (filters.sort !== "latest") searchParams.set("sort", filters.sort);
   if (cursor) searchParams.set("cursor", serializeClipCursor(cursor));
 

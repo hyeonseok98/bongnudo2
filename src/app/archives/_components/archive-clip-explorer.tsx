@@ -42,7 +42,7 @@ export function ArchiveClipExplorer({
   const directory = useClipDirectory();
   const charactersQuery = useCharacters();
   const optionsQuery = useClipOptions();
-  const clipsQuery = useClips(directory.filters);
+  const clipsQuery = useClips({ ...directory.filters, date: null });
   const characters = charactersQuery.data?.characters ?? [];
   const streamerAffiliations = charactersQuery.data?.streamerAffiliations ?? [];
   const clips = clipsQuery.data?.pages.flatMap((page) => page.items) ?? [];
@@ -79,7 +79,10 @@ export function ArchiveClipExplorer({
 
       <ClipFilters
         characters={characters}
-        date={directory.date}
+        date={null}
+        dateRange={directory.dateFrom && directory.dateTo
+          ? { from: directory.dateFrom, to: directory.dateTo }
+          : null}
         day={directory.day}
         groups={directory.groupSelection}
         jobs={directory.jobSelection}
@@ -89,6 +92,10 @@ export function ArchiveClipExplorer({
         searchLabel="인물 검색"
         streamerAffiliations={streamerAffiliations}
         onDateChange={directory.changeDate}
+        onDateRangeChange={(range) => directory.changeDateRange(
+          range?.from ?? null,
+          range?.to ?? null,
+        )}
         onDayChange={directory.changeDay}
         onGroupsApply={directory.applyGroups}
         onJobsApply={directory.applyJobs}

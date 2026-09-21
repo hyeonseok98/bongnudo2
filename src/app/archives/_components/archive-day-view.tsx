@@ -26,6 +26,8 @@ import { ArchiveCard } from "./archive-card";
 
 const archiveDayFilters: Omit<ClipListFilters, "day"> = {
   date: null,
+  dateFrom: null,
+  dateTo: null,
   groups: [],
   jobs: [],
   participantIds: [],

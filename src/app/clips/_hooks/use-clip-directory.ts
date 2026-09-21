@@ -25,12 +25,16 @@ const clipQueryParsers = {
   tags: parseAsArrayOf(parseAsString).withDefault([]),
   day: parseAsInteger,
   date: parseAsString,
+  dateFrom: parseAsString,
+  dateTo: parseAsString,
   sort: parseAsStringLiteral(CLIP_SORT_VALUES).withDefault("latest"),
   view: parseAsStringLiteral(CLIP_VIEW_VALUES).withDefault("timeline"),
 };
 
 export interface ClipDirectory {
   date: string | null;
+  dateFrom: string | null;
+  dateTo: string | null;
   day: number | null;
   filters: ClipListFilters;
   groupSelection: HierarchicalFilterSelection;
@@ -43,6 +47,7 @@ export interface ClipDirectory {
   applyGroups: (selection: HierarchicalFilterSelection) => void;
   applyJobs: (selection: HierarchicalFilterSelection) => void;
   changeDate: (date: string | null) => void;
+  changeDateRange: (dateFrom: string | null, dateTo: string | null) => void;
   changeDay: (day: number | null) => void;
   changeParticipants: (participantIds: string[]) => void;
   changeTags: (tagIds: string[]) => void;
@@ -53,7 +58,7 @@ export interface ClipDirectory {
 }
 
 export function useClipDirectory(): ClipDirectory {
-  const [{ q, groups, jobs, participant, tags, day, date, sort, view }, setQueryState] =
+  const [{ q, groups, jobs, participant, tags, day, date, dateFrom, dateTo, sort, view }, setQueryState] =
     useQueryStates(clipQueryParsers);
 
   function changeQuery(query: string) {
@@ -90,14 +95,26 @@ export function useClipDirectory(): ClipDirectory {
 
   function changeDay(nextDay: number | null) {
     void setQueryState(
-      { date: null, day: nextDay },
+      { date: null, dateFrom: null, dateTo: null, day: nextDay },
       { history: "replace" },
     );
   }
 
   function changeDate(nextDate: string | null) {
     void setQueryState(
-      { date: nextDate, day: null },
+      { date: nextDate, dateFrom: null, dateTo: null, day: null },
+      { history: "replace" },
+    );
+  }
+
+  function changeDateRange(nextDateFrom: string | null, nextDateTo: string | null) {
+    void setQueryState(
+      {
+        date: null,
+        dateFrom: nextDateFrom,
+        dateTo: nextDateTo,
+        day: null,
+      },
       { history: "replace" },
     );
   }
@@ -128,6 +145,8 @@ export function useClipDirectory(): ClipDirectory {
         tags: null,
         day: null,
         date: null,
+        dateFrom: null,
+        dateTo: null,
       },
       { history: "replace" },
     );
@@ -135,9 +154,13 @@ export function useClipDirectory(): ClipDirectory {
 
   return {
     date,
+    dateFrom,
+    dateTo,
     day,
     filters: {
       date,
+      dateFrom,
+      dateTo,
       day,
       groups,
       jobs,
@@ -156,6 +179,7 @@ export function useClipDirectory(): ClipDirectory {
     applyGroups,
     applyJobs,
     changeDate,
+    changeDateRange,
     changeDay,
     changeParticipants,
     changeTags,

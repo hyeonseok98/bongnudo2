@@ -18,7 +18,7 @@ import {
 import { getR2PublicUrl } from "@/lib/r2";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
 import type { Database } from "@/lib/supabase/database.types";
-import { getKstDateRange } from "@/features/seasons/season-date";
+import { getKstDateRange, getKstDateRangeBetween } from "@/features/seasons/season-date";
 import { matchesKoreanSearch } from "@/utils/korean-search";
 
 const PAGE_SIZE = 24;
@@ -152,7 +152,11 @@ export async function getClipPage(
     return { items: [], nextCursor: null };
   }
 
-  const dateRange = filters.date ? getKstDateRange(filters.date) : null;
+  const dateRange = filters.date
+    ? getKstDateRange(filters.date)
+    : filters.dateFrom && filters.dateTo
+      ? getKstDateRangeBetween(filters.dateFrom, filters.dateTo)
+      : null;
   const { data: pageRows, error: pageError } = await client.rpc("get_clip_page", {
     p_cursor_clip_created_at: cursor?.clipCreatedAt,
     p_cursor_id: cursor?.id,

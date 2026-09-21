@@ -6,6 +6,8 @@ export type ClipView = (typeof CLIP_VIEW_VALUES)[number];
 
 export interface ClipListFilters {
   date: string | null;
+  dateFrom: string | null;
+  dateTo: string | null;
   day: number | null;
   groups: string[];
   jobs: string[];

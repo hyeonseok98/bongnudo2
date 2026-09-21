@@ -27,6 +27,7 @@ interface DatePickerProps {
   isInvalid?: boolean;
   label: string;
   max: string;
+  min?: string;
   onValueChange: (value: string) => void;
   placeholder?: string;
   value: string | null;
@@ -39,11 +40,13 @@ export function DatePicker({
   isInvalid = false,
   label,
   max,
+  min,
   onValueChange,
   placeholder = "날짜 선택",
   value,
 }: DatePickerProps) {
   const maxDate = parseDate(max);
+  const minDate = min ? parseDate(min) : null;
   const selectedDate = value ? parseDate(value) : maxDate;
   const [visibleMonth, setVisibleMonth] = useState(() =>
     startOfMonth(selectedDate),
@@ -58,7 +61,7 @@ export function DatePicker({
     : startOfMonth(visibleMonth);
 
   function selectDate(date: Date): void {
-    if (isAfter(date, maxDate)) return;
+    if (isAfter(date, maxDate) || (minDate !== null && isAfter(minDate, date))) return;
     onValueChange(format(date, "yyyy-MM-dd"));
     setVisibleMonth(startOfMonth(date));
   }
@@ -135,7 +138,7 @@ export function DatePicker({
               ))}
               {days.map((day) => {
                 const isSelected = isSameDay(day, selectedDate);
-                const isDisabled = isAfter(day, maxDate);
+                const isDisabled = isAfter(day, maxDate) || (minDate !== null && isAfter(minDate, day));
                 return (
                   <button
                     aria-current={isSelected ? "date" : undefined}

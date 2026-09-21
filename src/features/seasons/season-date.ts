@@ -31,6 +31,20 @@ export function getKstDateRange(date: string): KstDateRange {
   };
 }
 
+export function getKstDateRangeBetween(
+  dateFrom: string,
+  dateTo: string,
+): KstDateRange {
+  if (!isKstDate(dateFrom) || !isKstDate(dateTo) || dateFrom > dateTo) {
+    throw new Error("유효한 날짜 범위가 아님.");
+  }
+
+  const start = getKstDateRange(dateFrom).start;
+  const end = getKstDateRange(shiftKstDate(dateTo, 1)).start;
+
+  return { start, end };
+}
+
 export function isKstDate(value: string): boolean {
   const match = DATE_PATTERN.exec(value);
 
