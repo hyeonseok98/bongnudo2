@@ -13,14 +13,20 @@ export function parseArchiveCursor(value: string | null): ArchiveListCursor | nu
     return null;
   }
 
-  const sortAt = value.slice(0, separatorIndex);
+  const [sortAt, count] = value.slice(0, separatorIndex).split("|");
   const id = value.slice(separatorIndex + 1);
+
+  if (count !== undefined && (!/^\d+$/.test(count) || !Number.isSafeInteger(Number(count)))) {
+    return null;
+  }
 
   return Number.isNaN(Date.parse(sortAt)) || !UUID_PATTERN.test(id)
     ? null
-    : { id, sortAt };
+    : { id, sortAt, ...(count === undefined ? {} : { recommendationCount: Number(count) }) };
 }
 
 export function serializeArchiveCursor(cursor: ArchiveListCursor): string {
-  return `${cursor.sortAt}|${cursor.id}`;
+  return cursor.recommendationCount === undefined
+    ? `${cursor.sortAt}|${cursor.id}`
+    : `${cursor.sortAt}|${cursor.recommendationCount}|${cursor.id}`;
 }

@@ -1,5 +1,5 @@
 export const ARCHIVE_CATEGORY_VALUES = ["character", "incident", "series", "other"] as const;
-export const ARCHIVE_LIST_SORT_VALUES = ["updated", "published"] as const;
+export const ARCHIVE_LIST_SORT_VALUES = ["updated", "published", "recommended"] as const;
 export const ARCHIVE_LIST_TYPE_VALUES = ["all", "system", "user"] as const;
 export const ARCHIVE_STATUS_VALUES = ["ongoing", "completed"] as const;
 export const MY_ARCHIVE_TAB_VALUES = ["owned", "edited", "deleted"] as const;
@@ -206,6 +206,7 @@ export interface ArchivePeoplePage {
 }
 
 export interface ArchivePeopleFilters {
+  participantId?: string | null;
   affiliations: string[];
   jobs: string[];
   query: string;
@@ -220,6 +221,7 @@ export interface ArchiveSystemClipSummary {
 
 export interface ArchiveListCursor {
   id: string;
+  recommendationCount?: number;
   sortAt: string;
 }
 
@@ -244,6 +246,9 @@ export interface ArchiveListItem {
   publishedAt: string | null;
   representativeImageUrl: string | null;
   recommendationCount: number;
+  relatedParticipants: ArchiveCardParticipant[];
+  relatedParticipantCount: number;
+  relatedSeasonDays: ArchiveSeasonDay[];
   sortAt: string;
   status: ArchiveStatus;
   systemParticipant: ArchiveSystemParticipant & {
@@ -257,6 +262,19 @@ export interface ArchiveListItem {
 export interface ArchivePage {
   items: ArchiveListItem[];
   nextCursor: ArchiveListCursor | null;
+}
+
+export interface ArchiveCardParticipant extends ArchiveRelatedParticipant {
+  rpProfileImageUrl: string | null;
+  streamerProfileImageUrl: string | null;
+}
+
+export interface ArchiveDiscoveryHome {
+  featured: ArchiveListItem[];
+  recent: ArchiveListItem[];
+  people: Array<ArchiveCardParticipant & { archiveCount: number }>;
+  days: Array<ArchiveSeasonDay & { archiveCount: number }>;
+  categories: Array<{ category: ArchiveCategory; archiveCount: number }>;
 }
 
 export interface MyArchiveCursor {

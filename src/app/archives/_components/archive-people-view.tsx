@@ -3,6 +3,7 @@
 import { useInfiniteQuery, useQuery } from "@tanstack/react-query";
 import { Archive, LoaderCircle, UserRound } from "lucide-react";
 import { useState } from "react";
+import { parseAsString, useQueryState } from "nuqs";
 
 import { ArchiveGridSkeleton } from "@/components/archive-grid-skeleton";
 import type { HierarchicalFilterSelection } from "@/components/filters/hierarchical-filter";
@@ -28,6 +29,7 @@ import { ArchiveCard } from "./archive-card";
 const EMPTY_SELECTION: HierarchicalFilterSelection = { ids: [] };
 
 export function ArchivePeopleView() {
+  const [participantId, setParticipantId] = useQueryState("participant", parseAsString);
   const [query, setQuery] = useState("");
   const [jobSelection, setJobSelection] = useState(EMPTY_SELECTION);
   const [streamerAffiliationSelection, setStreamerAffiliationSelection] = useState(EMPTY_SELECTION);
@@ -37,6 +39,7 @@ export function ArchivePeopleView() {
   const criteria = { query, jobSelection, streamerAffiliationSelection };
   const peopleQuery = useInfiniteQuery({
     ...archiveQueries.people({
+      participantId,
       affiliations: streamerAffiliationSelection.ids,
       jobs: jobSelection.ids,
       query: query.trim(),
@@ -69,6 +72,8 @@ export function ArchivePeopleView() {
         <h2 className="text-heading font-semibold text-primary" id="archive-people-heading">인물별 탐색</h2>
         <p className="mt-2 text-body text-secondary">인물과 함께 남은 공개 아카이브를 살펴보세요.</p>
       </div>
+
+      {participantId ? <button type="button" className="cursor-pointer text-body-sm text-brand-text hover:underline" onClick={() => void setParticipantId(null)}>모든 인물 보기</button> : null}
 
       {charactersQuery.data ? (
         <>

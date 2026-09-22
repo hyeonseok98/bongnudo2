@@ -2246,6 +2246,19 @@ export type Database = {
         }
         Returns: undefined
       }
+      get_archive_card_relations: {
+        Args: { p_archive_ids: string[] }
+        Returns: {
+          archive_id: string
+          participant_count: number
+          participants: Json
+          season_days: Json
+        }[]
+      }
+      get_archive_discovery_summary: {
+        Args: { p_season_id: number }
+        Returns: Json
+      }
       get_clip_historical_affiliations: {
         Args: {
           p_participant_id: string
@@ -2302,6 +2315,7 @@ export type Database = {
         Args: {
           p_category?: string
           p_cursor_id?: string
+          p_cursor_recommendation_count?: number
           p_cursor_sort_at?: string
           p_limit?: number
           p_participant_id?: string

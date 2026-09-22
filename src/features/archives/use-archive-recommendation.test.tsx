@@ -4,7 +4,7 @@ import { QueryClient, QueryClientProvider, type InfiniteData } from "@tanstack/r
 import { act, renderHook, waitFor } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
-import type { ArchiveDetail, ArchiveListItem, ArchivePage } from "./archive";
+import type { ArchiveDetail, ArchiveDiscoveryHome, ArchiveListItem, ArchivePage } from "./archive";
 import { useArchiveRecommendation } from "./use-archive-recommendation";
 import { archiveQueries } from "@/queries/archive-queries";
 
@@ -27,6 +27,9 @@ const archiveItem: ArchiveListItem = {
   ownerName: null,
   publishedAt: "2026-09-22T00:00:00.000Z",
   recommendationCount: 3,
+  relatedParticipants: [],
+  relatedParticipantCount: 0,
+  relatedSeasonDays: [],
   representativeImageUrl: null,
   sortAt: "2026-09-22T00:00:00.000Z",
   status: "ongoing",
@@ -86,6 +89,7 @@ describe("useArchiveRecommendation", () => {
       expect(getListItem(queryClient).viewerRecommended).toBe(true);
       expect(getDetail(queryClient).recommendationCount).toBe(4);
       expect(getDetail(queryClient).viewerRecommended).toBe(true);
+      expect(queryClient.getQueryData<ArchiveDiscoveryHome>(archiveQueries.home().queryKey)?.featured[0]?.viewerRecommended).toBe(true);
     });
   });
 
@@ -116,6 +120,7 @@ describe("useArchiveRecommendation", () => {
       expect(getListItem(queryClient).viewerRecommended).toBe(false);
       expect(getDetail(queryClient).recommendationCount).toBe(3);
       expect(getDetail(queryClient).viewerRecommended).toBe(false);
+      expect(queryClient.getQueryData<ArchiveDiscoveryHome>(archiveQueries.home().queryKey)?.recent[0]?.recommendationCount).toBe(3);
     });
   });
 
@@ -171,6 +176,9 @@ function seedArchiveCaches(queryClient: QueryClient): void {
     type: "all",
   }).queryKey, listData);
   queryClient.setQueryData(archiveQueries.detail(archiveItem.id).queryKey, archiveDetail);
+  queryClient.setQueryData<ArchiveDiscoveryHome>(archiveQueries.home().queryKey, {
+    featured: [archiveItem], recent: [archiveItem], people: [], days: [], categories: [],
+  });
 }
 
 function getListItem(queryClient: QueryClient): ArchiveListItem {

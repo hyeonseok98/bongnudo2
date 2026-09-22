@@ -10,6 +10,7 @@ import {
 
 import type {
   ArchiveDetail,
+  ArchiveDiscoveryHome,
   ArchiveListItem,
   ArchivePage,
   ArchivePeoplePage,
@@ -44,6 +45,7 @@ export function useArchiveRecommendation({
         queryClient.cancelQueries({ queryKey: archiveQueries.dayRelated() }),
         queryClient.cancelQueries({ queryKey: archiveQueries.persons() }),
         queryClient.cancelQueries({ queryKey: archiveQueries.peopleLists() }),
+        queryClient.cancelQueries({ queryKey: archiveQueries.home().queryKey }),
       ]);
 
       const snapshots = getArchiveRecommendationSnapshots(queryClient, archiveId);
@@ -86,6 +88,7 @@ function getArchiveRecommendationSnapshots(
     ...queryClient.getQueriesData({ queryKey: archiveQueries.dayRelated() }),
     ...queryClient.getQueriesData({ queryKey: archiveQueries.persons() }),
     ...queryClient.getQueriesData({ queryKey: archiveQueries.peopleLists() }),
+    ...queryClient.getQueriesData({ queryKey: archiveQueries.home().queryKey }),
   ];
 
   return queries.map(([queryKey, data]) => ({ data, queryKey }));
@@ -96,6 +99,11 @@ function updateArchiveRecommendationCaches(
   archiveId: string,
   result: ArchiveRecommendationResult,
 ): void {
+  queryClient.setQueryData<ArchiveDiscoveryHome>(archiveQueries.home().queryKey, (data) => data ? {
+    ...data,
+    featured: data.featured.map((archive) => patchArchiveRecommendation(archive, archiveId, result)),
+    recent: data.recent.map((archive) => patchArchiveRecommendation(archive, archiveId, result)),
+  } : data);
   queryClient.setQueryData<ArchiveDetail>(
     archiveQueries.detail(archiveId).queryKey,
     (archive) => archive ? patchArchiveRecommendation(archive, archiveId, result) : archive,

@@ -15,6 +15,7 @@ import { getSupabaseAdminClient } from "@/lib/supabase/server";
 import type {
   ArchiveCategory,
   ArchiveDetail,
+  ArchiveDiscoveryHome,
   ArchiveEditorOptions,
   ArchiveEditPolicy,
   ArchiveKind,
@@ -38,6 +39,7 @@ import type {
   MyArchiveTab,
 } from "./archive";
 import { ArchiveRequestError } from "./archive-error";
+import { getArchiveCardRelations, getArchiveDiscoverySummary } from "./archive-discovery";
 import { canEditArchiveContent } from "./archive-permission";
 import {
   getArchiveRecommendationStates,
@@ -211,14 +213,16 @@ export async function getPublicArchivePage(
   filters: ArchiveListFilters,
   cursor: ArchiveListCursor | null,
   recommendationViewer: ArchiveRecommendationViewer,
+  pageSize = ARCHIVE_LIST_PAGE_SIZE,
 ): Promise<ArchivePage> {
   const supabase = getSupabaseAdminClient();
   const result = await supabase.rpc("get_public_archive_page", {
-    p_limit: ARCHIVE_LIST_PAGE_SIZE + 1,
+    p_limit: pageSize + 1,
     p_sort: filters.sort,
     p_type: filters.type,
     ...(filters.category ? { p_category: filters.category } : {}),
     ...(cursor ? { p_cursor_id: cursor.id, p_cursor_sort_at: cursor.sortAt } : {}),
+    ...(cursor?.recommendationCount !== undefined ? { p_cursor_recommendation_count: cursor.recommendationCount } : {}),
     ...(filters.participantId ? { p_participant_id: filters.participantId } : {}),
     ...(filters.query ? { p_query: filters.query } : {}),
     ...(filters.status ? { p_status: filters.status } : {}),
@@ -231,18 +235,34 @@ export async function getPublicArchivePage(
   }
 
   const rows = result.data;
-  const items = await attachArchiveRecommendationStates(
-    rows.slice(0, ARCHIVE_LIST_PAGE_SIZE).map(toArchiveListItem),
+  const items = await attachArchiveCardMetadata(
+    rows.slice(0, pageSize).map(toArchiveListItem),
     recommendationViewer,
   );
   const lastItem = items.at(-1);
 
   return {
     items,
-    nextCursor: rows.length > ARCHIVE_LIST_PAGE_SIZE && lastItem
-      ? { id: lastItem.id, sortAt: lastItem.sortAt }
+    nextCursor: rows.length > pageSize && lastItem
+      ? {
+          id: lastItem.id, sortAt: lastItem.sortAt,
+          ...(filters.sort === "recommended" ? { recommendationCount: lastItem.recommendationCount } : {}),
+        }
       : null,
   };
+}
+
+export async function getArchiveDiscoveryHome(viewer: ArchiveRecommendationViewer): Promise<ArchiveDiscoveryHome> {
+  const seasonId = await getArchivePeopleSeasonId();
+  const filters: ArchiveListFilters = {
+    category: null, participantId: null, query: "", status: null, type: "user", sort: "recommended",
+  };
+  const [featured, recent, summary] = await Promise.all([
+    getPublicArchivePage(filters, null, viewer, 6),
+    getPublicArchivePage({ ...filters, sort: "published" }, null, viewer, 6),
+    getArchiveDiscoverySummary(seasonId),
+  ]);
+  return { ...summary, featured: featured.items, recent: recent.items };
 }
 
 export async function getPublicUserArchivesForSeasonDay(
@@ -357,6 +377,9 @@ export async function getPublicUserArchivesForSeasonDay(
       publishedAt: archive.published_at,
       representativeImageUrl: stats?.representativeImageUrl ?? null,
       recommendationCount: 0,
+      relatedParticipants: [],
+      relatedParticipantCount: 0,
+      relatedSeasonDays: [],
       sortAt: archive.updated_at,
       status: toArchiveStatus(archive.status),
       systemParticipant: null,
@@ -366,7 +389,7 @@ export async function getPublicUserArchivesForSeasonDay(
     };
   });
 
-  return attachArchiveRecommendationStates(items, recommendationViewer);
+  return attachArchiveCardMetadata(items, recommendationViewer);
 }
 
 export async function getArchivePersonDetail(
@@ -451,7 +474,7 @@ export async function getArchivePersonDetail(
       return left.displayOrder - right.displayOrder;
     });
 
-  const relatedArchives = await attachArchiveRecommendationStates(
+  const relatedArchives = await attachArchiveCardMetadata(
     await getArchivePeopleUserArchives(
       relatedRelationsResult.data.map((relation) => relation.archive_id),
     ),
@@ -545,6 +568,9 @@ export async function getArchivePeopleSections(
         representativeImageUrl:
           getR2PublicUrl(participant.portrait_image_key) ?? stats?.representativeImageUrl ?? null,
         recommendationCount: 0,
+        relatedParticipants: [],
+        relatedParticipantCount: 0,
+        relatedSeasonDays: [],
         sortAt: stats?.lastClipCreatedAt ?? archive.updated_at,
         status: toArchiveStatus(archive.status),
         systemParticipant: {
@@ -581,17 +607,15 @@ export async function getArchivePeopleSections(
     }];
   });
 
-  const recommendationStates = await getArchiveRecommendationStates(
-    sections.flatMap((section) => section.archives.map((archive) => archive.id)),
+  const enrichedArchives = await attachArchiveCardMetadata(
+    sections.flatMap((section) => section.archives),
     recommendationViewer,
   );
+  const archivesById = new Map(enrichedArchives.map((archive) => [archive.id, archive]));
 
   return sections.map((section) => ({
     ...section,
-    archives: section.archives.map((archive) => applyArchiveRecommendationState(
-      archive,
-      recommendationStates.get(archive.id),
-    )),
+    archives: section.archives.map((archive) => archivesById.get(archive.id) ?? archive),
   }));
 }
 
@@ -620,6 +644,10 @@ export async function getArchivePeoplePage(
 
   if (participantIds) {
     query = query.in("id", participantIds);
+  }
+
+  if (filters.participantId) {
+    query = query.eq("id", filters.participantId);
   }
 
   if (cursor) {
@@ -1034,6 +1062,9 @@ async function getArchivePeopleUserArchives(archiveIds: string[]): Promise<Archi
       publishedAt: archive.published_at,
       representativeImageUrl: stats?.representativeImageUrl ?? null,
       recommendationCount: 0,
+      relatedParticipants: [],
+      relatedParticipantCount: 0,
+      relatedSeasonDays: [],
       sortAt: archive.updated_at,
       status: toArchiveStatus(archive.status),
       systemParticipant: null,
@@ -1783,6 +1814,9 @@ function toArchiveListItem(row: PublicArchivePageRow): ArchiveListItem {
     publishedAt: row.published_at,
     representativeImageUrl: profileImageUrl ?? row.representative_thumbnail_url,
     recommendationCount: 0,
+    relatedParticipants: [],
+    relatedParticipantCount: 0,
+    relatedSeasonDays: [],
     sortAt: row.sort_at,
     status: toArchiveStatus(row.status),
     systemParticipant,
@@ -1792,17 +1826,18 @@ function toArchiveListItem(row: PublicArchivePageRow): ArchiveListItem {
   };
 }
 
-async function attachArchiveRecommendationStates(
+async function attachArchiveCardMetadata(
   archives: ArchiveListItem[],
   viewer: ArchiveRecommendationViewer,
 ): Promise<ArchiveListItem[]> {
-  const states = await getArchiveRecommendationStates(
-    archives.map((archive) => archive.id),
-    viewer,
-  );
+  const archiveIds = archives.map((archive) => archive.id);
+  const [states, relations] = await Promise.all([
+    getArchiveRecommendationStates(archiveIds, viewer),
+    getArchiveCardRelations(archiveIds),
+  ]);
 
   return archives.map((archive) => applyArchiveRecommendationState(
-    archive,
+    { ...archive, ...relations.get(archive.id) },
     states.get(archive.id),
   ));
 }

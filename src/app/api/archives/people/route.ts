@@ -10,6 +10,7 @@ const requestSchema = z.object({
   affiliations: z.array(z.string().trim().min(1).max(100)).max(20),
   cursor: z.uuid().nullable(),
   jobs: z.array(z.string().trim().min(1).max(100)).max(20),
+  participantId: z.uuid().nullable(),
   limit: z.coerce.number().int().min(1).max(12).default(12),
   query: z.string().trim().max(100),
 });
@@ -21,6 +22,7 @@ export async function GET(request: Request) {
       affiliations: searchParams.getAll("affiliation"),
       cursor: searchParams.get("cursor"),
       jobs: searchParams.getAll("job"),
+      participantId: searchParams.get("participant"),
       limit: searchParams.get("limit") ?? undefined,
       query: searchParams.get("q") ?? "",
     });

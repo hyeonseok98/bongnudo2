@@ -1,15 +1,17 @@
 "use client";
 
 import Link from "next/link";
-import { CalendarDays, Clapperboard, FolderArchive } from "lucide-react";
+import { Clapperboard, FolderArchive } from "lucide-react";
 
 import type { ArchiveListItem } from "@/features/archives/archive";
 import {
   getDisplayName,
+  getDisplayProfileImageUrl,
   MEDIA_PREVIEW_BLUR_CLASS,
   shouldBlurMediaPreview,
 } from "@/features/rp-mode/rp-mode";
 import { useRpModeSettings } from "@/providers/rp-mode-provider";
+import { CharacterAvatar } from "@/app/characters/_components/character-avatar";
 import { cn } from "@/utils/cn";
 
 import { ArchiveRecommendationButton } from "./archive-recommendation-button";
@@ -17,13 +19,6 @@ import { ArchiveRecommendationButton } from "./archive-recommendation-button";
 interface ArchiveCardProps {
   archive: ArchiveListItem;
 }
-
-const dateFormatter = new Intl.DateTimeFormat("ko-KR", {
-  day: "numeric",
-  month: "short",
-  timeZone: "Asia/Seoul",
-  year: "numeric",
-});
 
 export function ArchiveCard({ archive }: ArchiveCardProps) {
   const { isMediaPreviewBlurEnabled, isRpMode } = useRpModeSettings();
@@ -53,8 +48,9 @@ export function ArchiveCard({ archive }: ArchiveCardProps) {
               style={{ backgroundImage: `url(${JSON.stringify(archive.representativeImageUrl)})` }}
             />
           ) : (
-            <div className="absolute inset-0 grid place-items-center text-tertiary">
-              <FolderArchive aria-hidden="true" className="size-10" />
+            <div className="absolute inset-0 flex flex-col items-start justify-center gap-3 px-6 text-secondary">
+              <FolderArchive aria-hidden="true" className="size-8" />
+              <p className="text-body-sm">대표 장면이 아직 없습니다</p>
             </div>
           )}
           <div className="absolute inset-x-0 bottom-0 h-16 bg-linear-to-t from-black/55 to-transparent" />
@@ -64,12 +60,33 @@ export function ArchiveCard({ archive }: ArchiveCardProps) {
           </span>
         </div>
 
-        <div className="space-y-2.5 p-4 pr-16">
-          {archive.archiveKind === "system_character" ? (
-            <SystemArchiveCardContent archive={archive} displayName={displayName} title={title} />
-          ) : (
-            <UserArchiveCardContent archive={archive} />
-          )}
+        <div className="space-y-3 p-4">
+          <h2 className="line-clamp-2 text-body font-semibold text-primary">{title}</h2>
+          {archive.description ? <p className="line-clamp-2 text-body-sm leading-5 text-secondary">{archive.description}</p> : null}
+          {archive.relatedParticipants.length > 0 ? (
+            <div className="flex items-center gap-2" aria-label="관련 인물">
+              <div className="flex -space-x-1.5">
+                {archive.relatedParticipants.map((person) => {
+                  const name = getDisplayName(person, "character-card", isRpMode);
+                  return <span key={person.id} title={name.primaryName}>
+                    <CharacterAvatar className="size-7 rounded-full" name={name.primaryName} sizes="28px" profileImageUrl={getDisplayProfileImageUrl(person, isRpMode)} />
+                  </span>;
+                })}
+              </div>
+              <span className="truncate text-body-sm text-secondary">
+                {getDisplayName(archive.relatedParticipants[0], "character-card", isRpMode).primaryName}
+                {archive.relatedParticipantCount > 1 ? ` 외 ${archive.relatedParticipantCount - 1}명` : ""}
+              </span>
+            </div>
+          ) : null}
+          <div className="min-h-5 pr-14 text-body-sm text-secondary">
+            {archive.relatedSeasonDays.length > 0 ? (
+              <p className="truncate" title={archive.relatedSeasonDays.map((day) => `${day.dayNumber}일차`).join(" · ")}>
+                {archive.relatedSeasonDays.slice(0, 3).map((day) => `${day.dayNumber}일차`).join(" · ")}
+                {archive.relatedSeasonDays.length > 3 ? ` 외 ${archive.relatedSeasonDays.length - 3}일` : ""}
+              </p>
+            ) : null}
+          </div>
         </div>
       </Link>
       <ArchiveRecommendationButton
@@ -80,47 +97,4 @@ export function ArchiveCard({ archive }: ArchiveCardProps) {
       />
     </article>
   );
-}
-
-function SystemArchiveCardContent({
-  archive,
-  displayName,
-  title,
-}: {
-  archive: ArchiveListItem;
-  displayName: ReturnType<typeof getDisplayName> | null;
-  title: string;
-}) {
-  return (
-    <>
-      <div className="min-w-0">
-        <h2 className="line-clamp-2 text-body font-semibold text-primary">{title}</h2>
-        {displayName?.secondaryName ? (
-          <p className="mt-0.5 truncate text-caption text-secondary">{displayName.secondaryName}</p>
-        ) : null}
-      </div>
-      <p className="text-body-sm text-secondary">이 인물의 봉누도2 클립 기록입니다.</p>
-      <p className="inline-flex items-center gap-1.5 text-caption text-tertiary">
-        <CalendarDays aria-hidden="true" className="size-3.5" />
-        {formatClipRange(archive.firstClipCreatedAt, archive.lastClipCreatedAt)}
-      </p>
-    </>
-  );
-}
-
-function UserArchiveCardContent({ archive }: { archive: ArchiveListItem }) {
-  return (
-    <>
-      <h2 className="line-clamp-2 text-body font-semibold text-primary">{archive.title}</h2>
-      {archive.description ? <p className="line-clamp-2 text-body-sm leading-5 text-secondary">{archive.description}</p> : null}
-    </>
-  );
-}
-
-function formatClipRange(first: string | null, last: string | null): string {
-  if (!first || !last) {
-    return "기록 기간 정보 없음";
-  }
-
-  return `${dateFormatter.format(new Date(first))} ~ ${dateFormatter.format(new Date(last))}`;
 }

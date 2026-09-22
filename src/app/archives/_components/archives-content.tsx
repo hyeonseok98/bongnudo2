@@ -6,16 +6,21 @@ import { parseAsStringLiteral, useQueryState } from "nuqs";
 
 import { Archive, CalendarDays, LoaderCircle, LogIn, Plus, UsersRound } from "lucide-react";
 
-import { useCharacters } from "@/app/characters/_hooks/use-characters";
+import { useQuery } from "@tanstack/react-query";
+import { useState } from "react";
+import type { ArchiveParticipantSearchResult } from "@/apis/archives/get-archives";
+import { archiveQueries } from "@/queries/archive-queries";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { ArchiveGridSkeleton } from "@/components/archive-grid-skeleton";
-import { FilterBarSkeleton } from "@/components/media-grid-skeleton";
+
 import { RetryButton } from "@/components/ui/retry-button";
 import { cn } from "@/utils/cn";
 
 import { useArchiveDirectory } from "../_hooks/use-archive-directory";
 import { useArchives } from "../_hooks/use-archives";
 import { ArchiveCard } from "./archive-card";
+import { ArchiveDiscoveryHome } from "./archive-discovery-home";
+import { ArchiveSearch } from "./archive-search";
 import { ArchiveDayView } from "./archive-day-view";
 import { ArchiveFilters } from "./archive-filters";
 import { ArchivePeopleView } from "./archive-people-view";
@@ -38,7 +43,7 @@ export function ArchivesContent({ isSignedIn }: ArchivesContentProps) {
         <div>
           <h1 className="text-title font-bold text-primary">아카이브</h1>
           <p className="mt-1 text-body text-secondary">
-            봉누도2의 이야기를 만든 기록과 인물별 클립을 찾아보세요.
+            봉누도2에서 만들어진 기록과 이야기를 찾아보세요.
           </p>
         </div>
         <ArchiveHeaderActions isSignedIn={isSignedIn} />
@@ -46,9 +51,7 @@ export function ArchivesContent({ isSignedIn }: ArchivesContentProps) {
 
       <ArchiveViewTabs onViewChange={(nextView) => void setView(nextView, { history: "replace" })} view={view} />
 
-      {view === "all" ? <ArchivePublicList /> : null}
-      {view === "day" ? <ArchiveDayView /> : null}
-      {view === "people" ? <ArchivePeopleView /> : null}
+      <ArchiveExploreContent view={view} onSearchStart={() => void setView("all", { history: "replace" })} />
     </div>
   );
 }
@@ -93,83 +96,72 @@ function ArchiveViewTabs({
   );
 }
 
-function ArchivePublicList() {
+function ArchiveExploreContent({ view, onSearchStart }: { view: ArchiveExploreView; onSearchStart: () => void }) {
   const directory = useArchiveDirectory();
-  const charactersQuery = useCharacters();
-  const archivesQuery = useArchives(directory.filters);
-  const archives = archivesQuery.data?.pages.flatMap((page) => page.items) ?? [];
-
-  if (charactersQuery.isError) {
-    return <ArchiveErrorState isRetrying={charactersQuery.isFetching} onRetry={() => void charactersQuery.refetch()} />;
-  }
+  const [selectedParticipant, setSelectedParticipant] = useState<ArchiveParticipantSearchResult | null>(null);
+  const participantQuery = useQuery({
+    ...archiveQueries.person(directory.participantId),
+    enabled: view === "all" && directory.participantId !== null && selectedParticipant?.seasonParticipantId !== directory.participantId,
+  });
+  const participant = selectedParticipant?.seasonParticipantId === directory.participantId
+    ? selectedParticipant : participantQuery.data?.participant;
+  const participantLabel = participant?.rpName ?? participant?.streamerName ?? "선택한 인물";
 
   return (
-    <div className="space-y-5">
-      {charactersQuery.isPending ? <FilterBarSkeleton /> : null}
-      {charactersQuery.data ? (
-        <ArchiveFilters
-          category={directory.category}
-          characters={charactersQuery.data.characters}
-          participantId={directory.participantId}
-          searchInput={directory.searchInput}
-          status={directory.status}
-          onCategoryChange={directory.changeCategory}
-          onParticipantChange={directory.changeParticipant}
-          onReset={directory.resetFilters}
-          onSearchInputChange={directory.changeSearchInput}
-          onStatusChange={directory.changeStatus}
-        />
-      ) : null}
-
-      {charactersQuery.data && archivesQuery.isPending ? <ArchiveGridSkeleton /> : null}
-      {archivesQuery.isError ? <ArchiveErrorState onRetry={() => void archivesQuery.refetch()} /> : null}
-      {charactersQuery.data && !archivesQuery.isPending && !archivesQuery.isError ? (
-        <section aria-labelledby="archive-results-heading" className="space-y-4">
-          <div className="flex min-h-5 items-center justify-between gap-3">
-            <h2 className="text-heading-sm font-semibold text-primary" id="archive-results-heading">공개 아카이브</h2>
-            <span
-              aria-label="아카이브 결과를 업데이트하는 중입니다."
-              className={cn(
-                "inline-flex size-4 items-center justify-center text-tertiary",
-                !(archivesQuery.isFetching && !archivesQuery.isFetchingNextPage) && "invisible",
-              )}
-              role="status"
-            >
-              <LoaderCircle aria-hidden="true" className="size-4 animate-spin" />
-              <span className="sr-only">아카이브 결과를 업데이트하는 중입니다.</span>
-            </span>
-          </div>
-
-          {archives.length > 0 ? (
-            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5">
-              {archives.map((archive) => <ArchiveCard archive={archive} key={archive.id} />)}
-            </div>
-          ) : (
-            <ArchiveEmptyState
-              hasFilters={
-                directory.participantId !== null ||
-                directory.category !== null ||
-                directory.status !== null
-              }
-              hasSearch={directory.query.length > 0}
-            />
-          )}
-
-          {archivesQuery.hasNextPage ? (
-            <div className="flex justify-center pt-2">
-              <Button
-                disabled={archivesQuery.isFetchingNextPage}
-                onClick={() => void archivesQuery.fetchNextPage()}
-                type="button"
-                variant="outline"
-              >
-                {archivesQuery.isFetchingNextPage ? "아카이브를 더 불러오는 중입니다." : "아카이브 더 보기"}
-              </Button>
-            </div>
-          ) : null}
-        </section>
-      ) : null}
+    <div className="space-y-8">
+      <ArchiveSearch value={view === "all" ? directory.searchInput : ""} onChange={(query) => {
+        onSearchStart();
+        directory.changeSearchInput(query);
+      }} onParticipantSelect={(person) => {
+        onSearchStart();
+        setSelectedParticipant(person);
+        directory.changeParticipant(person.seasonParticipantId);
+      }} />
+      {view === "all" && directory.hasFilters ? (
+        <ArchiveSearchResults directory={directory} participantLabel={participantLabel} />
+      ) : view === "all" ? <ArchiveDiscoveryHome /> : null}
+      {view === "day" ? <ArchiveDayView /> : null}
+      {view === "people" ? <ArchivePeopleView /> : null}
     </div>
+  );
+}
+
+function ArchiveSearchResults({ directory, participantLabel }: {
+  directory: ReturnType<typeof useArchiveDirectory>;
+  participantLabel: string;
+}) {
+  const archivesQuery = useArchives(directory.filters, directory.participantId !== null || directory.searchInput.trim() === directory.query);
+  const archives = archivesQuery.data?.pages.flatMap((page) => page.items) ?? [];
+  const title = directory.participantId ? `${participantLabel} 관련 아카이브`
+    : directory.searchInput.trim() ? `‘${directory.searchInput.trim()}’ 검색 결과`
+    : directory.sort === "recommended" ? "많이 추천받은 아카이브"
+    : directory.sort === "published" ? "최근 공개 아카이브" : "공개 아카이브";
+
+  return (
+    <section aria-labelledby="archive-results-heading" className="space-y-5">
+      <ArchiveFilters directory={directory} participantLabel={participantLabel} />
+      <div className="flex min-h-6 items-center justify-between gap-3">
+        <h2 id="archive-results-heading" className="text-heading-sm font-semibold text-primary">{title}</h2>
+        <div className="flex items-center gap-3">
+          <LoaderCircle aria-label="검색 결과를 업데이트하는 중입니다." className={cn("size-4 animate-spin text-secondary", !archivesQuery.isFetching && "invisible")} />
+          <button className="cursor-pointer text-body-sm text-secondary hover:text-primary" onClick={directory.resetFilters} type="button">탐색 홈으로</button>
+        </div>
+      </div>
+      {archivesQuery.isPending ? <ArchiveGridSkeleton /> : null}
+      {archivesQuery.isError ? <ArchiveErrorState isRetrying={archivesQuery.isFetching} onRetry={() => void archivesQuery.refetch()} /> : null}
+      {archives.length > 0 ? (
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5">
+          {archives.map((archive) => <ArchiveCard archive={archive} key={archive.id} />)}
+        </div>
+      ) : archivesQuery.isSuccess ? <ArchiveEmptyState hasFilters={directory.hasFilters} hasSearch={directory.query.length > 0} /> : null}
+      {archivesQuery.hasNextPage ? (
+        <div className="flex justify-center pt-2">
+          <Button disabled={archivesQuery.isFetching || archivesQuery.isPlaceholderData} onClick={() => void archivesQuery.fetchNextPage()} type="button" variant="outline">
+            {archivesQuery.isFetchingNextPage ? "아카이브를 더 불러오는 중입니다." : "아카이브 더 보기"}
+          </Button>
+        </div>
+      ) : null}
+    </section>
   );
 }
 

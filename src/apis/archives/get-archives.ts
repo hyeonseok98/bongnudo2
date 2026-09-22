@@ -2,6 +2,7 @@ import { z } from "zod";
 
 import type {
   ArchiveDetail,
+  ArchiveDiscoveryHome,
   ArchiveEditorOptions,
   ArchiveListCursor,
   ArchiveListFilters,
@@ -196,6 +197,14 @@ const archivePageSchema = z.object({
     publishedAt: z.string().datetime({ offset: true }).nullable(),
     representativeImageUrl: z.string().url().nullable(),
     recommendationCount: z.number().int().nonnegative(),
+    relatedParticipantCount: z.number().int().nonnegative(),
+    relatedParticipants: z.array(z.object({
+      id: z.uuid(), rpName: z.string().nullable(), streamerName: z.string(),
+      rpProfileImageUrl: z.string().url().nullable(), streamerProfileImageUrl: z.string().url().nullable(),
+    })),
+    relatedSeasonDays: z.array(z.object({
+      id: z.uuid(), dayNumber: z.number().int().positive(), sessionDate: z.string().date(),
+    })),
     sortAt: z.string().datetime({ offset: true }),
     status: z.enum(["ongoing", "completed"]),
     systemParticipant: z.object({
@@ -210,11 +219,33 @@ const archivePageSchema = z.object({
   })),
   nextCursor: z.object({
     id: z.uuid(),
+    recommendationCount: z.number().int().nonnegative().optional(),
     sortAt: z.string().datetime({ offset: true }),
   }).nullable(),
 });
 
 const archiveDayArchivesSchema = archivePageSchema.shape.items;
+
+const archiveDiscoveryHomeSchema = z.object({
+  featured: archiveDayArchivesSchema,
+  recent: archiveDayArchivesSchema,
+  people: z.array(archivePageSchema.shape.items.element.shape.relatedParticipants.element.extend({
+    archiveCount: z.number().int().nonnegative(),
+  })),
+  days: z.array(archivePageSchema.shape.items.element.shape.relatedSeasonDays.element.extend({
+    archiveCount: z.number().int().nonnegative(),
+  })),
+  categories: z.array(z.object({
+    category: z.enum(["character", "incident", "series", "other"]),
+    archiveCount: z.number().int().nonnegative(),
+  })),
+});
+
+export async function getArchiveDiscoveryHome(signal?: AbortSignal): Promise<ArchiveDiscoveryHome> {
+  const response = await fetch("/api/archives/home", { cache: "no-store", signal });
+  if (!response.ok) throw new Error("아카이브 탐색 정보를 불러오지 못함.");
+  return archiveDiscoveryHomeSchema.parse(await response.json());
+}
 
 const archivePersonDetailSchema = z.object({
   participant: z.object({
@@ -324,6 +355,7 @@ export async function getArchive(archiveId: string): Promise<ArchiveDetail> {
 export async function getPublicArchives(
   filters: ArchiveListFilters,
   cursor: ArchiveListCursor | null,
+  signal?: AbortSignal,
 ): Promise<ArchivePage> {
   const searchParams = new URLSearchParams();
 
@@ -338,6 +370,7 @@ export async function getPublicArchives(
   const query = searchParams.toString();
   const response = await fetch(`/api/archives${query ? `?${query}` : ""}`, {
     cache: "no-store",
+    signal,
   });
 
   if (!response.ok) {
@@ -389,6 +422,7 @@ export async function getArchivePeopleSections(
 
   if (filters.query) searchParams.set("q", filters.query);
   if (cursor) searchParams.set("cursor", cursor);
+  if (filters.participantId) searchParams.set("participant", filters.participantId);
   filters.jobs.forEach((job) => searchParams.append("job", job));
   filters.affiliations.forEach((affiliation) => searchParams.append("affiliation", affiliation));
 

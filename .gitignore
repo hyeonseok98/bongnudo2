@@ -102,6 +102,7 @@ supabase/migrations/*
 !supabase/migrations/20260922092920_grant_replay_job_helper_access.sql
 !supabase/migrations/20260922100431_add_archive_recommendations.sql
 !supabase/migrations/20260922101439_allow_system_archive_recommendation_count.sql
+!supabase/migrations/20260922102612_archive_discovery_queries.sql
 supabase/.temp/
 
 # test

@@ -1,18 +1,9 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { parseAsString, parseAsStringLiteral, useQueryStates } from "nuqs";
 import {
-  parseAsString,
-  parseAsStringLiteral,
-  useQueryStates,
-} from "nuqs";
-
-import {
-  ARCHIVE_CATEGORY_VALUES,
-  ARCHIVE_STATUS_VALUES,
-  type ArchiveCategory,
-  type ArchiveListFilters,
-  type ArchiveStatus,
+  ARCHIVE_CATEGORY_VALUES, ARCHIVE_LIST_SORT_VALUES, ARCHIVE_STATUS_VALUES,
+  type ArchiveCategory, type ArchiveListFilters, type ArchiveListSort, type ArchiveStatus,
 } from "@/features/archives/archive";
 import { useDebouncedValue } from "@/hooks/use-debounced-value";
 
@@ -20,97 +11,28 @@ const archiveQueryParsers = {
   category: parseAsStringLiteral(ARCHIVE_CATEGORY_VALUES),
   participant: parseAsString,
   q: parseAsString.withDefault(""),
+  sort: parseAsStringLiteral(ARCHIVE_LIST_SORT_VALUES),
   status: parseAsStringLiteral(ARCHIVE_STATUS_VALUES),
 };
 
-export interface ArchiveDirectory {
-  category: ArchiveCategory | null;
-  filters: ArchiveListFilters;
-  participantId: string | null;
-  query: string;
-  searchInput: string;
-  status: ArchiveStatus | null;
-  changeCategory: (category: ArchiveCategory | null) => void;
-  changeParticipant: (participantId: string | null) => void;
-  changeSearchInput: (query: string) => void;
-  changeStatus: (status: ArchiveStatus | null) => void;
-  resetFilters: () => void;
-}
-
-export function useArchiveDirectory(): ArchiveDirectory {
-  const [{ category, participant, q, status }, setQueryState] = useQueryStates(
-    archiveQueryParsers,
-  );
-  const [searchInput, setSearchInput] = useState(q);
-  const debouncedSearchInput = useDebouncedValue(searchInput, 300);
-  const lastSubmittedQuery = useRef(q);
-
-  useEffect(() => {
-    if (debouncedSearchInput === lastSubmittedQuery.current) {
-      return;
-    }
-
-    lastSubmittedQuery.current = debouncedSearchInput;
-    void setQueryState({ q: debouncedSearchInput || null }, { history: "replace" });
-  }, [debouncedSearchInput, setQueryState]);
-
-  useEffect(() => {
-    if (q === lastSubmittedQuery.current) {
-      return;
-    }
-
-    lastSubmittedQuery.current = q;
-    setSearchInput(q);
-  }, [q]);
-
-  function changeSearchInput(nextQuery: string) {
-    setSearchInput(nextQuery);
-  }
-
-  function changeParticipant(participantId: string | null) {
-    void setQueryState({ participant: participantId }, { history: "replace" });
-  }
-
-  function changeCategory(nextCategory: ArchiveCategory | null) {
-    void setQueryState({ category: nextCategory }, { history: "replace" });
-  }
-
-  function changeStatus(nextStatus: ArchiveStatus | null) {
-    void setQueryState({ status: nextStatus }, { history: "replace" });
-  }
-
-  function resetFilters() {
-    lastSubmittedQuery.current = "";
-    setSearchInput("");
-    void setQueryState(
-      {
-        category: null,
-        participant: null,
-        q: null,
-        status: null,
-      },
-      { history: "replace" },
-    );
-  }
+export function useArchiveDirectory() {
+  const [{ category, participant, q, sort, status }, setQueryState] = useQueryStates(archiveQueryParsers);
+  const debouncedQuery = useDebouncedValue(q, 300);
+  const filters: ArchiveListFilters = {
+    category, participantId: participant, query: participant ? "" : debouncedQuery.trim(),
+    sort: sort ?? "updated", status, type: participant && !category && !status ? "all" : "user",
+  };
 
   return {
-    category,
-    filters: {
-      category,
-      participantId: participant,
-      query: q,
-      sort: "updated",
-      status,
-      type: "user",
-    },
-    participantId: participant,
-    query: q,
-    searchInput,
-    status,
-    changeCategory,
-    changeParticipant,
-    changeSearchInput,
-    changeStatus,
-    resetFilters,
+    category, participantId: participant, query: filters.query, searchInput: q, sort, status, filters,
+    hasFilters: Boolean(category || participant || q.trim() || status || sort),
+    changeCategory: (value: ArchiveCategory | null) => void setQueryState({ category: value }),
+    changeParticipant: (id: string | null) => void setQueryState({ participant: id, q: null }, { history: "push" }),
+    changeSearchInput: (value: string) => void setQueryState({ q: value || null, participant: null }, { history: "replace" }),
+    changeSort: (value: ArchiveListSort) => void setQueryState({ sort: value }),
+    changeStatus: (value: ArchiveStatus | null) => void setQueryState({ status: value }),
+    resetFilters: () => void setQueryState({ category: null, participant: null, q: null, sort: null, status: null }),
   };
 }
+
+export type ArchiveDirectory = ReturnType<typeof useArchiveDirectory>;

@@ -10,6 +10,7 @@ import {
   createArchive,
   deleteArchive,
   getArchive,
+  getArchiveDiscoveryHome,
   getArchiveEditorOptions,
   getArchivePersonDetail,
   getArchivePeopleSections,
@@ -45,6 +46,10 @@ export const archiveQueries = {
   my: () => [...archiveQueries.all(), "my"] as const,
   peopleLists: () => [...archiveQueries.all(), "people"] as const,
   persons: () => [...archiveQueries.all(), "person"] as const,
+  home: () => queryOptions({
+    queryKey: [...archiveQueries.all(), "home"] as const,
+    queryFn: ({ signal }) => getArchiveDiscoveryHome(signal),
+  }),
   myListKey: (tab: MyArchiveTab) => [...archiveQueries.my(), tab] as const,
   detail: (archiveId: string) =>
     queryOptions({
@@ -65,7 +70,7 @@ export const archiveQueries = {
       ArchiveListCursor | null
     >({
       queryKey: [...archiveQueries.lists(), filters] as const,
-      queryFn: ({ pageParam }) => getPublicArchives(filters, pageParam),
+      queryFn: ({ pageParam, signal }) => getPublicArchives(filters, pageParam, signal),
       placeholderData: keepPreviousData,
       initialPageParam: null,
       getNextPageParam: (page) => page.nextCursor,
