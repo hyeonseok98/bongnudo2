@@ -26,7 +26,6 @@ interface ClipCardProps {
   canAddTags?: boolean;
   canManageCollectedMedia?: boolean;
   clip: ClipItem;
-  onExcluded?: () => void;
   onPreview: (clip: ClipItem) => void;
   participantProfileImages?: ReadonlyMap<string, ParticipantProfileImages>;
 }
@@ -45,7 +44,6 @@ export function ClipCard({
   canAddTags = false,
   canManageCollectedMedia = false,
   clip,
-  onExcluded,
   onPreview,
   participantProfileImages,
 }: ClipCardProps) {
@@ -174,18 +172,17 @@ export function ClipCard({
           </div>
         </div>
       </button>
-      {canAddTags || (canManageCollectedMedia && onExcluded) ? (
+      {canAddTags || canManageCollectedMedia ? (
         <CollectedMediaActionsMenu label={`${clip.title} 더보기`}>
           <ClipTagEditor
             canAddTags={canAddTags}
             clipId={clip.id}
             tags={clip.tags}
           />
-          {canManageCollectedMedia && onExcluded ? (
+          {canManageCollectedMedia ? (
             <CollectedMediaExclusionButton
               mediaId={clip.id}
               mediaType="clip"
-              onExcluded={onExcluded}
               variant="menu"
             />
           ) : null}
@@ -199,7 +196,6 @@ interface ClipCardGridProps {
   canAddTags?: boolean;
   canManageCollectedMedia?: boolean;
   clips: ClipItem[];
-  onExcluded?: () => void;
   onPreview: (clip: ClipItem) => void;
   participantProfileImages?: ReadonlyMap<string, ParticipantProfileImages>;
 }
@@ -208,7 +204,6 @@ export function ClipCardGrid({
   canAddTags = false,
   canManageCollectedMedia = false,
   clips,
-  onExcluded,
   onPreview,
   participantProfileImages,
 }: ClipCardGridProps) {
@@ -220,7 +215,6 @@ export function ClipCardGrid({
           canManageCollectedMedia={canManageCollectedMedia}
           clip={clip}
           key={clip.id}
-          onExcluded={onExcluded}
           onPreview={onPreview}
           participantProfileImages={participantProfileImages}
         />

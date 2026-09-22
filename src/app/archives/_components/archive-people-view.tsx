@@ -120,7 +120,7 @@ export function ArchivePeopleView() {
           }}
         />
       ) : null}
-      {sections.length > 0 ? (
+      {visibleSections.length > 0 || peopleQuery.hasNextPage ? (
         <div className="space-y-10">
           <div className="flex min-h-5 justify-end">
             <LoaderCircle
@@ -148,7 +148,7 @@ export function ArchivePeopleView() {
           />
         </div>
       ) : null}
-      {peopleQuery.isSuccess && !peopleQuery.hasNextPage && sections.length === 0 ? (
+      {peopleQuery.isSuccess && !peopleQuery.hasNextPage && visibleSections.length === 0 ? (
         <ArchivePeopleMessage>인물과 연결된 공개 아카이브가 없습니다.</ArchivePeopleMessage>
       ) : null}
     </section>

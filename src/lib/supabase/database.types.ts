@@ -2119,6 +2119,10 @@ export type Database = {
       }
     }
     Functions: {
+      add_clip_tag: {
+        Args: { p_clip_id: string; p_created_by: string; p_name: string }
+        Returns: string
+      }
       claim_media_collector_batch: {
         Args: { p_collector_kind: string }
         Returns: {
@@ -2283,6 +2287,25 @@ export type Database = {
           system_participant_streamer_name: string
           title: string
           updated_at: string
+        }[]
+      }
+      get_replay_session_page: {
+        Args: {
+          p_cursor_id?: string
+          p_cursor_sort_at?: string
+          p_date_end?: string
+          p_date_start?: string
+          p_day_number?: number
+          p_jobs?: string[]
+          p_limit?: number
+          p_participant_ids?: string[]
+        }
+        Returns: {
+          ended_at: string
+          replay_ids: string[]
+          session_id: string
+          sort_at: string
+          started_at: string
         }[]
       }
       get_system_archive_clip_summary: {

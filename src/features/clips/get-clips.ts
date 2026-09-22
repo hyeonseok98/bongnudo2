@@ -109,7 +109,6 @@ function createCareerEventsQuery(client: SupabaseClient<Database>) {
   `);
 }
 
-type ParticipantCandidate = QueryData<ReturnType<typeof createParticipantCandidatesQuery>>[number];
 type ClipSourceRow = QueryData<ReturnType<typeof createClipRowsQuery>>[number];
 type CareerEventRow = QueryData<ReturnType<typeof createCareerEventsQuery>>[number];
 
@@ -351,75 +350,6 @@ async function getActiveSeasonId(client: SupabaseClient<Database>): Promise<numb
   return data[0].id;
 }
 
-async function resolveSeasonDayId(
-  client: SupabaseClient<Database>,
-  seasonId: number,
-  dayNumber: number | null,
-): Promise<string | null> {
-  if (dayNumber === null) {
-    return null;
-  }
-
-  const { data, error } = await client
-    .from("season_days")
-    .select("id")
-    .eq("season_id", seasonId)
-    .eq("day_number", dayNumber)
-    .maybeSingle();
-
-  if (error) {
-    throw new Error("봉누도 일차를 확인하지 못함.", { cause: error });
-  }
-
-  return data?.id ?? null;
-}
-
-async function resolveParticipantIds(
-  client: SupabaseClient<Database>,
-  seasonId: number,
-  filters: ClipListFilters,
-): Promise<string[] | null> {
-  const hasQuery = filters.query.trim().length > 0;
-  const hasGroups = filters.groups.length > 0;
-
-  if (!hasQuery && !hasGroups) {
-    return filters.participantIds.length > 0 ? filters.participantIds : null;
-  }
-
-  const { data, error } = await createParticipantCandidatesQuery(client)
-    .eq("season_id", seasonId);
-
-  if (error) {
-    throw new Error("클립 인물 필터를 확인하지 못함.", { cause: error });
-  }
-
-  const selectedGroupSlugs = resolveSelectedGroupSlugs(data, filters.groups);
-
-  return data
-    .filter((participant) => {
-      if (
-        filters.participantIds.length > 0 &&
-        !filters.participantIds.includes(participant.id)
-      ) {
-        return false;
-      }
-
-      const isQueryMatched =
-        !hasQuery ||
-        matchesKoreanSearch(participant.streamer.name, filters.query) ||
-        (participant.rp_name !== null &&
-          matchesKoreanSearch(participant.rp_name, filters.query));
-      const isGroupMatched =
-        selectedGroupSlugs.size === 0 ||
-        participant.streamer.affiliation_memberships.some((membership) =>
-          selectedGroupSlugs.has(membership.affiliation.slug),
-        );
-
-      return isQueryMatched && isGroupMatched;
-    })
-    .map((participant) => participant.id);
-}
-
 async function resolveClipParticipantIds(
   client: SupabaseClient<Database>,
   filters: ClipListFilters,
@@ -447,60 +377,6 @@ async function resolveClipParticipantIds(
       )
     )
     .map((participant) => participant.id);
-}
-
-function resolveSelectedGroupSlugs(
-  participants: ParticipantCandidate[],
-  selectedGroupSlugs: string[],
-): Set<string> {
-  const affiliationsBySlug = new Map<string, {
-    id: string;
-    parentAffiliationId: string | null;
-    slug: string;
-  }>();
-  const childrenByParentId = new Map<string, string[]>();
-
-  for (const participant of participants) {
-    for (const membership of participant.streamer.affiliation_memberships) {
-      const affiliation = membership.affiliation;
-      affiliationsBySlug.set(affiliation.slug, {
-        id: affiliation.id,
-        parentAffiliationId: affiliation.parent_affiliation_id,
-        slug: affiliation.slug,
-      });
-
-      if (affiliation.parent_affiliation_id) {
-        const children = childrenByParentId.get(affiliation.parent_affiliation_id) ?? [];
-        children.push(affiliation.slug);
-        childrenByParentId.set(affiliation.parent_affiliation_id, children);
-      }
-    }
-  }
-
-  const resolved = new Set<string>();
-
-  function addBranch(slug: string) {
-    if (resolved.has(slug)) {
-      return;
-    }
-
-    resolved.add(slug);
-    const affiliation = affiliationsBySlug.get(slug);
-
-    if (!affiliation) {
-      return;
-    }
-
-    for (const childSlug of childrenByParentId.get(affiliation.id) ?? []) {
-      addBranch(childSlug);
-    }
-  }
-
-  for (const slug of selectedGroupSlugs) {
-    addBranch(slug);
-  }
-
-  return resolved;
 }
 
 async function getCareerEventsByParticipant(
@@ -675,39 +551,6 @@ function toClipItem(
     title: row.title,
     viewCount: row.view_count,
   };
-}
-
-function matchesJobFilters(
-  clip: ClipItem,
-  selectedJobs: string[],
-  careerEventsByParticipant: Map<string, CareerEventsByParticipant>,
-): boolean {
-  if (selectedJobs.length === 0) {
-    return true;
-  }
-
-  if (!clip.participant) {
-    return false;
-  }
-
-  const career = careerEventsByParticipant.get(clip.participant.id);
-
-  if (!career || career.events.length === 0) {
-    return false;
-  }
-
-  const state = getCharacterStateAt(career.events, clip.clipCreatedAt);
-
-  if (!state.isComplete) {
-    return false;
-  }
-
-  const selected = new Set(selectedJobs);
-
-  return state.affiliations.some((affiliation) =>
-    selected.has(affiliation.organization.slug) ||
-    selected.has(career.categoriesByOrganizationId.get(affiliation.organization.id) ?? ""),
-  );
 }
 
 function getCursorFilter(cursor: ClipCursor, sort: ClipListFilters["sort"]): string {

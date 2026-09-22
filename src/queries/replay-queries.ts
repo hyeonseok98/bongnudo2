@@ -12,6 +12,7 @@ const METADATA_STALE_TIME = 5 * 60 * 1_000;
 
 export const replayQueries = {
   all: () => ["replays"] as const,
+  lists: () => [...replayQueries.all(), "list"] as const,
   options: () => queryOptions({
     queryKey: [...replayQueries.all(), "options"] as const,
     queryFn: getReplayOptions,
@@ -25,7 +26,7 @@ export const replayQueries = {
       readonly ["replays", "list", ReplayListFilters],
       ReplayCursor | null
     >({
-      queryKey: [...replayQueries.all(), "list", filters] as const,
+      queryKey: [...replayQueries.lists(), filters] as const,
       queryFn: ({ pageParam }) => getReplays(filters, pageParam),
       placeholderData: keepPreviousData,
       initialPageParam: null,

@@ -98,6 +98,8 @@ supabase/migrations/*
 !supabase/migrations/20260920113559_create_media_collector_runs.sql
 !supabase/migrations/20260920115723_fix_media_collector_run_status_ambiguity.sql
 !supabase/migrations/20260920190823_add_archive_metadata_relations.sql
+!supabase/migrations/20260922091243_stabilize_media_and_replay_queries.sql
+!supabase/migrations/20260922092920_grant_replay_job_helper_access.sql
 supabase/.temp/
 
 # test

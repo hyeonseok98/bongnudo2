@@ -5,18 +5,18 @@ do $$
 declare
   v_clip_id uuid;
   v_tag_id uuid;
+  v_duplicate_tag_id uuid;
   v_user_id uuid;
 begin
   select id into v_clip_id from public.clips limit 1;
-  select id into v_user_id from public.users limit 1;
+  select id into v_user_id from public.users where status = 'active' limit 1;
 
   if v_clip_id is null or v_user_id is null then
     raise exception 'clip_tag_verification_fixture_missing';
   end if;
 
-  insert into public.tags (name, normalized_name)
-  values (' verification-tag ', 'verification-tag')
-  returning id into v_tag_id;
+  v_tag_id := public.add_clip_tag(v_clip_id, ' verification-tag ', v_user_id);
+  v_duplicate_tag_id := public.add_clip_tag(v_clip_id, 'verification-tag', v_user_id);
 
   if not exists (
     select 1
@@ -28,6 +28,15 @@ begin
     raise exception 'clip_tag_normalization_failed';
   end if;
 
+  if v_duplicate_tag_id is distinct from v_tag_id or (
+    select count(*)
+    from public.clip_tags
+    where clip_id = v_clip_id
+      and tag_id = v_tag_id
+  ) <> 1 then
+    raise exception 'clip_tag_transaction_duplicate_failed';
+  end if;
+
   if exists (
     select 1
     from pg_policies
@@ -37,9 +46,6 @@ begin
   ) then
     raise exception 'clip_tag_browser_write_policy_exists';
   end if;
-
-  insert into public.clip_tags (clip_id, tag_id, created_by)
-  values (v_clip_id, v_tag_id, v_user_id);
 
   begin
     insert into public.clip_tags (clip_id, tag_id, created_by)

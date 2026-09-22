@@ -16,6 +16,7 @@ const METADATA_STALE_TIME = 5 * 60 * 1_000;
 
 export const clipQueries = {
   all: () => ["clips"] as const,
+  lists: () => [...clipQueries.all(), "list"] as const,
   options: () =>
     queryOptions({
       queryKey: [...clipQueries.all(), "options"] as const,
@@ -30,7 +31,7 @@ export const clipQueries = {
       readonly ["clips", "list", ClipListFilters],
       ClipCursor | null
     >({
-      queryKey: [...clipQueries.all(), "list", filters] as const,
+      queryKey: [...clipQueries.lists(), filters] as const,
       queryFn: ({ pageParam }) => getClips(filters, pageParam),
       placeholderData: keepPreviousData,
       initialPageParam: null,

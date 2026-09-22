@@ -17,14 +17,15 @@ function replay(id: string, start: string | null, durationSeconds: number | null
 }
 
 describe("Replay 방송 세션", () => {
-  it("종료 후 정확히 15분 이내는 묶고 16분은 분리한다", () => {
+  it("종료 후 14분과 정확히 15분은 묶고 16분은 분리한다", () => {
     const rows = [
       replay("a", "2026-09-19T09:00:00Z", 3600),
-      replay("b", "2026-09-19T10:15:00Z", 3600),
-      replay("c", "2026-09-19T11:31:00Z", 3600),
+      replay("b", "2026-09-19T10:14:00Z", 3600),
+      replay("c", "2026-09-19T11:29:00Z", 3600),
+      replay("d", "2026-09-19T12:45:00Z", 3600),
     ];
 
-    expect(groupReplaySessions(rows).map((session) => session.replayIds)).toEqual([["c"], ["a", "b"]]);
+    expect(groupReplaySessions(rows).map((session) => session.replayIds)).toEqual([["d"], ["a", "b", "c"]]);
   });
 
   it("각 재접속이 15분 이내면 연속해서 묶는다", () => {

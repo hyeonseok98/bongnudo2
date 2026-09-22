@@ -24,7 +24,6 @@ import { cn } from "@/utils/cn";
 interface ReplayCardProps {
   canManageCollectedMedia?: boolean;
   session: ReplaySession;
-  onExcluded?: () => void;
   participantProfileImages?: ReadonlyMap<string, ParticipantProfileImages>;
 }
 
@@ -44,7 +43,7 @@ const timeFormatter = new Intl.DateTimeFormat("ko-KR", {
 
 const viewCountFormatter = new Intl.NumberFormat("ko-KR");
 
-export function ReplayCard({ canManageCollectedMedia = false, onExcluded, participantProfileImages, session }: ReplayCardProps) {
+export function ReplayCard({ canManageCollectedMedia = false, participantProfileImages, session }: ReplayCardProps) {
   const { isMediaPreviewBlurEnabled, isRpMode } = useRpModeSettings();
   const replay = session.replays[0];
   if (!replay) return null;
@@ -224,8 +223,8 @@ export function ReplayCard({ canManageCollectedMedia = false, onExcluded, partic
                           : ""}
                       </span>
                     </a>
-                    {canManageCollectedMedia && onExcluded ? (
-                      <CollectedMediaExclusionButton mediaId={item.id} mediaType="replay" onExcluded={onExcluded} variant="menu" />
+                    {canManageCollectedMedia ? (
+                      <CollectedMediaExclusionButton mediaId={item.id} mediaType="replay" variant="menu" />
                     ) : null}
                   </li>
                 ))}
@@ -234,12 +233,11 @@ export function ReplayCard({ canManageCollectedMedia = false, onExcluded, partic
           </DialogPrimitive.Portal>
         </DialogPrimitive.Root>
       )}
-      {session.replays.length === 1 && canManageCollectedMedia && onExcluded ? (
+      {session.replays.length === 1 && canManageCollectedMedia ? (
         <CollectedMediaActionsMenu label={`${replay.title} 더보기`}>
           <CollectedMediaExclusionButton
             mediaId={replay.id}
             mediaType="replay"
-            onExcluded={onExcluded}
             variant="menu"
           />
         </CollectedMediaActionsMenu>
@@ -250,14 +248,12 @@ export function ReplayCard({ canManageCollectedMedia = false, onExcluded, partic
 
 interface ReplayCardGridProps {
   canManageCollectedMedia?: boolean;
-  onExcluded?: () => void;
   participantProfileImages?: ReadonlyMap<string, ParticipantProfileImages>;
   replays: ReplaySession[];
 }
 
 export function ReplayCardGrid({
   canManageCollectedMedia = false,
-  onExcluded,
   participantProfileImages,
   replays,
 }: ReplayCardGridProps) {
@@ -267,7 +263,6 @@ export function ReplayCardGrid({
         <ReplayCard
           canManageCollectedMedia={canManageCollectedMedia}
           key={session.id}
-          onExcluded={onExcluded}
           participantProfileImages={participantProfileImages}
           session={session}
         />

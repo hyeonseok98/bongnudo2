@@ -2,6 +2,7 @@
 
 import { DragDropProvider, type DragEndEvent } from "@dnd-kit/react";
 import { isSortableOperation } from "@dnd-kit/react/sortable";
+import { Dialog as DialogPrimitive } from "@base-ui/react/dialog";
 import { AlertTriangle, Check, LogIn, LogOut, Settings2 } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -419,22 +420,27 @@ function ArchiveConflictDialog({
   onReload: () => void;
 }) {
   return (
-    <div className="fixed inset-0 z-modal grid place-items-center bg-black/60 p-4" role="dialog" aria-modal="true">
-      <div className="w-full max-w-md rounded-xl border border-default bg-surface-raised p-5 shadow-2xl">
-        <div className="flex gap-3">
-          <AlertTriangle aria-hidden="true" className="mt-0.5 size-5 shrink-0 text-status-warning" />
-          <div>
-            <h2 className="text-body font-semibold text-primary">다른 수정 내용을 확인해주세요.</h2>
-            <p className="mt-2 text-body-sm text-secondary">
-              다른 사용자가 먼저 저장했습니다. 최신 내용을 불러오거나 현재 초안을 유지할 수 있습니다.
-            </p>
+    <DialogPrimitive.Root onOpenChange={(open) => !open && onKeepDraft()} open>
+      <DialogPrimitive.Portal>
+        <DialogPrimitive.Backdrop className="fixed inset-0 z-modal bg-black/60" />
+        <DialogPrimitive.Popup className="fixed top-1/2 left-1/2 z-modal w-[calc(100vw-2rem)] max-w-md -translate-x-1/2 -translate-y-1/2 rounded-xl border border-default bg-surface-raised p-5 shadow-2xl outline-none">
+          <div className="flex gap-3">
+            <AlertTriangle aria-hidden="true" className="mt-0.5 size-5 shrink-0 text-status-warning" />
+            <div>
+              <DialogPrimitive.Title className="text-body font-semibold text-primary">
+                다른 수정 내용을 확인해주세요.
+              </DialogPrimitive.Title>
+              <DialogPrimitive.Description className="mt-2 text-body-sm text-secondary">
+                다른 사용자가 먼저 저장했습니다. 최신 내용을 불러오거나 현재 초안을 유지할 수 있습니다.
+              </DialogPrimitive.Description>
+            </div>
           </div>
-        </div>
-        <div className="mt-5 flex justify-end gap-2">
-          <Button onClick={onKeepDraft} type="button" variant="outline">초안 유지</Button>
-          <Button onClick={onReload} type="button">최신 내용 불러오기</Button>
-        </div>
-      </div>
-    </div>
+          <div className="mt-5 flex justify-end gap-2">
+            <DialogPrimitive.Close render={<Button type="button" variant="outline" />}>초안 유지</DialogPrimitive.Close>
+            <Button onClick={onReload} type="button">최신 내용 불러오기</Button>
+          </div>
+        </DialogPrimitive.Popup>
+      </DialogPrimitive.Portal>
+    </DialogPrimitive.Root>
   );
 }

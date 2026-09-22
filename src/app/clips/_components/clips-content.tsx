@@ -3,8 +3,6 @@
 import { LoaderCircle } from "lucide-react";
 import { useState } from "react";
 
-import { useQueryClient } from "@tanstack/react-query";
-
 import {
   ArchiveClipPreviewDialog,
   type ArchiveClipPreviewItem,
@@ -14,7 +12,6 @@ import { Select } from "@/components/ui/select";
 import { RetryButton } from "@/components/ui/retry-button";
 import { FilterBarSkeleton, MediaResultsSkeleton } from "@/components/media-grid-skeleton";
 import type { ClipItem } from "@/features/clips/clip";
-import { clipQueries } from "@/queries/clip-queries";
 import { cn } from "@/utils/cn";
 
 import { useClipDirectory } from "../_hooks/use-clip-directory";
@@ -29,7 +26,6 @@ interface ClipsContentProps {
 }
 
 export function ClipsContent({ canAddTags, canManageCollectedMedia }: ClipsContentProps) {
-  const queryClient = useQueryClient();
   const directory = useClipDirectory({ supportsTagFilter: false });
   const charactersQuery = useCharacters();
   const optionsQuery = useClipOptions();
@@ -139,7 +135,6 @@ export function ClipsContent({ canAddTags, canManageCollectedMedia }: ClipsConte
               canAddTags={canAddTags}
               canManageCollectedMedia={canManageCollectedMedia}
               clips={clips}
-              onExcluded={() => void queryClient.invalidateQueries({ queryKey: clipQueries.all() })}
               onPreview={setPreviewClip}
               participantProfileImages={participantProfileImages}
             />

@@ -1,6 +1,5 @@
 "use client";
 
-import { useQueryClient } from "@tanstack/react-query";
 import { LoaderCircle } from "lucide-react";
 
 import { cn } from "@/utils/cn";
@@ -9,7 +8,6 @@ import { useCharacters } from "@/app/characters/_hooks/use-characters";
 import { Button } from "@/components/ui/button";
 import { FilterBarSkeleton, MediaResultsSkeleton } from "@/components/media-grid-skeleton";
 import { RetryButton } from "@/components/ui/retry-button";
-import { replayQueries } from "@/queries/replay-queries";
 
 import { useReplayDirectory } from "../_hooks/use-replay-directory";
 import { useReplayOptions, useReplays } from "../_hooks/use-replays";
@@ -21,7 +19,6 @@ interface ReplaysContentProps {
 }
 
 export function ReplaysContent({ canManageCollectedMedia }: ReplaysContentProps) {
-  const queryClient = useQueryClient();
   const directory = useReplayDirectory();
   const charactersQuery = useCharacters();
   const optionsQuery = useReplayOptions();
@@ -95,7 +92,6 @@ export function ReplaysContent({ canManageCollectedMedia }: ReplaysContentProps)
           {replays.length > 0 ? (
             <ReplayCardGrid
               canManageCollectedMedia={canManageCollectedMedia}
-              onExcluded={() => void queryClient.invalidateQueries({ queryKey: replayQueries.all() })}
               participantProfileImages={participantProfileImages}
               replays={replays}
             />

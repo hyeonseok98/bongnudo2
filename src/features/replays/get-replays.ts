@@ -10,7 +10,7 @@ import {
 import { getKstDateRange } from "@/features/seasons/season-date";
 import { getR2PublicUrl } from "@/lib/r2";
 import type { Database } from "@/lib/supabase/database.types";
-import { getSupabaseServerClient } from "@/lib/supabase/server";
+import { getSupabaseAdminClient, getSupabaseServerClient } from "@/lib/supabase/server";
 import { matchesKoreanSearch } from "@/utils/korean-search";
 
 import type {
@@ -21,10 +21,8 @@ import type {
   ReplayPage,
   ReplaySession,
 } from "./replay";
-import { groupReplaySessions, pageReplaySessions, type ReplaySessionSource } from "./replay-sessions";
 
 const PAGE_SIZE = 24;
-const SOURCE_BATCH_SIZE = 500;
 
 function createActiveSeasonQuery(client: SupabaseClient<Database>) {
   return client.from("seasons").select("id").eq("is_active", true).limit(2);
@@ -75,18 +73,6 @@ function createReplayRowsQuery(client: SupabaseClient<Database>) {
   `);
 }
 
-function createReplaySessionSourceQuery(client: SupabaseClient<Database>) {
-  return client.from("replays").select(`
-    id,
-    duration_seconds,
-    live_started_at,
-    published_at,
-    season_day_id,
-    season_participant_id,
-    sort_at
-  `);
-}
-
 function createCareerEventsQuery(client: SupabaseClient<Database>) {
   return client.from("character_career_events").select(`
     id,
@@ -117,7 +103,6 @@ function createCareerEventsQuery(client: SupabaseClient<Database>) {
 
 type ParticipantCandidate = QueryData<ReturnType<typeof createParticipantCandidatesQuery>>[number];
 type ReplaySourceRow = QueryData<ReturnType<typeof createReplayRowsQuery>>[number];
-type ReplayTimingRow = QueryData<ReturnType<typeof createReplaySessionSourceQuery>>[number];
 type CareerEventRow = QueryData<ReturnType<typeof createCareerEventsQuery>>[number];
 
 interface CareerEventsByParticipant {
@@ -151,7 +136,7 @@ export async function getReplayPage(
   filters: ReplayListFilters,
   cursor: ReplayCursor | null,
 ): Promise<ReplayPage> {
-  const client = getSupabaseServerClient();
+  const client = getSupabaseAdminClient();
   const seasonId = await getActiveSeasonId(client);
   const participantIds = await resolveParticipantIds(client, seasonId, filters);
 
@@ -159,60 +144,28 @@ export async function getReplayPage(
     return { items: [], nextCursor: null };
   }
 
-  const seasonDayId = await resolveSeasonDayId(client, seasonId, filters.day);
-
-  if (filters.day !== null && seasonDayId === null) {
-    return { items: [], nextCursor: null };
-  }
-
   const dateRange = filters.date ? getKstDateRange(filters.date) : null;
-  const sourceRows: ReplayTimingRow[] = [];
+  const { data: sessionRows, error: sessionError } = await client.rpc(
+    "get_replay_session_page",
+    {
+      p_cursor_id: cursor?.id ?? undefined,
+      p_cursor_sort_at: cursor?.sortAt ?? undefined,
+      p_date_end: dateRange?.end ?? undefined,
+      p_date_start: dateRange?.start ?? undefined,
+      p_day_number: filters.day ?? undefined,
+      p_jobs: filters.jobs.length > 0 ? filters.jobs : undefined,
+      p_limit: PAGE_SIZE + 1,
+      p_participant_ids: participantIds ?? undefined,
+    },
+  );
 
-  for (let offset = 0; ; offset += SOURCE_BATCH_SIZE) {
-    let query = createReplaySessionSourceQuery(client)
-      .eq("season_id", seasonId)
-      .not("season_day_id", "is", null)
-      .is("excluded_at", null)
-      .order("sort_at", { ascending: false, nullsFirst: false })
-      .order("id", { ascending: false })
-      .range(offset, offset + SOURCE_BATCH_SIZE - 1);
-
-    if (participantIds !== null) {
-      query = query.in("season_participant_id", participantIds);
-    }
-
-    if (seasonDayId !== null) {
-      query = query.eq("season_day_id", seasonDayId);
-    }
-
-    if (dateRange !== null) {
-      query = query.gte("sort_at", dateRange.start).lt("sort_at", dateRange.end);
-    }
-
-    const { data, error } = await query;
-
-    if (error) {
-      throw new Error("다시보기를 불러오지 못함.", { cause: error });
-    }
-
-    sourceRows.push(...data);
-    if (data.length < SOURCE_BATCH_SIZE) break;
+  if (sessionError) {
+    throw new Error("다시보기를 불러오지 못함.", { cause: sessionError });
   }
 
-  if (sourceRows.length === 0) return { items: [], nextCursor: null };
-
-  const careerEventsByParticipant = filters.jobs.length > 0
-    ? await getCareerEventsByParticipant(client, seasonId, sourceRows)
-    : new Map<string, CareerEventsByParticipant>();
-  const matchedRows = filters.jobs.length > 0
-    ? sourceRows.filter((row) => matchesJobFilters(row, filters.jobs, careerEventsByParticipant))
-    : sourceRows;
-  const sessionPage = pageReplaySessions(
-    groupReplaySessions(matchedRows satisfies ReplaySessionSource[]),
-    cursor,
-    PAGE_SIZE,
-  );
-  const replayIds = sessionPage.items.flatMap((session) => session.replayIds);
+  const hasNextPage = sessionRows.length > PAGE_SIZE;
+  const visibleSessionRows = hasNextPage ? sessionRows.slice(0, PAGE_SIZE) : sessionRows;
+  const replayIds = visibleSessionRows.flatMap((session) => session.replay_ids);
 
   if (replayIds.length === 0) return { items: [], nextCursor: null };
 
@@ -228,24 +181,33 @@ export async function getReplayPage(
     replayRows.push(...data);
   }
 
-  const displayCareerEvents = filters.jobs.length > 0
-    ? careerEventsByParticipant
-    : await getCareerEventsByParticipant(client, seasonId, replayRows);
+  const displayCareerEvents = await getCareerEventsByParticipant(client, seasonId, replayRows);
   const replayById = new Map(
     replayRows.map((row) => [row.id, toReplayItem(row, displayCareerEvents)]),
   );
-  const items: ReplaySession[] = sessionPage.items.flatMap((session) => {
-    const replays = session.replayIds.flatMap((id) => {
+  const items: ReplaySession[] = visibleSessionRows.flatMap((session) => {
+    const replays = session.replay_ids.flatMap((id) => {
       const replay = replayById.get(id);
       return replay ? [replay] : [];
     });
 
     return replays.length > 0
-      ? [{ id: session.id, startedAt: session.startedAt, endedAt: session.endedAt, replays }]
+      ? [{
+          endedAt: session.ended_at,
+          id: session.session_id,
+          replays,
+          startedAt: session.started_at,
+        }]
       : [];
   });
+  const lastSession = visibleSessionRows.at(-1);
 
-  return { items, nextCursor: sessionPage.nextCursor };
+  return {
+    items,
+    nextCursor: hasNextPage && lastSession
+      ? { id: lastSession.session_id, sortAt: lastSession.sort_at }
+      : null,
+  };
 }
 
 async function getActiveSeasonId(client: SupabaseClient<Database>): Promise<number> {
@@ -256,29 +218,6 @@ async function getActiveSeasonId(client: SupabaseClient<Database>): Promise<numb
   }
 
   return data[0].id;
-}
-
-async function resolveSeasonDayId(
-  client: SupabaseClient<Database>,
-  seasonId: number,
-  dayNumber: number | null,
-): Promise<string | null> {
-  if (dayNumber === null) {
-    return null;
-  }
-
-  const { data, error } = await client
-    .from("season_days")
-    .select("id")
-    .eq("season_id", seasonId)
-    .eq("day_number", dayNumber)
-    .maybeSingle();
-
-  if (error) {
-    throw new Error("봉누도 일차를 확인하지 못함.", { cause: error });
-  }
-
-  return data?.id ?? null;
 }
 
 async function resolveParticipantIds(
@@ -528,29 +467,4 @@ function toReplayItem(
     title: row.title,
     viewCount: row.view_count,
   };
-}
-
-function matchesJobFilters(
-  replay: ReplayTimingRow,
-  selectedJobs: string[],
-  careerEventsByParticipant: Map<string, CareerEventsByParticipant>,
-): boolean {
-  if (selectedJobs.length === 0) return true;
-  if (!replay.season_participant_id) return false;
-
-  const replayTime = replay.live_started_at ?? replay.published_at;
-  const career = careerEventsByParticipant.get(replay.season_participant_id);
-
-  if (!replayTime || !career || career.events.length === 0) return false;
-
-  const state = getCharacterStateAt(career.events, replayTime);
-
-  if (!state.isComplete) return false;
-
-  const selected = new Set(selectedJobs);
-
-  return state.affiliations.some((affiliation) =>
-    selected.has(affiliation.organization.slug) ||
-    selected.has(career.categoriesByOrganizationId.get(affiliation.organization.id) ?? ""),
-  );
 }

@@ -86,25 +86,11 @@ export async function addClipTag(clipId: string, tagName: string): Promise<ClipT
   const user = await requireActiveUser();
   const name = normalizeAndValidateTagName(tagName);
   const supabase = getSupabaseAdminClient();
-  const { data: tag, error: tagError } = await supabase
-    .from("tags")
-    .upsert(
-      { name, normalized_name: normalizeTagName(name) },
-      { onConflict: "normalized_name" },
-    )
-    .select("id")
-    .single();
-
-  if (tagError) {
-    throw new ClipTagRequestError("태그를 추가하지 못했습니다.", 500, { cause: tagError });
-  }
-
-  const { error } = await supabase
-    .from("clip_tags")
-    .upsert(
-      { clip_id: clipId, created_by: user.id, tag_id: tag.id },
-      { ignoreDuplicates: true, onConflict: "clip_id,tag_id" },
-    );
+  const { error } = await supabase.rpc("add_clip_tag", {
+    p_clip_id: clipId,
+    p_created_by: user.id,
+    p_name: name,
+  });
 
   if (error) {
     if (error.message.includes("clip_tag_limit_exceeded")) {
@@ -115,6 +101,10 @@ export async function addClipTag(clipId: string, tagName: string): Promise<ClipT
 
     if (error.message.includes("clip_not_found")) {
       throw new ClipTagRequestError("클립을 찾을 수 없습니다.", 404, { cause: error });
+    }
+
+    if (error.message.includes("invalid_tag_name")) {
+      throw new ClipTagRequestError("태그 정보가 올바르지 않습니다.", 400, { cause: error });
     }
 
     throw new ClipTagRequestError("태그를 추가하지 못했습니다.", 500, { cause: error });
