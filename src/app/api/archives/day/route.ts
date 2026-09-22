@@ -4,6 +4,7 @@ import { z } from "zod";
 
 import { createArchiveErrorResponse } from "@/features/archives/archive-route";
 import { ArchiveRequestError } from "@/features/archives/archive-error";
+import { getArchiveRecommendationViewer } from "@/features/archives/archive-recommendation";
 import { getPublicUserArchivesForSeasonDay } from "@/features/archives/archive-service";
 
 export async function GET(request: Request) {
@@ -16,7 +17,11 @@ export async function GET(request: Request) {
       throw new ArchiveRequestError("봉누도 일차 정보가 올바르지 않습니다.", 400);
     }
 
-    const archives = await getPublicUserArchivesForSeasonDay(result.data.seasonDay);
+    const recommendationViewer = await getArchiveRecommendationViewer();
+    const archives = await getPublicUserArchivesForSeasonDay(
+      result.data.seasonDay,
+      recommendationViewer,
+    );
 
     return NextResponse.json(archives, {
       headers: { "Cache-Control": "no-store" },

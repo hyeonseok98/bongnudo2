@@ -5,6 +5,7 @@ import {
   createArchiveErrorResponse,
   parseArchiveId,
 } from "@/features/archives/archive-route";
+import { getArchiveRecommendationViewer } from "@/features/archives/archive-recommendation";
 import { getArchiveDetail, saveArchive } from "@/features/archives/archive-service";
 import { requireArchiveUser } from "@/features/archives/archive-user";
 
@@ -14,8 +15,15 @@ export async function GET(
 ) {
   try {
     const { archiveId } = await params;
-    const viewer = await getCurrentUser();
-    const archive = await getArchiveDetail(parseArchiveId(archiveId), viewer);
+    const [viewer, recommendationViewer] = await Promise.all([
+      getCurrentUser(),
+      getArchiveRecommendationViewer(),
+    ]);
+    const archive = await getArchiveDetail(
+      parseArchiveId(archiveId),
+      viewer,
+      recommendationViewer,
+    );
 
     if (!archive) {
       return NextResponse.json({ error: "아카이브를 찾을 수 없습니다." }, { status: 404 });

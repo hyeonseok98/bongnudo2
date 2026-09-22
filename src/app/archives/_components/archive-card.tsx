@@ -12,6 +12,8 @@ import {
 import { useRpModeSettings } from "@/providers/rp-mode-provider";
 import { cn } from "@/utils/cn";
 
+import { ArchiveRecommendationButton } from "./archive-recommendation-button";
+
 interface ArchiveCardProps {
   archive: ArchiveListItem;
 }
@@ -34,7 +36,7 @@ export function ArchiveCard({ archive }: ArchiveCardProps) {
   const shouldBlurThumbnail = shouldBlurMediaPreview(isRpMode, isMediaPreviewBlurEnabled);
 
   return (
-    <article className="group overflow-hidden rounded-xl border border-default bg-surface-raised transition-[background-color,border-color,box-shadow] duration-fast hover:border-brand hover:shadow-md dark:hover:bg-surface-selected">
+    <article className="group relative overflow-hidden rounded-xl border border-default bg-surface-raised transition-[background-color,border-color,box-shadow] duration-fast hover:border-brand hover:shadow-md dark:hover:bg-surface-selected">
       <Link
         aria-label={`${title} 열기`}
         className="block cursor-pointer focus-visible:outline-2 focus-visible:outline-focus-ring focus-visible:outline-offset-[-2px]"
@@ -62,7 +64,7 @@ export function ArchiveCard({ archive }: ArchiveCardProps) {
           </span>
         </div>
 
-        <div className="space-y-2.5 p-4">
+        <div className="space-y-2.5 p-4 pr-16">
           {archive.archiveKind === "system_character" ? (
             <SystemArchiveCardContent archive={archive} displayName={displayName} title={title} />
           ) : (
@@ -70,6 +72,12 @@ export function ArchiveCard({ archive }: ArchiveCardProps) {
           )}
         </div>
       </Link>
+      <ArchiveRecommendationButton
+        archiveId={archive.id}
+        className="absolute right-4 bottom-4 z-10"
+        recommendationCount={archive.recommendationCount}
+        recommended={archive.viewerRecommended}
+      />
     </article>
   );
 }

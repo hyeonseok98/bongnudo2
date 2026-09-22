@@ -94,6 +94,7 @@ export interface ArchiveDetail {
   isOwner: boolean;
   relatedParticipants: ArchiveRelatedParticipant[];
   relatedSeasonDays: ArchiveSeasonDay[];
+  recommendationCount: number;
   seasonId: number;
   status: ArchiveStatus;
   structureMode: ArchiveStructureMode | null;
@@ -101,6 +102,7 @@ export interface ArchiveDetail {
   title: string;
   updatedAt: string;
   visibility: ArchiveVisibility;
+  viewerRecommended: boolean;
 }
 
 export interface ArchiveDetailChapter {
@@ -241,6 +243,7 @@ export interface ArchiveListItem {
   ownerName: string | null;
   publishedAt: string | null;
   representativeImageUrl: string | null;
+  recommendationCount: number;
   sortAt: string;
   status: ArchiveStatus;
   systemParticipant: ArchiveSystemParticipant & {
@@ -248,6 +251,7 @@ export interface ArchiveListItem {
   } | null;
   title: string;
   updatedAt: string;
+  viewerRecommended: boolean;
 }
 
 export interface ArchivePage {

@@ -4,6 +4,7 @@ import { z } from "zod";
 
 import { createArchiveErrorResponse } from "@/features/archives/archive-route";
 import { ArchiveRequestError } from "@/features/archives/archive-error";
+import { getArchiveRecommendationViewer } from "@/features/archives/archive-recommendation";
 import { getArchivePersonDetail } from "@/features/archives/archive-service";
 
 export async function GET(request: Request) {
@@ -16,7 +17,8 @@ export async function GET(request: Request) {
       throw new ArchiveRequestError("인물 정보가 올바르지 않습니다.", 400);
     }
 
-    const detail = await getArchivePersonDetail(result.data.participant);
+    const recommendationViewer = await getArchiveRecommendationViewer();
+    const detail = await getArchivePersonDetail(result.data.participant, recommendationViewer);
 
     if (!detail) {
       throw new ArchiveRequestError("인물 정보를 찾을 수 없습니다.", 404);

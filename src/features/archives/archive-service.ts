@@ -40,6 +40,10 @@ import type {
 import { ArchiveRequestError } from "./archive-error";
 import { canEditArchiveContent } from "./archive-permission";
 import {
+  getArchiveRecommendationStates,
+  type ArchiveRecommendationViewer,
+} from "./archive-recommendation";
+import {
   createArchiveRequestSchema,
   parseArchiveSnapshot,
   restoreArchiveRevisionRequestSchema,
@@ -206,6 +210,7 @@ export async function restoreArchive(
 export async function getPublicArchivePage(
   filters: ArchiveListFilters,
   cursor: ArchiveListCursor | null,
+  recommendationViewer: ArchiveRecommendationViewer,
 ): Promise<ArchivePage> {
   const supabase = getSupabaseAdminClient();
   const result = await supabase.rpc("get_public_archive_page", {
@@ -226,7 +231,10 @@ export async function getPublicArchivePage(
   }
 
   const rows = result.data;
-  const items = rows.slice(0, ARCHIVE_LIST_PAGE_SIZE).map(toArchiveListItem);
+  const items = await attachArchiveRecommendationStates(
+    rows.slice(0, ARCHIVE_LIST_PAGE_SIZE).map(toArchiveListItem),
+    recommendationViewer,
+  );
   const lastItem = items.at(-1);
 
   return {
@@ -239,6 +247,7 @@ export async function getPublicArchivePage(
 
 export async function getPublicUserArchivesForSeasonDay(
   seasonDayId: string,
+  recommendationViewer: ArchiveRecommendationViewer,
 ): Promise<ArchiveListItem[]> {
   const supabase = getSupabaseAdminClient();
   const matchingItemsResult = await supabase
@@ -333,7 +342,7 @@ export async function getPublicUserArchivesForSeasonDay(
     existing.representativeImageUrl ??= item.clip.thumbnail_url;
   }
 
-  return (archivesResult.data ?? []).map((archive) => {
+  const items = (archivesResult.data ?? []).map((archive) => {
     const stats = statsByArchiveId.get(archive.id);
 
     return {
@@ -347,17 +356,22 @@ export async function getPublicUserArchivesForSeasonDay(
       ownerName: null,
       publishedAt: archive.published_at,
       representativeImageUrl: stats?.representativeImageUrl ?? null,
+      recommendationCount: 0,
       sortAt: archive.updated_at,
       status: toArchiveStatus(archive.status),
       systemParticipant: null,
       title: archive.title,
       updatedAt: archive.updated_at,
+      viewerRecommended: false,
     };
   });
+
+  return attachArchiveRecommendationStates(items, recommendationViewer);
 }
 
 export async function getArchivePersonDetail(
   participantId: string,
+  recommendationViewer: ArchiveRecommendationViewer,
 ): Promise<ArchivePersonDetail | null> {
   const supabase = getSupabaseAdminClient();
   const [participantResult, systemArchiveResult, relatedRelationsResult] = await Promise.all([
@@ -437,6 +451,13 @@ export async function getArchivePersonDetail(
       return left.displayOrder - right.displayOrder;
     });
 
+  const relatedArchives = await attachArchiveRecommendationStates(
+    await getArchivePeopleUserArchives(
+      relatedRelationsResult.data.map((relation) => relation.archive_id),
+    ),
+    recommendationViewer,
+  );
+
   return {
     participant: {
       affiliations,
@@ -444,15 +465,14 @@ export async function getArchivePersonDetail(
       rpName: participant.rp_name,
       streamerName: participant.streamer.name,
     },
-    relatedArchives: await getArchivePeopleUserArchives(
-      relatedRelationsResult.data.map((relation) => relation.archive_id),
-    ),
+    relatedArchives,
     systemArchiveId: systemArchiveResult.data?.id ?? null,
   };
 }
 
 export async function getArchivePeopleSections(
   participantIds: string[],
+  recommendationViewer: ArchiveRecommendationViewer,
 ): Promise<ArchivePeopleSection[]> {
   const supabase = getSupabaseAdminClient();
   const [participantsResult, systemArchivesResult, clips, relatedRelationsResult] = await Promise.all([
@@ -524,6 +544,7 @@ export async function getArchivePeopleSections(
         publishedAt: archive.published_at,
         representativeImageUrl:
           getR2PublicUrl(participant.portrait_image_key) ?? stats?.representativeImageUrl ?? null,
+        recommendationCount: 0,
         sortAt: stats?.lastClipCreatedAt ?? archive.updated_at,
         status: toArchiveStatus(archive.status),
         systemParticipant: {
@@ -534,13 +555,14 @@ export async function getArchivePeopleSections(
         },
         title: archive.title,
         updatedAt: archive.updated_at,
+        viewerRecommended: false,
       };
 
       return [[participantId, item] as const];
     }),
   );
 
-  return participantIds.flatMap((participantId) => {
+  const sections = participantIds.flatMap((participantId) => {
     const participant = participantsById.get(participantId);
     if (!participant) return [];
 
@@ -558,6 +580,19 @@ export async function getArchivePeopleSections(
       },
     }];
   });
+
+  const recommendationStates = await getArchiveRecommendationStates(
+    sections.flatMap((section) => section.archives.map((archive) => archive.id)),
+    recommendationViewer,
+  );
+
+  return sections.map((section) => ({
+    ...section,
+    archives: section.archives.map((archive) => applyArchiveRecommendationState(
+      archive,
+      recommendationStates.get(archive.id),
+    )),
+  }));
 }
 
 const ARCHIVE_PEOPLE_PAGE_SIZE = 12;
@@ -565,6 +600,7 @@ const ARCHIVE_PEOPLE_PAGE_SIZE = 12;
 export async function getArchivePeoplePage(
   filters: ArchivePeopleFilters,
   cursor: string | null,
+  recommendationViewer: ArchiveRecommendationViewer,
   limit = ARCHIVE_PEOPLE_PAGE_SIZE,
 ): Promise<ArchivePeoplePage> {
   const supabase = getSupabaseAdminClient();
@@ -599,7 +635,10 @@ export async function getArchivePeoplePage(
   }
 
   const rows = result.data.slice(0, limit);
-  const items = await getArchivePeopleSections(rows.map((participant) => participant.id));
+  const items = await getArchivePeopleSections(
+    rows.map((participant) => participant.id),
+    recommendationViewer,
+  );
 
   return {
     items,
@@ -994,11 +1033,13 @@ async function getArchivePeopleUserArchives(archiveIds: string[]): Promise<Archi
       ownerName: null,
       publishedAt: archive.published_at,
       representativeImageUrl: stats?.representativeImageUrl ?? null,
+      recommendationCount: 0,
       sortAt: archive.updated_at,
       status: toArchiveStatus(archive.status),
       systemParticipant: null,
       title: archive.title,
       updatedAt: archive.updated_at,
+      viewerRecommended: false,
     };
   });
 }
@@ -1096,6 +1137,7 @@ export async function getMyArchivePage(
 export async function getArchiveDetail(
   archiveId: string,
   viewer: AuthenticatedUser | null,
+  recommendationViewer: ArchiveRecommendationViewer,
 ): Promise<ArchiveDetail | null> {
   const supabase = getSupabaseAdminClient();
   const archiveResult = await supabase
@@ -1239,6 +1281,11 @@ export async function getArchiveDetail(
     itemsByChapterId.set(item.chapter_id, items);
   }
 
+  const recommendationState = (await getArchiveRecommendationStates(
+    [archive.id],
+    recommendationViewer,
+  )).get(archive.id);
+
   return {
     category: toArchiveCategory(archive.category),
     archiveKind: toArchiveKind(archive.archive_kind),
@@ -1293,6 +1340,7 @@ export async function getArchiveDetail(
         sessionDate: seasonDay.session_date,
       }))
       .sort((left, right) => left.dayNumber - right.dayNumber),
+    recommendationCount: recommendationState?.recommendationCount ?? 0,
     seasonId: archive.season_id,
     status: toArchiveStatus(archive.status),
     structureMode: toArchiveStructureMode(archive.structure_mode),
@@ -1306,6 +1354,7 @@ export async function getArchiveDetail(
     title: archive.title,
     updatedAt: archive.updated_at,
     visibility: toArchiveVisibility(archive.visibility),
+    viewerRecommended: recommendationState?.recommended ?? false,
   };
 }
 
@@ -1733,11 +1782,39 @@ function toArchiveListItem(row: PublicArchivePageRow): ArchiveListItem {
     ownerName: row.owner_name,
     publishedAt: row.published_at,
     representativeImageUrl: profileImageUrl ?? row.representative_thumbnail_url,
+    recommendationCount: 0,
     sortAt: row.sort_at,
     status: toArchiveStatus(row.status),
     systemParticipant,
     title: row.title,
     updatedAt: row.updated_at,
+    viewerRecommended: false,
+  };
+}
+
+async function attachArchiveRecommendationStates(
+  archives: ArchiveListItem[],
+  viewer: ArchiveRecommendationViewer,
+): Promise<ArchiveListItem[]> {
+  const states = await getArchiveRecommendationStates(
+    archives.map((archive) => archive.id),
+    viewer,
+  );
+
+  return archives.map((archive) => applyArchiveRecommendationState(
+    archive,
+    states.get(archive.id),
+  ));
+}
+
+function applyArchiveRecommendationState(
+  archive: ArchiveListItem,
+  state: { recommendationCount: number; recommended: boolean } | undefined,
+): ArchiveListItem {
+  return {
+    ...archive,
+    recommendationCount: state?.recommendationCount ?? 0,
+    viewerRecommended: state?.recommended ?? false,
   };
 }
 

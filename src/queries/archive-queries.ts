@@ -23,6 +23,7 @@ import {
   saveArchive,
   restoreArchive,
 } from "@/apis/archives/get-archives";
+import { toggleArchiveRecommendation } from "@/apis/archives/toggle-archive-recommendation";
 import type {
   ArchiveListCursor,
   ArchiveListFilters,
@@ -38,12 +39,16 @@ import type { ClipCursor, ClipPage, ClipSort } from "@/features/clips/clip";
 
 export const archiveQueries = {
   all: () => ["archives"] as const,
+  details: () => [...archiveQueries.all(), "detail"] as const,
   lists: () => [...archiveQueries.all(), "list"] as const,
+  dayRelated: () => [...archiveQueries.all(), "day-related"] as const,
   my: () => [...archiveQueries.all(), "my"] as const,
+  peopleLists: () => [...archiveQueries.all(), "people"] as const,
+  persons: () => [...archiveQueries.all(), "person"] as const,
   myListKey: (tab: MyArchiveTab) => [...archiveQueries.my(), tab] as const,
   detail: (archiveId: string) =>
     queryOptions({
-      queryKey: [...archiveQueries.all(), "detail", archiveId] as const,
+      queryKey: [...archiveQueries.details(), archiveId] as const,
       queryFn: () => getArchive(archiveId),
     }),
   editorOptions: () =>
@@ -68,7 +73,7 @@ export const archiveQueries = {
   dayRelatedArchives: (seasonDayId: string | null) =>
     queryOptions({
       enabled: seasonDayId !== null,
-      queryKey: [...archiveQueries.all(), "day-related", seasonDayId] as const,
+      queryKey: [...archiveQueries.dayRelated(), seasonDayId] as const,
       queryFn: () => {
         if (!seasonDayId) {
           throw new Error("봉누도 일차 정보가 올바르지 않습니다.");
@@ -99,7 +104,7 @@ export const archiveQueries = {
   person: (participantId: string | null) =>
     queryOptions({
       enabled: participantId !== null,
-      queryKey: [...archiveQueries.all(), "person", participantId] as const,
+      queryKey: [...archiveQueries.persons(), participantId] as const,
       queryFn: () => {
         if (!participantId) {
           throw new Error("인물 정보가 올바르지 않습니다.");
@@ -116,7 +121,7 @@ export const archiveQueries = {
       readonly ["archives", "people", ArchivePeopleFilters],
       string | null
     >({
-      queryKey: [...archiveQueries.all(), "people", filters] as const,
+      queryKey: [...archiveQueries.peopleLists(), filters] as const,
       queryFn: ({ pageParam }) => getArchivePeopleSections(filters, pageParam),
       initialPageParam: null,
       getNextPageParam: (page) => page.nextCursor,
@@ -183,4 +188,8 @@ export const archiveMutations = {
   }),
   softDelete: () => mutationOptions({ mutationFn: deleteArchive }),
   restore: () => mutationOptions({ mutationFn: restoreArchive }),
+  recommendation: (archiveId: string) => mutationOptions({
+    mutationKey: [...archiveQueries.all(), "recommendation", archiveId] as const,
+    mutationFn: () => toggleArchiveRecommendation(archiveId),
+  }),
 };

@@ -9,6 +9,8 @@ import type { ArchiveDetail, ArchiveSystemClipSummary } from "@/features/archive
 import { getDisplayName } from "@/features/rp-mode/rp-mode";
 import { useRpModeSettings } from "@/providers/rp-mode-provider";
 
+import { ArchiveRecommendationButton } from "./archive-recommendation-button";
+
 interface ArchiveDetailHeaderProps {
   archive: ArchiveDetail;
   systemSummary?: ArchiveSystemClipSummary;
@@ -67,12 +69,19 @@ export function ArchiveDetailHeader({ archive, systemSummary }: ArchiveDetailHea
             </div>
           ) : null}
         </div>
-        {archive.canEditContent || archive.canEditMetadata ? (
-          <Link className={buttonVariants({ variant: "outline" })} href={`/archives/${archive.id}/edit`}>
-            <Pencil aria-hidden="true" />
-            편집하기
-          </Link>
-        ) : null}
+        <div className="flex items-center gap-3">
+          <ArchiveRecommendationButton
+            archiveId={archive.id}
+            recommendationCount={archive.recommendationCount}
+            recommended={archive.viewerRecommended}
+          />
+          {archive.canEditContent || archive.canEditMetadata ? (
+            <Link className={buttonVariants({ variant: "outline" })} href={`/archives/${archive.id}/edit`}>
+              <Pencil aria-hidden="true" />
+              편집하기
+            </Link>
+          ) : null}
+        </div>
       </div>
       <div className="flex flex-wrap gap-x-5 gap-y-2 text-body-sm text-secondary">
         {clipCount !== undefined ? <span className="inline-flex items-center gap-1.5"><FolderOpen aria-hidden="true" className="size-4" />클립 {clipCount}개</span> : null}

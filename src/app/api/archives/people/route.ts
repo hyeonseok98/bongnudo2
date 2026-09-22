@@ -3,6 +3,7 @@ import { z } from "zod";
 
 import { createArchiveErrorResponse } from "@/features/archives/archive-route";
 import { ArchiveRequestError } from "@/features/archives/archive-error";
+import { getArchiveRecommendationViewer } from "@/features/archives/archive-recommendation";
 import { getArchivePeoplePage } from "@/features/archives/archive-service";
 
 const requestSchema = z.object({
@@ -28,7 +29,13 @@ export async function GET(request: Request) {
       throw new ArchiveRequestError("인물 선택 정보가 올바르지 않습니다.", 400);
     }
 
-    const page = await getArchivePeoplePage(result.data, result.data.cursor, result.data.limit);
+    const recommendationViewer = await getArchiveRecommendationViewer();
+    const page = await getArchivePeoplePage(
+      result.data,
+      result.data.cursor,
+      recommendationViewer,
+      result.data.limit,
+    );
 
     return NextResponse.json(page, {
       headers: { "Cache-Control": "no-store" },

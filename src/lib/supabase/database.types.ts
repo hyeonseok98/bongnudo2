@@ -185,6 +185,45 @@ export type Database = {
           },
         ]
       }
+      archive_recommendations: {
+        Row: {
+          anonymous_voter_hash: string | null
+          archive_id: string
+          created_at: string
+          id: string
+          user_id: string | null
+        }
+        Insert: {
+          anonymous_voter_hash?: string | null
+          archive_id: string
+          created_at?: string
+          id?: string
+          user_id?: string | null
+        }
+        Update: {
+          anonymous_voter_hash?: string | null
+          archive_id?: string
+          created_at?: string
+          id?: string
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "archive_recommendations_archive_id_fkey"
+            columns: ["archive_id"]
+            isOneToOne: false
+            referencedRelation: "archives"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "archive_recommendations_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       archive_revisions: {
         Row: {
           archive_id: string
@@ -239,6 +278,7 @@ export type Database = {
           id: string
           owner_id: string | null
           published_at: string | null
+          recommendation_count: number
           season_id: number
           status: string
           structure_mode: string | null
@@ -258,6 +298,7 @@ export type Database = {
           id?: string
           owner_id?: string | null
           published_at?: string | null
+          recommendation_count?: number
           season_id: number
           status?: string
           structure_mode?: string | null
@@ -277,6 +318,7 @@ export type Database = {
           id?: string
           owner_id?: string | null
           published_at?: string | null
+          recommendation_count?: number
           season_id?: number
           status?: string
           structure_mode?: string | null
@@ -2383,6 +2425,17 @@ export type Database = {
       soft_delete_archive: {
         Args: { p_actor_user_id: string; p_archive_id: string }
         Returns: undefined
+      }
+      toggle_archive_recommendation: {
+        Args: {
+          p_anonymous_voter_hash?: string
+          p_archive_id: string
+          p_user_id?: string
+        }
+        Returns: {
+          recommendation_count: number
+          recommended: boolean
+        }[]
       }
       try_acquire_live_refresh: {
         Args: { p_lease_seconds?: number; p_run_id: string }

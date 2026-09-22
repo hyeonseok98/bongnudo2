@@ -105,6 +105,7 @@ const archiveDetailSchema = z.object({
     id: z.uuid(),
     sessionDate: z.string().date(),
   })),
+  recommendationCount: z.number().int().nonnegative(),
   seasonId: z.number().int().positive(),
   status: z.enum(["ongoing", "completed"]),
   structureMode: z.enum(["day_based", "freeform"]).nullable(),
@@ -116,6 +117,7 @@ const archiveDetailSchema = z.object({
   title: z.string(),
   updatedAt: z.string().datetime({ offset: true }),
   visibility: z.enum(["private", "public"]),
+  viewerRecommended: z.boolean(),
 });
 
 const systemArchiveClipSummarySchema = z.object({
@@ -193,6 +195,7 @@ const archivePageSchema = z.object({
     ownerName: z.string().nullable(),
     publishedAt: z.string().datetime({ offset: true }).nullable(),
     representativeImageUrl: z.string().url().nullable(),
+    recommendationCount: z.number().int().nonnegative(),
     sortAt: z.string().datetime({ offset: true }),
     status: z.enum(["ongoing", "completed"]),
     systemParticipant: z.object({
@@ -203,6 +206,7 @@ const archivePageSchema = z.object({
     }).nullable(),
     title: z.string(),
     updatedAt: z.string().datetime({ offset: true }),
+    viewerRecommended: z.boolean(),
   })),
   nextCursor: z.object({
     id: z.uuid(),

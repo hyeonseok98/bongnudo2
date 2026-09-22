@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 
 import { createArchiveErrorResponse } from "@/features/archives/archive-route";
+import { getArchiveRecommendationViewer } from "@/features/archives/archive-recommendation";
 import { getPublicArchivePage, createArchive } from "@/features/archives/archive-service";
 import { requireArchiveUser } from "@/features/archives/archive-user";
 import { parseArchiveListRequest } from "@/features/archives/archive-validation";
@@ -8,7 +9,8 @@ import { parseArchiveListRequest } from "@/features/archives/archive-validation"
 export async function GET(request: Request) {
   try {
     const { cursor, filters } = parseArchiveListRequest(new URL(request.url).searchParams);
-    const page = await getPublicArchivePage(filters, cursor);
+    const recommendationViewer = await getArchiveRecommendationViewer();
+    const page = await getPublicArchivePage(filters, cursor, recommendationViewer);
 
     return NextResponse.json(page, {
       headers: { "Cache-Control": "no-store" },
