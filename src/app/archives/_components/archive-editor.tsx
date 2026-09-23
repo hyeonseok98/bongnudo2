@@ -11,6 +11,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
 import { Button, buttonVariants } from "@/components/ui/button";
 import { RetryButton } from "@/components/ui/retry-button";
+import { Skeleton } from "@/components/ui/skeleton";
 import type { ArchiveClipSummary, ArchiveDetail } from "@/features/archives/archive";
 import { archiveMutations, archiveQueries } from "@/queries/archive-queries";
 
@@ -43,7 +44,7 @@ export function ArchiveEditor({ archiveId, isSignedIn }: ArchiveEditorProps) {
   }
 
   if (archiveQuery.isPending) {
-    return <ArchiveEditorNotice>아카이브를 불러오는 중입니다.</ArchiveEditorNotice>;
+    return <ArchiveEditorSkeleton />;
   }
 
   if (archiveQuery.isError || !archiveQuery.data) {
@@ -277,7 +278,7 @@ function ArchiveEditorWorkspace({ archive }: { archive: ArchiveDetail }) {
   }
 
   if (optionsQuery.isPending) {
-    return <ArchiveEditorNotice>아카이브 편집 정보를 불러오는 중입니다.</ArchiveEditorNotice>;
+    return <ArchiveEditorSkeleton />;
   }
 
   if (optionsQuery.isError) {
@@ -372,6 +373,31 @@ function ArchiveEditorWorkspace({ archive }: { archive: ArchiveDetail }) {
           onReload={() => window.location.reload()}
         />
       ) : null}
+    </div>
+  );
+}
+
+export function ArchiveEditorSkeleton() {
+  return (
+    <div aria-label="아카이브 편집기를 불러오는 중입니다." className="flex h-full min-h-[70vh] flex-col overflow-hidden" role="status">
+      <header className="flex shrink-0 flex-wrap items-center gap-3 border-b border-default px-4 py-2.5 md:px-6">
+        <div className="min-w-0 flex-1 space-y-2"><Skeleton className="h-5 w-60" /><Skeleton className="h-3 w-32" /></div>
+        <div className="flex gap-2"><Skeleton className="h-9 w-20" /><Skeleton className="h-9 w-20" /><Skeleton className="h-9 w-16" /></div>
+      </header>
+      <div className="grid min-h-0 flex-1 gap-3 overflow-hidden p-3 lg:grid-cols-[minmax(22rem,0.85fr)_minmax(0,1.35fr)]">
+        <section className="min-h-0 space-y-4 overflow-hidden rounded-xl border border-default bg-surface-raised p-4">
+          <div className="flex gap-2"><Skeleton className="h-9 w-32" /><Skeleton className="h-9 w-32" /><Skeleton className="h-9 w-28" /></div>
+          <Skeleton className="h-7 w-40" />
+          <Skeleton className="h-10 w-full" />
+          <Skeleton className="h-20 w-full" />
+          <div className="grid grid-cols-2 gap-3">{Array.from({ length: 4 }, (_, index) => <Skeleton className="aspect-video w-full" key={index} />)}</div>
+        </section>
+        <section className="min-h-0 space-y-4 overflow-hidden rounded-xl border border-default bg-surface-raised p-4">
+          <div className="flex items-center justify-between"><div className="space-y-2"><Skeleton className="h-7 w-28" /><Skeleton className="h-4 w-64" /></div><Skeleton className="h-9 w-32" /></div>
+          <div className="flex flex-wrap gap-3">{Array.from({ length: 6 }, (_, index) => <Skeleton className="h-9 w-36" key={index} />)}</div>
+          <div className="grid grid-cols-2 gap-3 xl:grid-cols-3 2xl:grid-cols-4">{Array.from({ length: 8 }, (_, index) => <Skeleton className="aspect-video w-full rounded-xl" key={index} />)}</div>
+        </section>
+      </div>
     </div>
   );
 }

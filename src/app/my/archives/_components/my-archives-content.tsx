@@ -11,6 +11,7 @@ import {
   type MyArchiveTab,
 } from "@/features/archives/archive";
 import { cn } from "@/utils/cn";
+import { Skeleton } from "@/components/ui/skeleton";
 
 import { useMyArchives } from "../_hooks/use-my-archives";
 import { MyArchiveRow } from "./my-archive-row";
@@ -97,9 +98,15 @@ export function MyArchivesContent() {
 
 function MyArchivesLoading() {
   return (
-    <div aria-label="내 아카이브를 불러오는 중입니다." className="space-y-3">
+    <div aria-label="내 아카이브를 불러오는 중입니다." className="space-y-3" role="status">
       {Array.from({ length: 5 }, (_, index) => (
-        <div className="h-28 animate-pulse rounded-xl bg-surface-muted" key={index} />
+        <article className="grid overflow-hidden rounded-xl border border-default bg-surface-raised sm:grid-cols-[11rem_minmax(0,1fr)]" key={index}>
+          <Skeleton className="aspect-video w-full rounded-none sm:aspect-auto" />
+          <div className="flex min-w-0 flex-col gap-4 p-4 sm:p-5">
+            <div className="space-y-3"><Skeleton className="h-6 w-2/3" /><Skeleton className="h-4 w-full" /><Skeleton className="h-4 w-3/5" /><Skeleton className="h-3 w-20" /></div>
+            <div className="flex gap-2"><Skeleton className="h-9 w-16" /><Skeleton className="h-9 w-16" /><Skeleton className="h-9 w-16" /></div>
+          </div>
+        </article>
       ))}
     </div>
   );

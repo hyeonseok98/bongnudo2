@@ -9,6 +9,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { ArchiveDetailHeader } from "./archive-detail-header";
 import { ArchiveUserContent } from "./archive-user-content";
 import { SystemCharacterArchiveContent } from "./system-character-archive-content";
+import { ArchiveClipCardSkeleton } from "./archive-clip-card";
 
 interface ArchiveDetailContentProps {
   archiveId: string;
@@ -44,33 +45,26 @@ function ArchiveDetailLoading() {
   return (
     <div className="space-y-8 py-8 sm:py-10" aria-label="아카이브를 불러오는 중입니다.">
       <header className="space-y-4 border-b border-default pb-8">
-        <Skeleton className="h-4 w-40" />
+        <Skeleton className="h-5 w-56" />
         <Skeleton className="h-10 w-2/3 max-w-xl" />
         <Skeleton className="h-4 w-full max-w-3xl" />
         <Skeleton className="h-4 w-4/5 max-w-2xl" />
+        <div className="flex gap-5"><Skeleton className="h-4 w-24" /><Skeleton className="h-4 w-28" /><Skeleton className="h-4 w-32" /></div>
       </header>
-      <div className="grid items-start gap-10 lg:grid-cols-[minmax(0,1fr)_15rem]">
-        <div className="space-y-12">
-          {Array.from({ length: 2 }, (_, sectionIndex) => (
-            <section className="space-y-5" key={sectionIndex}>
-              <div className="space-y-2">
-                <Skeleton className="h-7 w-52" />
-                <Skeleton className="h-4 w-3/5" />
-              </div>
-              <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
-                {Array.from({ length: 3 }, (_, cardIndex) => (
-                  <Skeleton className="aspect-video w-full rounded-xl" key={cardIndex} />
-                ))}
-              </div>
-            </section>
+      <div className="space-y-6">
+        <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
+          <div className="flex flex-wrap gap-2">
+            {Array.from({ length: 6 }, (_, index) => (
+              <Skeleton className="h-9 w-20" key={index} />
+            ))}
+          </div>
+          <Skeleton className="h-9 w-32" />
+        </div>
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+          {Array.from({ length: 8 }, (_, index) => (
+            <ArchiveClipCardSkeleton key={index} />
           ))}
         </div>
-        <aside className="hidden space-y-3 rounded-xl border border-default p-3 lg:block">
-          <Skeleton className="h-4 w-20" />
-          <Skeleton className="h-8 w-full" />
-          <Skeleton className="h-8 w-4/5" />
-          <Skeleton className="h-8 w-11/12" />
-        </aside>
       </div>
     </div>
   );

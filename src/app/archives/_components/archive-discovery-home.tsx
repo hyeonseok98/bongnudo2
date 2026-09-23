@@ -7,6 +7,7 @@ import type { ReactNode } from "react";
 
 import { CharacterAvatar } from "@/app/characters/_components/character-avatar";
 import { ArchiveGridSkeleton } from "@/components/archive-grid-skeleton";
+import { Skeleton } from "@/components/ui/skeleton";
 import { RetryButton } from "@/components/ui/retry-button";
 import { getDisplayName, getDisplayProfileImageUrl } from "@/features/rp-mode/rp-mode";
 import { useRpModeSettings } from "@/providers/rp-mode-provider";
@@ -28,7 +29,7 @@ export function ArchiveDiscoveryHome() {
         <p className="text-body text-status-danger">아카이브를 불러오지 못함.</p>
         <RetryButton isPending={query.isFetching} onRetry={() => void query.refetch()} />
       </div>
-    ) : <div className="space-y-10"><ArchiveGridSkeleton count={6} /><ArchiveGridSkeleton count={6} /></div>;
+    ) : <ArchiveDiscoveryHomeSkeleton />;
   }
 
   const featured = home.featured.filter((archive) => archive.recommendationCount > 0);
@@ -99,6 +100,54 @@ export function ArchiveDiscoveryHome() {
         </div>
       </DiscoverySection> : null}
     </div>
+  );
+}
+
+export function ArchiveDiscoveryHomeSkeleton() {
+  return (
+    <div aria-label="아카이브 탐색 내용을 불러오는 중입니다." className="space-y-8" role="status">
+      <section className="space-y-5">
+        <DiscoverySectionSkeletonHeader />
+        <ArchiveGridSkeleton count={4} />
+      </section>
+      <section className="space-y-5">
+        <DiscoverySectionSkeletonHeader />
+        <div className="grid gap-x-6 gap-y-2 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-6">
+          {Array.from({ length: 6 }, (_, index) => (
+            <div className="flex items-center gap-3 py-3" key={index}>
+              <Skeleton className="size-10 rounded-full" />
+              <div className="space-y-2">
+                <Skeleton className="h-4 w-28" />
+                <Skeleton className="h-3 w-36" />
+              </div>
+            </div>
+          ))}
+        </div>
+      </section>
+      <section className="space-y-5">
+        <DiscoverySectionSkeletonHeader />
+        <div className="grid grid-cols-2 gap-x-6 gap-y-2 lg:grid-cols-4">
+          {Array.from({ length: 4 }, (_, index) => (
+            <div className="flex items-center gap-3 py-3" key={index}>
+              <Skeleton className="h-4 w-20" />
+              <Skeleton className="h-3 w-8" />
+            </div>
+          ))}
+        </div>
+      </section>
+    </div>
+  );
+}
+
+function DiscoverySectionSkeletonHeader() {
+  return (
+    <header className="flex items-end justify-between gap-4">
+      <div className="space-y-2">
+        <Skeleton className="h-7 w-48" />
+        <Skeleton className="h-4 w-64 max-w-full" />
+      </div>
+      <Skeleton className="h-9 w-16 shrink-0" />
+    </header>
   );
 }
 

@@ -6,6 +6,7 @@ import type { ReactNode } from "react";
 
 import { CharacterAvatar } from "@/app/characters/_components/character-avatar";
 import { ThemeImage } from "@/components/ui/theme-image";
+import { Skeleton } from "@/components/ui/skeleton";
 import { getOrganizationTypeLabel } from "@/features/organizations/organization";
 
 import { useOrganizations } from "../_hooks/use-organizations";
@@ -16,11 +17,7 @@ export function OrganizationDetail({ slug }: { slug: string }) {
   const organizationsQuery = useOrganizations();
 
   if (organizationsQuery.isPending) {
-    return (
-      <OrganizationDetailMessage>
-        조직 정보를 불러오는 중입니다.
-      </OrganizationDetailMessage>
-    );
+    return <OrganizationDetailSkeleton />;
   }
 
   if (organizationsQuery.isError) {
@@ -141,6 +138,36 @@ export function OrganizationDetail({ slug }: { slug: string }) {
             등록된 현재 구성원이 없습니다.
           </p>
         )}
+      </section>
+    </div>
+  );
+}
+
+function OrganizationDetailSkeleton() {
+  return (
+    <div aria-label="조직 정보를 불러오는 중입니다." className="space-y-8" role="status">
+      <div className="relative h-48 sm:h-56">
+        <Skeleton className="absolute inset-x-0 top-0 h-full rounded-none" />
+        <div className="absolute inset-x-0 bottom-6 space-y-2 px-4 sm:px-0">
+          <Skeleton className="h-9 w-64" />
+          <Skeleton className="h-5 w-44" />
+        </div>
+      </div>
+      <section className="space-y-8">
+        <Skeleton className="h-7 w-20" />
+        {Array.from({ length: 3 }, (_, groupIndex) => (
+          <div className="space-y-4" key={groupIndex}>
+            <div className="flex items-center gap-4"><Skeleton className="h-7 w-36" /><div aria-hidden="true" className="h-px flex-1 bg-border-default" /></div>
+            <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6">
+              {Array.from({ length: 6 }, (_, index) => (
+                <div className="flex min-w-0 items-center gap-3 rounded-xl border border-default bg-surface-raised p-3" key={index}>
+                  <Skeleton className="size-12 shrink-0 rounded-lg" />
+                  <div className="min-w-0 space-y-2"><Skeleton className="h-4 w-20" /><Skeleton className="h-3 w-16" /></div>
+                </div>
+              ))}
+            </div>
+          </div>
+        ))}
       </section>
     </div>
   );

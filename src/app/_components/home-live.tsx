@@ -1,7 +1,7 @@
 "use client";
 
 import { useCharacters } from "@/app/characters/_hooks/use-characters";
-import { LiveGrid } from "@/app/live/_components/live-grid";
+import { LiveGrid, LiveGridSkeleton } from "@/app/live/_components/live-grid";
 import { useLiveBroadcasts } from "@/app/live/_hooks/use-live-broadcasts";
 import {
   buildLiveStreams,
@@ -42,9 +42,7 @@ export function HomeLive() {
       />
 
       {isPending ? (
-        <HomeSectionMessage>
-          실시간 방송을 불러오는 중입니다.
-        </HomeSectionMessage>
+        <LiveGridSkeleton count={HOME_LIVE_COUNT} />
       ) : isError ? (
         <HomeSectionMessage isError>
           실시간 방송을 불러오지 못했습니다.

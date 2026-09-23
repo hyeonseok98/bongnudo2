@@ -3,9 +3,8 @@
 import { useState } from "react";
 
 import { useInfiniteQuery, useQuery } from "@tanstack/react-query";
-import { LoaderCircle } from "lucide-react";
-
 import { Button } from "@/components/ui/button";
+import { Skeleton } from "@/components/ui/skeleton";
 import type { ArchiveClipSummary, ArchiveDetail } from "@/features/archives/archive";
 import { archiveQueries } from "@/queries/archive-queries";
 
@@ -52,6 +51,7 @@ export function SystemCharacterArchiveContent({ archive }: SystemCharacterArchiv
             >
               전체
             </Button>
+            {summaryQuery.isPending ? Array.from({ length: 6 }, (_, index) => <Skeleton className="h-9 w-20" key={index} />) : null}
             {summaryQuery.data?.seasonDays.map((seasonDay) => (
               <Button
                 aria-selected={day === seasonDay.dayNumber}
@@ -65,17 +65,19 @@ export function SystemCharacterArchiveContent({ archive }: SystemCharacterArchiv
               </Button>
             ))}
           </div>
-          <label className="flex items-center gap-2 text-body-sm text-secondary">
-            정렬
-            <select
-              className="h-9 rounded-lg border border-default bg-background px-3 text-body-sm text-primary outline-none focus-visible:border-focus-ring"
-              onChange={(event) => changeSort(event.target.value === "latest" ? "latest" : "oldest")}
-              value={sort}
-            >
-              <option value="oldest">오래된순</option>
-              <option value="latest">최신순</option>
-            </select>
-          </label>
+          {summaryQuery.isPending ? <Skeleton className="h-9 w-32" /> : (
+            <label className="flex items-center gap-2 text-body-sm text-secondary">
+              정렬
+              <select
+                className="h-9 rounded-lg border border-default bg-background px-3 text-body-sm text-primary outline-none focus-visible:border-focus-ring"
+                onChange={(event) => changeSort(event.target.value === "latest" ? "latest" : "oldest")}
+                value={sort}
+              >
+                <option value="oldest">오래된순</option>
+                <option value="latest">최신순</option>
+              </select>
+            </label>
+          )}
         </div>
 
         {summaryQuery.isError ? (
@@ -130,9 +132,13 @@ export function SystemCharacterArchiveContent({ archive }: SystemCharacterArchiv
 
 function LoadingBox() {
   return (
-    <div className="flex min-h-52 items-center justify-center gap-2 rounded-xl border border-default bg-surface-raised text-body-sm text-secondary">
-      <LoaderCircle aria-hidden="true" className="size-4 animate-spin" />
-      클립을 불러오는 중입니다.
+    <div aria-label="클립을 불러오는 중입니다." className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4" role="status">
+      {Array.from({ length: 8 }, (_, index) => (
+        <article className="overflow-hidden rounded-xl border border-default bg-surface-raised" key={index}>
+          <Skeleton className="aspect-video w-full rounded-none" />
+          <div className="space-y-2 p-3"><Skeleton className="h-5 w-11/12" /><div className="flex items-center gap-2"><Skeleton className="size-7 rounded-full" /><Skeleton className="h-4 w-24" /></div><Skeleton className="h-3 w-24" /></div>
+        </article>
+      ))}
     </div>
   );
 }

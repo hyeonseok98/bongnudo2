@@ -8,8 +8,8 @@ import { parseAsInteger, useQueryState } from "nuqs";
 import { ArrowRight } from "lucide-react";
 
 import { ArchiveGridSkeleton } from "@/components/archive-grid-skeleton";
+import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
-import { FilterBarSkeleton } from "@/components/media-grid-skeleton";
 import { RetryButton } from "@/components/ui/retry-button";
 import type { ArchiveListItem } from "@/features/archives/archive";
 import { getLatestCompletedSeasonDayByDateTime } from "@/features/seasons/season-day";
@@ -30,7 +30,7 @@ export function ArchiveDayView() {
   const relatedArchivesQuery = useQuery(archiveQueries.dayRelatedArchives(seasonDayId));
 
   if (optionsQuery.isPending) {
-    return <FilterBarSkeleton />;
+    return <ArchiveDaySkeleton />;
   }
 
   if (optionsQuery.isError || !optionsQuery.data) {
@@ -76,6 +76,28 @@ export function ArchiveDayView() {
         isPending={relatedArchivesQuery.isPending}
         onRetry={() => void relatedArchivesQuery.refetch()}
       />
+    </section>
+  );
+}
+
+function ArchiveDaySkeleton() {
+  return (
+    <section aria-label="일자별 아카이브를 불러오는 중입니다." className="space-y-7" role="status">
+      <div className="space-y-2">
+        <Skeleton className="h-8 w-40" />
+        <Skeleton className="h-6 w-80 max-w-full" />
+      </div>
+      <div className="flex gap-2 overflow-hidden pb-1">
+        {Array.from({ length: 6 }, (_, index) => <Skeleton className="h-9 w-20 shrink-0" key={index} />)}
+      </div>
+      <Skeleton className="h-9 w-40" />
+      <section className="space-y-4 border-t border-default pt-7">
+        <div className="space-y-2">
+          <Skeleton className="h-6 w-36" />
+          <Skeleton className="h-6 w-80 max-w-full" />
+        </div>
+        <ArchiveGridSkeleton count={3} />
+      </section>
     </section>
   );
 }

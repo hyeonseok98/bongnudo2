@@ -30,7 +30,7 @@ export function HomeArchives() {
         href="/archives"
         title="아카이브"
       />
-      {archivesQuery.isPending ? <ArchiveGridSkeleton count={HOME_ARCHIVE_COUNT} /> : null}
+      {archivesQuery.isPending ? <ArchiveGridSkeleton count={HOME_ARCHIVE_COUNT} largeColumns={5} /> : null}
       {archivesQuery.isError ? (
         <HomeSectionMessage isError>아카이브를 불러오지 못했습니다.</HomeSectionMessage>
       ) : null}

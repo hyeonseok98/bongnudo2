@@ -5,9 +5,10 @@ import { Archive, LoaderCircle, UserRound } from "lucide-react";
 import { useState } from "react";
 import { parseAsString, useQueryState } from "nuqs";
 
-import { ArchiveGridSkeleton } from "@/components/archive-grid-skeleton";
+import { ArchiveCardSkeleton } from "@/components/archive-grid-skeleton";
 import type { HierarchicalFilterSelection } from "@/components/filters/hierarchical-filter";
 import { RetryButton } from "@/components/ui/retry-button";
+import { Skeleton } from "@/components/ui/skeleton";
 import type { ArchivePeopleSection } from "@/features/archives/archive";
 import { getDisplayName } from "@/features/rp-mode/rp-mode";
 import { useRpModeSettings } from "@/providers/rp-mode-provider";
@@ -114,7 +115,9 @@ export function ArchivePeopleView() {
         </>
       ) : null}
 
-      {charactersQuery.isPending || peopleQuery.isPending ? <ArchivePeopleLoadingState /> : null}
+      {charactersQuery.isPending || peopleQuery.isPending ? (
+        <ArchivePeopleLoadingState showFilters={charactersQuery.isPending} />
+      ) : null}
       {charactersQuery.isError || peopleQuery.isError ? (
         <ArchivePeopleError
           isRetrying={charactersQuery.isFetching || peopleQuery.isFetching}
@@ -174,27 +177,43 @@ function findFilterLabel(
 
 function ArchivePeopleNextPageSkeleton() {
   return (
-    <div aria-label="다음 인물별 아카이브를 불러오는 중입니다." className="space-y-10" role="status">
+    <div aria-label="다음 인물별 아카이브를 불러오는 중입니다." className="grid gap-6 sm:grid-cols-2 xl:grid-cols-3" role="status">
       {Array.from({ length: 3 }, (_, index) => (
-        <section className="space-y-4" key={index}>
-          <div className="h-6 w-32 animate-pulse rounded-md bg-surface-muted" />
-          <ArchiveGridSkeleton count={3} />
-        </section>
+        <ArchivePersonSectionSkeleton key={index} />
       ))}
     </div>
   );
 }
 
-function ArchivePeopleLoadingState() {
+function ArchivePeopleLoadingState({ showFilters }: { showFilters: boolean }) {
   return (
-    <div className="space-y-10" role="status">
-      {Array.from({ length: 3 }, (_, index) => (
-        <section className="space-y-4" key={index}>
-          <div className="h-6 w-32 animate-pulse rounded-md bg-muted" />
-          <ArchiveGridSkeleton count={3} />
-        </section>
-      ))}
+    <div aria-label="인물별 아카이브를 불러오는 중입니다." className="space-y-7" role="status">
+      {showFilters ? (
+        <div className="flex flex-wrap gap-4"><Skeleton className="h-10 w-44" /><Skeleton className="h-10 w-52" /></div>
+      ) : null}
+      <div className="space-y-10">
+        {Array.from({ length: 12 }, (_, index) => (
+          <ArchivePersonSectionSkeleton key={index} />
+        ))}
+      </div>
     </div>
+  );
+}
+
+function ArchivePersonSectionSkeleton() {
+  return (
+    <section className="space-y-4">
+      <div className="flex items-center gap-2.5">
+        <Skeleton className="size-8 rounded-full" />
+        <div className="space-y-1.5">
+          <Skeleton className="h-5 w-32" />
+          <Skeleton className="h-4 w-24" />
+        </div>
+      </div>
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-6">
+        <ArchiveCardSkeleton />
+      </div>
+    </section>
   );
 }
 

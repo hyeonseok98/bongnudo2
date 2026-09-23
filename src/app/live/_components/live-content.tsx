@@ -21,7 +21,8 @@ import {
   sortLiveStreams,
 } from "../_utils/live-directory";
 import { LiveFilters } from "./live-filters";
-import { LiveGrid } from "./live-grid";
+import { LiveGrid, LiveGridSkeleton } from "./live-grid";
+import { Skeleton } from "@/components/ui/skeleton";
 
 export function LiveContent() {
   const directory = useLiveDirectory();
@@ -92,9 +93,17 @@ export function LiveContent() {
     return (
       <div className="space-y-6">
         <LiveDirectoryHeading />
-        <p className="text-body-sm text-secondary" role="status">
-          실시간 방송 정보를 불러오는 중입니다.
-        </p>
+        <div aria-label="실시간 현황을 불러오는 중입니다." className="space-y-6" role="status">
+          <section aria-label="LIVE 검색 및 필터" className="space-y-3">
+            <Skeleton className="h-10 w-full max-w-2xl" />
+            <div className="flex flex-wrap gap-4"><Skeleton className="h-10 w-44" /><Skeleton className="h-10 w-60" /></div>
+          </section>
+          <div className="flex items-center justify-between">
+            <Skeleton className="h-5 w-28" />
+            <Skeleton className="h-10 w-36" />
+          </div>
+          <LiveGridSkeleton />
+        </div>
       </div>
     );
   }

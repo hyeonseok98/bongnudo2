@@ -22,6 +22,7 @@ import { CharacterList } from "./character-list";
 import { CharacterModeSwitch } from "./character-mode-switch";
 import { CharacterViewToggle } from "./character-view-toggle";
 import { SelectedFilterSummary } from "./selected-filter-summary";
+import { Skeleton } from "@/components/ui/skeleton";
 
 export function CharactersContent() {
   const directory = useCharacterDirectory();
@@ -103,9 +104,7 @@ export function CharactersContent() {
           mode={directory.mode}
           onModeChange={directory.changeMode}
         />
-        <p className="text-body-sm text-secondary" role="status">
-          인물 정보를 불러오는 중입니다.
-        </p>
+        <CharacterDirectorySkeleton view={directory.view} />
       </div>
     );
   }
@@ -210,6 +209,35 @@ export function CharactersContent() {
           )}
         </div>
       </section>
+    </div>
+  );
+}
+
+function CharacterDirectorySkeleton({ view }: { view: "grid" | "list" }) {
+  return (
+    <div aria-label="인물 도감을 불러오는 중입니다." className="space-y-6" role="status">
+      <div className="space-y-3">
+        <Skeleton className="h-10 w-full max-w-2xl" />
+        <div className="flex flex-wrap gap-4"><Skeleton className="h-10 w-44" /><Skeleton className="h-10 w-60" /></div>
+      </div>
+      <div className="flex min-h-8 items-center justify-between gap-3">
+        <Skeleton className="h-4 w-48" />
+        <div className="flex gap-2"><Skeleton className="h-9 w-28" /><Skeleton className="h-10 w-32" /></div>
+      </div>
+      {view === "grid" ? (
+        <div className="grid grid-cols-2 items-stretch gap-3 sm:grid-cols-3 sm:gap-4 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6">
+          {Array.from({ length: 12 }, (_, index) => (
+            <Skeleton className="aspect-3/4 w-full rounded-xl" key={index} />
+          ))}
+        </div>
+      ) : (
+        <div className="overflow-hidden rounded-xl border border-default">
+          <Skeleton className="h-12 w-full rounded-none" />
+          <div className="divide-y divide-border-default">
+            {Array.from({ length: 8 }, (_, index) => <Skeleton className="h-16 w-full rounded-none" key={index} />)}
+          </div>
+        </div>
+      )}
     </div>
   );
 }

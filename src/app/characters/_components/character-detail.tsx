@@ -23,6 +23,7 @@ import { useState, type ReactNode } from "react";
 
 import { Badge } from "@/components/ui/badge";
 import { ThemeImage } from "@/components/ui/theme-image";
+import { Skeleton } from "@/components/ui/skeleton";
 import {
   RP_AFFILIATION_BADGE_FALLBACK,
   RP_AFFILIATION_BADGE_STYLES,
@@ -69,7 +70,7 @@ export function CharacterDetail({ kind, identifier }: CharacterDetailProps) {
   const charactersQuery = useCharacters();
 
   if (charactersQuery.isPending) {
-    return <DetailMessage>인물 정보를 불러오는 중입니다.</DetailMessage>;
+    return <CharacterDetailSkeleton />;
   }
 
   if (charactersQuery.isError) {
@@ -127,6 +128,25 @@ export function CharacterDetail({ kind, identifier }: CharacterDetailProps) {
             streamerHref={streamerHref}
           />
         )}
+      </div>
+    </div>
+  );
+}
+
+function CharacterDetailSkeleton() {
+  return (
+    <div aria-label="인물 정보를 불러오는 중입니다." className="relative" role="status">
+      <Skeleton className="absolute inset-x-0 top-0 h-48 rounded-none sm:h-56" />
+      <div className="relative z-10 space-y-4 pt-16 sm:pt-20">
+        <Skeleton className="h-9 w-36" />
+        <div className="grid gap-4 xl:grid-cols-[minmax(16rem,0.75fr)_minmax(20rem,1.05fr)_minmax(20rem,1fr)]">
+          <Skeleton className="min-h-[32rem] w-full rounded-xl" />
+          <Skeleton className="aspect-6/7 w-full rounded-xl" />
+          <div className="space-y-4">
+            <Skeleton className="h-56 w-full rounded-xl" />
+            <Skeleton className="h-40 w-full rounded-xl" />
+          </div>
+        </div>
       </div>
     </div>
   );
@@ -528,11 +548,24 @@ function CareerHistoryPanel({
     throw careerEventsQuery.error;
   }
 
+  if (careerEventsQuery.isPending) {
+    return <CareerHistorySkeleton />;
+  }
+
   if (careerEventsQuery.data && careerEventsQuery.data.length > 0) {
     return <CareerEventsPanel events={careerEventsQuery.data} />;
   }
 
   return <RoleHistoryPanel histories={fallbackHistories} />;
+}
+
+function CareerHistorySkeleton() {
+  return (
+    <section aria-label="직책 및 소속 이력을 불러오는 중입니다." className="rounded-xl border border-default bg-surface-raised/75 p-5" role="status">
+      <div className="mb-4 flex items-center gap-3 border-b border-default pb-3"><Skeleton className="size-5" /><Skeleton className="h-6 w-36" /></div>
+      <div className="space-y-3">{Array.from({ length: 3 }, (_, index) => <Skeleton className="h-16 w-full" key={index} />)}</div>
+    </section>
+  );
 }
 
 function CareerEventsPanel({ events }: { events: CharacterCareerEvent[] }) {

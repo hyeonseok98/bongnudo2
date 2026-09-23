@@ -3,6 +3,7 @@
 import { Play, UserRound } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
+import { Skeleton } from "@/components/ui/skeleton";
 import type { ArchiveClipSummary } from "@/features/archives/archive";
 import {
   getDisplayName,
@@ -87,6 +88,19 @@ export function ArchiveClipCard({ clip, note = null, onPreview }: ArchiveClipCar
           <p className="text-caption text-tertiary">{dateFormatter.format(new Date(clip.clipCreatedAt))}</p>
         </div>
       </button>
+    </article>
+  );
+}
+
+export function ArchiveClipCardSkeleton() {
+  return (
+    <article className="overflow-hidden rounded-xl border border-default bg-surface-raised">
+      <Skeleton className="aspect-video w-full rounded-none" />
+      <div className="space-y-2 p-3">
+        <div className="space-y-1"><Skeleton className="h-4 w-11/12" /><Skeleton className="h-4 w-2/3" /></div>
+        <div className="flex items-center gap-2"><Skeleton className="size-7 rounded-full" /><div className="space-y-1"><Skeleton className="h-3 w-20" /><Skeleton className="h-3 w-16" /></div></div>
+        <Skeleton className="h-3 w-24" />
+      </div>
     </article>
   );
 }

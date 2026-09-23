@@ -17,6 +17,7 @@ import {
   filterOrganizations,
 } from "../_utils/organization-directory";
 import { OrganizationCard } from "./organization-card";
+import { Skeleton } from "@/components/ui/skeleton";
 
 export function OrganizationsContent() {
   const directory = useOrganizationDirectory();
@@ -44,9 +45,7 @@ export function OrganizationsContent() {
     return (
       <div className="space-y-6">
         <OrganizationDirectoryHeading />
-        <p className="text-body-sm text-secondary" role="status">
-          조직 정보를 불러오는 중입니다.
-        </p>
+        <OrganizationDirectorySkeleton />
       </div>
     );
   }
@@ -147,6 +146,29 @@ export function OrganizationsContent() {
             </p>
           </div>
         )}
+      </section>
+    </div>
+  );
+}
+
+function OrganizationDirectorySkeleton() {
+  return (
+    <div aria-label="조직 도감을 불러오는 중입니다." className="space-y-6" role="status">
+      <section aria-label="조직 검색 및 필터" className="space-y-3">
+        <Skeleton className="h-10 w-full max-w-2xl" />
+        <div className="flex flex-wrap gap-4"><Skeleton className="h-10 w-44" /></div>
+      </section>
+      <div className="flex min-h-6 items-center"><Skeleton className="h-4 w-40" /></div>
+      <section className="space-y-3">
+        <div className="flex items-center gap-4"><Skeleton className="h-7 w-36" /><div aria-hidden="true" className="h-px flex-1 bg-border-default" /></div>
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5">
+          {Array.from({ length: 10 }, (_, index) => (
+            <article className="overflow-hidden rounded-xl border border-default bg-surface-raised" key={index}>
+              <Skeleton className="aspect-square w-full rounded-none" />
+              <div className="space-y-2 p-4"><Skeleton className="h-3 w-16" /><Skeleton className="h-6 w-3/4" /><Skeleton className="h-4 w-24" /></div>
+            </article>
+          ))}
+        </div>
       </section>
     </div>
   );
