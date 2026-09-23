@@ -18,12 +18,13 @@ interface CharacterFiltersProps {
   jobNodes: FilterTreeNode[];
   jobValue: HierarchicalFilterSelection;
   query: string;
+  showSearch?: boolean;
   streamerAffiliationSelection: HierarchicalFilterSelection;
   streamerAffiliationNodes: FilterTreeNode[];
   streamerAffiliationLabelNodes: FilterTreeNode[];
   streamerAffiliationQuickOptions: QuickFilterOption[];
   onJobApply: (selection: HierarchicalFilterSelection) => void;
-  onQueryChange: (query: string) => void;
+  onQueryChange?: (query: string) => void;
   onStreamerAffiliationsApply: (
     selection: HierarchicalFilterSelection,
   ) => void;
@@ -36,6 +37,7 @@ export function CharacterFilters({
   jobNodes,
   jobValue,
   query,
+  showSearch = true,
   streamerAffiliationSelection,
   streamerAffiliationNodes,
   streamerAffiliationLabelNodes,
@@ -45,14 +47,16 @@ export function CharacterFilters({
   onStreamerAffiliationsApply,
 }: CharacterFiltersProps) {
   return (
-    <section aria-label="인물 검색 및 필터" className="space-y-3">
-      <SearchField
-        label="이름 또는 키워드 검색"
-        onChange={(event) => onQueryChange(event.target.value)}
-        onClear={() => onQueryChange("")}
-        placeholder="스트리머명 또는 RP 캐릭터 이름으로 검색해보세요"
-        value={query}
-      />
+    <section aria-label={showSearch ? "인물 검색 및 필터" : "인물 필터"} className="space-y-3">
+      {showSearch && onQueryChange ? (
+        <SearchField
+          label="이름 또는 키워드 검색"
+          onChange={(event) => onQueryChange(event.target.value)}
+          onClear={() => onQueryChange("")}
+          placeholder="스트리머명 또는 RP 캐릭터 이름으로 검색해보세요"
+          value={query}
+        />
+      ) : null}
 
       <FilterBar>
         <HierarchicalFilter

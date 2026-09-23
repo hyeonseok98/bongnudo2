@@ -150,7 +150,7 @@ function ArchiveSearchResults({ directory, participantLabel }: {
       {archivesQuery.isPending ? <ArchiveGridSkeleton /> : null}
       {archivesQuery.isError ? <ArchiveErrorState isRetrying={archivesQuery.isFetching} onRetry={() => void archivesQuery.refetch()} /> : null}
       {archives.length > 0 ? (
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5">
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-6">
           {archives.map((archive) => <ArchiveCard archive={archive} key={archive.id} />)}
         </div>
       ) : archivesQuery.isSuccess ? <ArchiveEmptyState hasFilters={directory.hasFilters} hasSearch={directory.query.length > 0} /> : null}

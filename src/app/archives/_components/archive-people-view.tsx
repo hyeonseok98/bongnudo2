@@ -30,19 +30,18 @@ const EMPTY_SELECTION: HierarchicalFilterSelection = { ids: [] };
 
 export function ArchivePeopleView() {
   const [participantId, setParticipantId] = useQueryState("participant", parseAsString);
-  const [query, setQuery] = useState("");
   const [jobSelection, setJobSelection] = useState(EMPTY_SELECTION);
   const [streamerAffiliationSelection, setStreamerAffiliationSelection] = useState(EMPTY_SELECTION);
   const charactersQuery = useQuery(characterQueries.list());
   const characters = charactersQuery.data?.characters ?? [];
   const streamerAffiliations = charactersQuery.data?.streamerAffiliations ?? [];
-  const criteria = { query, jobSelection, streamerAffiliationSelection };
+  const criteria = { query: "", jobSelection, streamerAffiliationSelection };
   const peopleQuery = useInfiniteQuery({
     ...archiveQueries.people({
       participantId,
       affiliations: streamerAffiliationSelection.ids,
       jobs: jobSelection.ids,
-      query: query.trim(),
+      query: "",
     }),
     enabled: charactersQuery.isSuccess,
   });
@@ -60,7 +59,7 @@ export function ArchivePeopleView() {
     nextStreamerAffiliationSelection: HierarchicalFilterSelection,
   ) {
     return filterCharacters(characters, {
-      query,
+      query: "",
       jobSelection: nextJobSelection,
       streamerAffiliationSelection: nextStreamerAffiliationSelection,
     }, streamerAffiliations).length;
@@ -84,9 +83,9 @@ export function ArchivePeopleView() {
             jobNodes={facetData.jobNodes}
             jobValue={jobSelection}
             onJobApply={setJobSelection}
-            onQueryChange={setQuery}
             onStreamerAffiliationsApply={setStreamerAffiliationSelection}
-            query={query}
+            query=""
+            showSearch={false}
             streamerAffiliationLabelNodes={allStreamerAffiliationFilterData.nodes}
             streamerAffiliationNodes={facetData.streamerAffiliations.nodes}
             streamerAffiliationQuickOptions={facetData.streamerAffiliations.quickOptions}
@@ -220,7 +219,7 @@ function ArchivePersonSection({ archives, participant }: ArchivePeopleSection) {
           ) : null}
         </div>
       </div>
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5">
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-6">
         {archives.map((archive) => <ArchiveCard archive={archive} key={archive.id} />)}
       </div>
     </section>
