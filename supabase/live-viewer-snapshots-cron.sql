@@ -34,18 +34,25 @@ begin
   perform cron.unschedule(jobid)
   from cron.job
   where jobname in (
+    'live-refresh-server-evening',
+    'live-refresh-server-midnight',
+    'live-refresh-server-0400',
+    'live-refresh-offhours-evening',
+    'live-refresh-offhours-morning',
     'collect-live-viewer-snapshots-evening-kst',
     'collect-live-viewer-snapshots-after-midnight-kst',
     'refresh-live-current-peak-kst',
     'refresh-live-current-0400-kst',
     'refresh-live-current-off-hours-0405-kst',
     'refresh-live-current-off-hours-0401-kst',
-    'refresh-live-current-off-hours-kst'
+    'refresh-live-current-off-hours-kst',
+    'refresh-live-current-off-hours-evening-kst',
+    'refresh-live-current-off-hours-morning-kst'
   );
 
   perform cron.schedule(
-    'refresh-live-current-peak-kst',
-    '* 8-18 * * *',
+    'live-refresh-server-evening',
+    '* 9-18 * * *',
     $job$
       select net.http_post(
         url := (
@@ -68,7 +75,7 @@ begin
   );
 
   perform cron.schedule(
-    'refresh-live-current-0400-kst',
+    'live-refresh-server-0400',
     '0 19 * * *',
     $job$
       select net.http_post(
@@ -92,8 +99,8 @@ begin
   );
 
   perform cron.schedule(
-    'refresh-live-current-off-hours-0401-kst',
-    '1-59/2 19 * * *',
+    'live-refresh-offhours-evening',
+    '1-59/2 19-23 * * *',
     $job$
       select net.http_post(
         url := (
@@ -116,8 +123,8 @@ begin
   );
 
   perform cron.schedule(
-    'refresh-live-current-off-hours-kst',
-    '1-59/2 20-23,0-7 * * *',
+    'live-refresh-offhours-morning',
+    '1-59/2 0-8 * * *',
     $job$
       select net.http_post(
         url := (

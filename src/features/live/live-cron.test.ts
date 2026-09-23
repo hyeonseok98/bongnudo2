@@ -9,7 +9,7 @@ const cronSql = readFileSync(
 );
 
 describe("LIVE refresh Cron SQL", () => {
-  it("운영시간 1분, KST 04:00 단일 실행, 운영시간 외 2분을 등록함", () => {
+  it("LIVE 정밀 집계와 마지막 04:00 snapshot, 운영 외 2분 갱신을 등록함", () => {
     const schedules = Array.from(
       cronSql.matchAll(
         /perform cron\.schedule\(\s*'([^']+)',\s*'([^']+)'/g,
@@ -19,20 +19,20 @@ describe("LIVE refresh Cron SQL", () => {
 
     expect(schedules).toEqual([
       {
-        name: "refresh-live-current-peak-kst",
-        schedule: "* 8-18 * * *",
+        name: "live-refresh-server-evening",
+        schedule: "* 9-18 * * *",
       },
       {
-        name: "refresh-live-current-0400-kst",
+        name: "live-refresh-server-0400",
         schedule: "0 19 * * *",
       },
       {
-        name: "refresh-live-current-off-hours-0401-kst",
-        schedule: "1-59/2 19 * * *",
+        name: "live-refresh-offhours-evening",
+        schedule: "1-59/2 19-23 * * *",
       },
       {
-        name: "refresh-live-current-off-hours-kst",
-        schedule: "1-59/2 20-23,0-7 * * *",
+        name: "live-refresh-offhours-morning",
+        schedule: "1-59/2 0-8 * * *",
       },
     ]);
   });
