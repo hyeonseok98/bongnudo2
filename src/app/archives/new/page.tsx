@@ -5,7 +5,7 @@ import { getCurrentUser } from "@/features/auth/session";
 import { ArchiveCreateContent } from "../_components/archive-create-content";
 
 export const metadata: Metadata = {
-  title: "새 아카이브 | 봉누록",
+  title: "새 아카이브",
   robots: { index: false },
 };
 

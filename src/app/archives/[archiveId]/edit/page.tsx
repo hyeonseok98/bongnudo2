@@ -5,7 +5,7 @@ import { getCurrentUser } from "@/features/auth/session";
 import { ArchiveEditor } from "../../_components/archive-editor";
 
 export const metadata: Metadata = {
-  title: "아카이브 편집 | 봉누록",
+  title: "아카이브 편집",
   robots: { index: false },
 };
 

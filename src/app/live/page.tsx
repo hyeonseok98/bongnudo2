@@ -3,7 +3,7 @@ import type { Metadata } from "next";
 import { LiveContent } from "./_components/live-content";
 
 export const metadata: Metadata = {
-  title: "실시간 현황 | 봉누록",
+  title: "실시간 현황",
   description: "현재 방송 중인 봉누도2 참가자를 확인해보세요.",
   alternates: {
     canonical: "/live",

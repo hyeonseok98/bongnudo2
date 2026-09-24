@@ -4,7 +4,7 @@ import { LegalDocument } from "../_components/legal-document";
 import { termsOfService } from "../_content/terms-of-service";
 
 export const metadata: Metadata = {
-  title: "이용약관 | 봉누록",
+  title: "이용약관",
   description: "봉누록 이용약관입니다.",
   alternates: { canonical: "/terms" },
 };

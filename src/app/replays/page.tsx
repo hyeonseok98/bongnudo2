@@ -5,8 +5,8 @@ import { getCurrentUser } from "@/features/auth/session";
 import { ReplaysContent } from "./_components/replays-content";
 
 export const metadata: Metadata = {
-  title: "다시보기 | 봉누록",
-  description: "봉누도2 참가자의 다시보기를 찾아보세요.",
+  title: "다시보기",
+  description: "봉누도2 다시보기를 참가자와 방송 일차 기준으로 탐색해보세요.",
   alternates: { canonical: "/replays" },
 };
 

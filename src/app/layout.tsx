@@ -10,6 +10,7 @@ import {
   MEDIA_PREVIEW_BLUR_COOKIE_NAME,
   RP_MODE_COOKIE_NAME,
 } from "@/features/rp-mode/rp-mode";
+import { getSiteOrigin } from "@/features/seo/site-origin";
 import { QueryProvider } from "@/providers/query-provider";
 import { RpModeProvider } from "@/providers/rp-mode-provider";
 import { SidebarProvider } from "@/providers/sidebar-provider";
@@ -32,9 +33,13 @@ const pretendard = localFont({
 });
 
 export const metadata: Metadata = {
-  title: "봉누록 | 봉누도2의 모든 기록",
+  metadataBase: new URL(getSiteOrigin()),
+  title: {
+    default: "봉누록 | 봉누도2의 모든 기록",
+    template: "%s | 봉누록",
+  },
   icons: {
-    icon: "/logos/bongnurok_logo_small.png",
+    icon: "/logo/bongnurok_favicon_small.png",
   },
   description:
     "봉누도2의 인물과 조직, 실시간 현황, 다시보기와 클립을 한곳에서 확인할 수 있는 봉누도2 정보 사이트입니다.",

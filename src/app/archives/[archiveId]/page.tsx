@@ -1,10 +1,11 @@
 import type { Metadata } from "next";
 
-import { ArchiveDetailContent } from "../_components/archive-detail-content";
+import {
+  getArchiveDescription,
+  getPublicArchiveMetadata,
+} from "@/features/archives/archive-metadata";
 
-export const metadata: Metadata = {
-  title: "아카이브 | 봉누록",
-};
+import { ArchiveDetailContent } from "../_components/archive-detail-content";
 
 export default async function ArchiveDetailPage({
   params,
@@ -14,4 +15,26 @@ export default async function ArchiveDetailPage({
   const { archiveId } = await params;
 
   return <ArchiveDetailContent archiveId={archiveId} />;
+}
+
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ archiveId: string }>;
+}): Promise<Metadata> {
+  const { archiveId } = await params;
+  const archive = await getPublicArchiveMetadata(archiveId);
+
+  if (!archive) {
+    return {
+      title: "아카이브",
+      robots: { index: false, follow: false },
+    };
+  }
+
+  return {
+    title: archive.title,
+    description: getArchiveDescription(archive.description),
+    alternates: { canonical: `/archives/${encodeURIComponent(archive.id)}` },
+  };
 }

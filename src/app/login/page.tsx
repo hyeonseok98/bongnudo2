@@ -11,7 +11,7 @@ import { getCurrentUser } from "@/features/auth/session";
 import { LoginConsentForm } from "./_components/login-consent-form";
 
 export const metadata: Metadata = {
-  title: "로그인 | 봉누록",
+  title: "로그인",
   description: "치지직 계정으로 봉누록에 로그인합니다.",
   robots: { index: false, follow: false },
 };

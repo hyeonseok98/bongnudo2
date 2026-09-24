@@ -4,7 +4,7 @@ import { LegalDocument } from "../_components/legal-document";
 import { privacyPolicy } from "../_content/privacy-policy";
 
 export const metadata: Metadata = {
-  title: "개인정보 처리방침 | 봉누록",
+  title: "개인정보 처리방침",
   description: "봉누록 개인정보 처리방침입니다.",
   alternates: { canonical: "/privacy" },
 };

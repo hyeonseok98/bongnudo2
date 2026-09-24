@@ -7,7 +7,6 @@ import { HomeLive } from "./_components/home-live";
 import { HomeReplays } from "./_components/home-replays";
 
 export const metadata: Metadata = {
-  title: "봉누록",
   description: "각자의 이야기로 완성되는 봉누도2를 만나보세요.",
   alternates: { canonical: "/" },
 };
