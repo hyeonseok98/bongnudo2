@@ -236,6 +236,18 @@ function ArchiveEditorWorkspace({ archive }: { archive: ArchiveDetail }) {
 
   function saveDraft() {
     setMessage(null);
+
+    if ((draft.metadata.description?.length ?? 0) > 500) {
+      setMessage("아카이브 설명은 500자 이하로 입력해주세요.");
+      return;
+    }
+
+    const invalidChapter = draft.chapters.find((chapter) => (chapter.description?.length ?? 0) > 300);
+    if (invalidChapter) {
+      setMessage(`챕터 설명은 300자 이하로 입력해주세요. (${invalidChapter.title})`);
+      return;
+    }
+
     saveMutation.mutate({
       archiveId: archive.id,
       input: {

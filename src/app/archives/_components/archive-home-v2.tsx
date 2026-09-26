@@ -105,7 +105,7 @@ function ArchiveHomeV2Content({ home }: { home: ArchiveDiscoveryHome }) {
   }
 
   return (
-    <div className="mt-5 space-y-5 lg:space-y-6">
+    <div className="mt-6 space-y-8 lg:space-y-10">
       {days.length > 0 ? <ArchiveDayRail days={days} /> : null}
 
       {recent.length > 0 ? (
@@ -267,11 +267,11 @@ function ArchiveDayRail({ days }: ArchiveDayRailProps) {
   return (
     <HomePanel description="운영일을 따라 봉누도2의 기록을 빠르게 찾아보세요." href="/archives?view=day" icon={CalendarDays} title="봉누도 타임라인">
       <div className="relative">
-        <button aria-label="이전 일차 보기" className="absolute top-1/2 left-0 z-10 hidden size-8 -translate-y-1/2 cursor-pointer place-items-center rounded-full bg-surface-raised/90 text-secondary hover:bg-surface-muted hover:text-primary sm:grid" onClick={() => scrollRail("left")} type="button">
+        <button aria-label="이전 일차 보기" className="absolute top-10 left-0 z-10 hidden size-8 cursor-pointer place-items-center rounded-full border-0 bg-surface-raised/90 text-secondary shadow-none hover:bg-surface-muted hover:text-primary focus-visible:outline-2 focus-visible:outline-focus-ring sm:grid" onClick={() => scrollRail("left")} type="button">
           <ChevronLeft aria-hidden="true" className="size-4" />
         </button>
         <div
-          className="scrollbar-hidden cursor-grab touch-pan-x select-none overflow-x-auto px-0 py-1 active:cursor-grabbing sm:px-8"
+          className="scrollbar-hidden cursor-grab touch-pan-x select-none overflow-x-auto px-0 py-1 active:cursor-grabbing"
           onPointerCancel={handlePointerUp}
           onPointerDown={handlePointerDown}
           onPointerMove={handlePointerMove}
@@ -311,7 +311,7 @@ function ArchiveDayRail({ days }: ArchiveDayRailProps) {
             })}
           </div>
         </div>
-        <button aria-label="다음 일차 보기" className="absolute top-1/2 right-0 z-10 hidden size-8 -translate-y-1/2 cursor-pointer place-items-center rounded-full bg-surface-raised/90 text-secondary hover:bg-surface-muted hover:text-primary sm:grid" onClick={() => scrollRail("right")} type="button">
+        <button aria-label="다음 일차 보기" className="absolute top-10 right-0 z-10 hidden size-8 cursor-pointer place-items-center rounded-full border-0 bg-surface-raised/90 text-secondary shadow-none hover:bg-surface-muted hover:text-primary focus-visible:outline-2 focus-visible:outline-focus-ring sm:grid" onClick={() => scrollRail("right")} type="button">
           <ChevronRight aria-hidden="true" className="size-4" />
         </button>
       </div>
@@ -331,7 +331,7 @@ interface HomePanelProps {
 function HomePanel({ children, description, href, icon: Icon, id, title }: HomePanelProps) {
   return (
     <section aria-label={title} className="relative" id={id}>
-      <header className="mb-4 flex items-start justify-between gap-4">
+      <header className="mb-6 flex items-start justify-between gap-4">
         <div className="min-w-0">
           <div className="flex items-center gap-2">
             <Icon aria-hidden="true" className="size-5 shrink-0 text-brand-text" />

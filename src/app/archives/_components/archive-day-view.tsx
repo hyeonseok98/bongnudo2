@@ -28,6 +28,9 @@ export function ArchiveDayView() {
     (seasonDay) => seasonDay.dayNumber === day,
   )?.id ?? null;
   const relatedArchivesQuery = useQuery(archiveQueries.dayRelatedArchives(seasonDayId));
+  const selectedSeasonDay = optionsQuery.data?.seasonDays.find(
+    (seasonDay) => seasonDay.dayNumber === day,
+  ) ?? null;
 
   if (optionsQuery.isPending) {
     return <ArchiveDaySkeleton />;
@@ -59,6 +62,16 @@ export function ArchiveDayView() {
           </Button>
         ))}
       </div>
+
+      {selectedSeasonDay ? (
+        <div className="flex flex-wrap items-baseline gap-x-4 gap-y-1 text-body-sm">
+          <strong className="text-body font-semibold text-primary">{selectedSeasonDay.dayNumber}일차</strong>
+          <span className="text-secondary">{formatSeasonDayDate(selectedSeasonDay.sessionDate)}</span>
+          <span className="text-secondary">
+            관련 아카이브 {relatedArchivesQuery.isPending ? "불러오는 중" : `${relatedArchivesQuery.data?.length ?? 0}개`}
+          </span>
+        </div>
+      ) : null}
 
       {day !== null ? (
         <Link
@@ -139,4 +152,18 @@ function ArchiveDayMessage({ children }: { children: ReactNode }) {
       {children}
     </div>
   );
+}
+
+function formatSeasonDayDate(sessionDate: string): string {
+  const [year, month, day] = sessionDate.split("-").map(Number);
+  if (![year, month, day].every(Number.isFinite)) {
+    return sessionDate;
+  }
+
+  return new Intl.DateTimeFormat("ko-KR", {
+    day: "numeric",
+    month: "long",
+    year: "numeric",
+    timeZone: "Asia/Seoul",
+  }).format(new Date(Date.UTC(year, month - 1, day, 3)));
 }

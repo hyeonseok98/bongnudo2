@@ -96,6 +96,7 @@ export function ArchiveSettingsDialog({
           <div className="mt-5 space-y-5">
             <FormField label="제목">
               <Input maxLength={60} onChange={(event) => updateMetadata({ title: event.target.value })} value={draft.title} />
+              <span className="text-caption text-secondary">{draft.title.length}/60자</span>
             </FormField>
             <FormField label="설명">
               <Textarea
@@ -104,6 +105,7 @@ export function ArchiveSettingsDialog({
                 onChange={(event) => updateMetadata({ description: event.target.value })}
                 value={draft.description ?? ""}
               />
+              <span className="text-caption text-secondary">{(draft.description ?? "").length}/500자</span>
             </FormField>
             <div className="grid gap-3 sm:grid-cols-2">
               <FormField label="주제">

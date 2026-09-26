@@ -47,6 +47,8 @@ export function ArchiveCreateContent({ isSignedIn }: ArchiveCreateContentProps) 
   const [editPolicy, setEditPolicy] = useState<ArchiveEditPolicy>("owner_only");
   const [relatedParticipants, setRelatedParticipants] = useState<ArchiveRelatedParticipant[]>([]);
   const [relatedSeasonDayIds, setRelatedSeasonDayIds] = useState<string[]>([]);
+  const [titleValue, setTitleValue] = useState("");
+  const [descriptionValue, setDescriptionValue] = useState("");
   const [errors, setErrors] = useState<ArchiveCreateErrors>({});
   const [message, setMessage] = useState<string | null>(null);
 
@@ -152,17 +154,25 @@ export function ArchiveCreateContent({ isSignedIn }: ArchiveCreateContentProps) 
 
       <form action={handleSubmit} className="mt-6 rounded-xl border border-default bg-surface-raised p-5 sm:p-6">
         <fieldset className="space-y-7" disabled={createMutation.isPending}>
-          <FormField error={errors.title} label="제목" required requiredIndicator="asterisk">
+          <FormField error={errors.title} hint={`${titleValue.length}/60자`} label="제목" required requiredIndicator="asterisk">
             <Input
               aria-invalid={errors.title ? true : undefined}
               maxLength={60}
               name="title"
-              onChange={() => errors.title && setErrors({})}
+              onChange={(event) => {
+                setTitleValue(event.target.value);
+                if (errors.title) setErrors({});
+              }}
               placeholder="아카이브 제목을 입력해주세요."
             />
           </FormField>
-          <FormField label="설명 (선택)">
-            <Textarea maxLength={500} name="description" placeholder="아카이브를 소개해주세요." />
+          <FormField hint={`${descriptionValue.length}/500자`} label="설명 (선택)">
+            <Textarea
+              maxLength={500}
+              name="description"
+              onChange={(event) => setDescriptionValue(event.target.value)}
+              placeholder="아카이브를 소개해주세요."
+            />
           </FormField>
           <FormField label="주제">
             <Select

@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { CalendarDays, ChevronLeft, FolderOpen, Pencil } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 import { buttonVariants } from "@/components/ui/button";
 import type { ArchiveDetail, ArchiveSystemClipSummary } from "@/features/archives/archive";
@@ -25,6 +25,8 @@ const updatedAtFormatter = new Intl.DateTimeFormat("ko-KR", {
 
 export function ArchiveDetailHeader({ archive, systemSummary }: ArchiveDetailHeaderProps) {
   const [isDescriptionExpanded, setIsDescriptionExpanded] = useState(false);
+  const [hasOverflowingDescription, setHasOverflowingDescription] = useState(false);
+  const descriptionRef = useRef<HTMLParagraphElement>(null);
   const { isRpMode } = useRpModeSettings();
   const systemDisplayName = archive.systemParticipant
     ? getDisplayName(archive.systemParticipant, "clip-card", isRpMode)
@@ -41,6 +43,23 @@ export function ArchiveDetailHeader({ archive, systemSummary }: ArchiveDetailHea
       : "기록 기간 정보 없음"
     : `${archive.chapters.length}개 챕터`;
 
+  useEffect(() => {
+    if (isDescriptionExpanded || !descriptionRef.current) {
+      return;
+    }
+
+    const descriptionElement = descriptionRef.current;
+    const updateOverflowState = () => {
+      setHasOverflowingDescription(descriptionElement.scrollHeight > descriptionElement.clientHeight + 1);
+    };
+
+    updateOverflowState();
+    const resizeObserver = new ResizeObserver(updateOverflowState);
+    resizeObserver.observe(descriptionElement);
+
+    return () => resizeObserver.disconnect();
+  }, [archive.description, isDescriptionExpanded]);
+
   return (
     <header className="flex flex-col gap-5 border-b border-default py-8 sm:py-10">
       <nav aria-label="아카이브 경로">
@@ -54,10 +73,13 @@ export function ArchiveDetailHeader({ archive, systemSummary }: ArchiveDetailHea
           <h1 className="break-keep text-hero font-bold text-primary">{title}</h1>
           {archive.description ? (
             <div className="max-w-3xl">
-              <p className={isDescriptionExpanded ? "text-body text-secondary" : "line-clamp-2 text-body text-secondary"}>
+              <p
+                className={isDescriptionExpanded ? "text-body text-secondary" : "line-clamp-4 text-body text-secondary"}
+                ref={descriptionRef}
+              >
                 {archive.description}
               </p>
-              {archive.description.length > 80 ? (
+              {hasOverflowingDescription || isDescriptionExpanded ? (
                 <button
                   className="mt-1 cursor-pointer text-body-sm font-medium text-brand-text hover:underline focus-visible:outline-2 focus-visible:outline-focus-ring focus-visible:outline-offset-2"
                   onClick={() => setIsDescriptionExpanded((current) => !current)}

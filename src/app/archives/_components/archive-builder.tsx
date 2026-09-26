@@ -312,7 +312,7 @@ function ArchiveChapterEditor({
               />
             </FormField>
           )}
-          <FormField label="챕터 이름">
+          <FormField hint={`${chapter.title.length}/50자`} label="챕터 이름">
             <Input
               maxLength={50}
               onChange={(event) => onTitleChange(event.target.value)}
@@ -336,7 +336,7 @@ function ArchiveChapterEditor({
         사이드 스토리
       </label>
 
-      <FormField className="mt-3" label="챕터 설명">
+      <FormField className="mt-3" hint={`${(chapter.description ?? "").length}/300자`} label="챕터 설명">
         <Textarea
           className="min-h-20"
           maxLength={300}
