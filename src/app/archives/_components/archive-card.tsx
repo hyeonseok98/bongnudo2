@@ -18,9 +18,10 @@ import { ArchiveRecommendationButton } from "./archive-recommendation-button";
 
 interface ArchiveCardProps {
   archive: ArchiveListItem;
+  compact?: boolean;
 }
 
-export function ArchiveCard({ archive }: ArchiveCardProps) {
+export function ArchiveCard({ archive, compact = false }: ArchiveCardProps) {
   const { isMediaPreviewBlurEnabled, isRpMode } = useRpModeSettings();
   const displayName = archive.systemParticipant
     ? getDisplayName(archive.systemParticipant, "clip-card", isRpMode)
@@ -31,7 +32,10 @@ export function ArchiveCard({ archive }: ArchiveCardProps) {
   const shouldBlurThumbnail = shouldBlurMediaPreview(isRpMode, isMediaPreviewBlurEnabled);
 
   return (
-    <article className="group relative h-full min-w-0 overflow-hidden rounded-xl border border-default bg-surface-raised transition-[border-color,box-shadow] duration-fast hover:border-brand hover:shadow-sm focus-within:border-brand focus-within:ring-2 focus-within:ring-focus-ring/40">
+    <article className={cn(
+      "group relative min-w-0 overflow-hidden rounded-xl border border-default bg-surface-raised transition-[border-color,box-shadow] duration-fast hover:border-brand hover:shadow-sm focus-within:border-brand focus-within:ring-2 focus-within:ring-focus-ring/40",
+      !compact && "h-full",
+    )}>
       <Link
         aria-label={`${title} 열기`}
         className="block cursor-pointer focus-visible:outline-2 focus-visible:outline-focus-ring focus-visible:outline-offset-[-2px]"
@@ -60,7 +64,10 @@ export function ArchiveCard({ archive }: ArchiveCardProps) {
           </span>
         </div>
 
-        <div className="grid grid-rows-[3rem_2.5rem_1.5rem_1.25rem] gap-2 p-3 text-left">
+        <div className={cn(
+          "grid gap-2 p-3 text-left",
+          compact ? "grid-rows-[auto_auto_auto_auto]" : "grid-rows-[3rem_2.5rem_1.5rem_1.25rem]",
+        )}>
           <h2 className="line-clamp-2 text-body font-semibold leading-6 text-primary">{title}</h2>
           {archive.description ? (
             <p className="line-clamp-2 text-body-sm leading-5 text-secondary">{archive.description}</p>

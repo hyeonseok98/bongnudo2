@@ -1,16 +1,14 @@
 "use client";
 
-import Link from "next/link";
-
 import { parseAsStringLiteral, useQueryState } from "nuqs";
-
-import { Archive, CalendarDays, LoaderCircle, LogIn, Plus, UsersRound } from "lucide-react";
+import Link from "next/link";
+import { Archive, BookOpen, LoaderCircle, Sparkles, Tags, UsersRound } from "lucide-react";
 
 import { useQuery } from "@tanstack/react-query";
 import { useState } from "react";
 import type { ArchiveParticipantSearchResult } from "@/apis/archives/get-archives";
 import { archiveQueries } from "@/queries/archive-queries";
-import { Button, buttonVariants } from "@/components/ui/button";
+import { Button } from "@/components/ui/button";
 import { ArchiveGridSkeleton } from "@/components/archive-grid-skeleton";
 
 import { RetryButton } from "@/components/ui/retry-button";
@@ -19,8 +17,8 @@ import { cn } from "@/utils/cn";
 import { useArchiveDirectory } from "../_hooks/use-archive-directory";
 import { useArchives } from "../_hooks/use-archives";
 import { ArchiveCard } from "./archive-card";
-import { ArchiveDiscoveryHome } from "./archive-discovery-home";
-import { ArchiveSearch } from "./archive-search";
+import { ArchiveHero, type ArchiveExploreView } from "./archive-hero";
+import { ArchiveHomeV2 } from "./archive-home-v2";
 import { ArchiveDayView } from "./archive-day-view";
 import { ArchiveFilters } from "./archive-filters";
 import { ArchivePeopleView } from "./archive-people-view";
@@ -29,74 +27,11 @@ interface ArchivesContentProps {
   isSignedIn: boolean;
 }
 
-type ArchiveExploreView = "all" | "day" | "people";
-
-const archiveExploreViewParser = parseAsStringLiteral(["all", "day", "people"] as const)
+const archiveExploreViewParser = parseAsStringLiteral(["all", "day", "people", "topics"] as const)
   .withDefault("all");
 
 export function ArchivesContent({ isSignedIn }: ArchivesContentProps) {
   const [view, setView] = useQueryState("view", archiveExploreViewParser);
-
-  return (
-    <div className="space-y-8">
-      <header className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
-        <div>
-          <h1 className="text-title font-bold text-primary">아카이브</h1>
-          <p className="mt-1 text-body text-secondary">
-            봉누도2에서 만들어진 기록과 이야기를 찾아보세요.
-          </p>
-        </div>
-        <ArchiveHeaderActions isSignedIn={isSignedIn} />
-      </header>
-
-      <ArchiveViewTabs onViewChange={(nextView) => void setView(nextView, { history: "replace" })} view={view} />
-
-      <ArchiveExploreContent view={view} onSearchStart={() => void setView("all", { history: "replace" })} />
-    </div>
-  );
-}
-
-function ArchiveViewTabs({
-  onViewChange,
-  view,
-}: {
-  onViewChange: (view: ArchiveExploreView) => void;
-  view: ArchiveExploreView;
-}) {
-  const tabs: Array<{ icon: typeof Archive; label: string; value: ArchiveExploreView }> = [
-    { icon: Archive, label: "전체", value: "all" },
-    { icon: CalendarDays, label: "일자별", value: "day" },
-    { icon: UsersRound, label: "인물별", value: "people" },
-  ];
-
-  return (
-    <div aria-label="공개 아카이브 보기 방식" className="flex w-fit rounded-lg border border-default bg-background p-1" role="tablist">
-      {tabs.map((tab) => {
-        const Icon = tab.icon;
-        const isSelected = view === tab.value;
-
-        return (
-          <button
-            aria-selected={isSelected}
-            className={cn(
-              "inline-flex h-8 cursor-pointer items-center gap-1.5 rounded-md px-2.5 text-body-sm font-medium text-secondary",
-              isSelected && "bg-surface-muted text-primary",
-            )}
-            key={tab.value}
-            onClick={() => onViewChange(tab.value)}
-            role="tab"
-            type="button"
-          >
-            <Icon aria-hidden="true" className="size-4" />
-            {tab.label}
-          </button>
-        );
-      })}
-    </div>
-  );
-}
-
-function ArchiveExploreContent({ view, onSearchStart }: { view: ArchiveExploreView; onSearchStart: () => void }) {
   const directory = useArchiveDirectory();
   const [selectedParticipant, setSelectedParticipant] = useState<ArchiveParticipantSearchResult | null>(null);
   const participantQuery = useQuery({
@@ -107,22 +42,110 @@ function ArchiveExploreContent({ view, onSearchStart }: { view: ArchiveExploreVi
     ? selectedParticipant : participantQuery.data?.participant;
   const participantLabel = participant?.rpName ?? participant?.streamerName ?? "선택한 인물";
 
+  const heroProps = {
+    isSignedIn,
+    onParticipantSelect: (person: ArchiveParticipantSearchResult) => {
+      void setView("all", { history: "replace" });
+      setSelectedParticipant(person);
+      directory.changeParticipant(person.seasonParticipantId);
+    },
+    onSearchChange: (query: string) => {
+      void setView("all", { history: "replace" });
+      directory.changeSearchInput(query);
+    },
+    onViewChange: (nextView: ArchiveExploreView) => {
+      void setView(nextView, { history: "replace" });
+    },
+    searchValue: view === "all" ? directory.searchInput : "",
+    view,
+  };
+
   return (
     <div className="space-y-8">
-      <ArchiveSearch value={view === "all" ? directory.searchInput : ""} onChange={(query) => {
-        onSearchStart();
-        directory.changeSearchInput(query);
-      }} onParticipantSelect={(person) => {
-        onSearchStart();
-        setSelectedParticipant(person);
-        directory.changeParticipant(person.seasonParticipantId);
-      }} />
+      {view === "all" && !directory.hasFilters ? <ArchiveHomeV2 {...heroProps} /> : <ArchiveHero {...heroProps} />}
       {view === "all" && directory.hasFilters ? (
         <ArchiveSearchResults directory={directory} participantLabel={participantLabel} />
-      ) : view === "all" ? <ArchiveDiscoveryHome /> : null}
+      ) : null}
       {view === "day" ? <ArchiveDayView /> : null}
       {view === "people" ? <ArchivePeopleView /> : null}
+      {view === "topics" ? <ArchiveTopicsView /> : null}
     </div>
+  );
+}
+
+const topicDetails = {
+  character: { icon: UsersRound, label: "인물" },
+  incident: { icon: Sparkles, label: "사건" },
+  series: { icon: BookOpen, label: "시리즈" },
+  other: { icon: Tags, label: "기타" },
+} as const;
+
+function ArchiveTopicsView() {
+  const query = useQuery(archiveQueries.home());
+  const directory = useArchiveDirectory();
+  const archivesQuery = useArchives(directory.filters, directory.category !== null);
+  const archives = archivesQuery.data?.pages.flatMap((page) => page.items) ?? [];
+
+  if (query.isPending) {
+    return <ArchiveGridSkeleton />;
+  }
+
+  if (query.isError) {
+    return <ArchiveErrorState isRetrying={query.isFetching} onRetry={() => void query.refetch()} />;
+  }
+
+  const topics = query.data.categories.filter((topic) => topic.archiveCount > 0);
+
+  return (
+    <section aria-labelledby="archive-topics-heading" className="space-y-5" id="archive-topics">
+      <header>
+        <h1 id="archive-topics-heading" className="text-heading-lg font-semibold text-primary">주제별 아카이브</h1>
+        <p className="mt-1 text-body text-secondary">등록된 주제에서 관련된 공개 아카이브를 찾아보세요.</p>
+      </header>
+      {topics.length > 0 ? (
+        <div className="flex flex-wrap gap-3">
+          {topics.map(({ archiveCount, category }) => {
+            const detail = topicDetails[category];
+            const Icon = detail.icon;
+            return (
+              <Link
+                className="group flex h-24 w-40 flex-col rounded-lg bg-surface-raised/45 p-3 transition-colors hover:bg-surface-muted focus-visible:outline-2 focus-visible:outline-focus-ring"
+                href={`/archives?view=topics&category=${category}`}
+                key={category}
+              >
+                <Icon aria-hidden="true" className="size-5 text-brand-text" />
+                <span className="mt-auto flex items-center justify-between gap-2">
+                  <span className="text-body-sm font-semibold text-primary group-hover:text-brand-text">{detail.label}</span>
+                  <span className="text-caption text-secondary">{archiveCount}개</span>
+                </span>
+              </Link>
+            );
+          })}
+        </div>
+      ) : (
+        <ArchiveEmptyState hasFilters={false} hasSearch={false} />
+      )}
+      {directory.category ? (
+        <section aria-labelledby="archive-topic-results-heading" className="space-y-4 pt-2">
+          <div>
+            <h2 className="text-heading-sm font-semibold text-primary" id="archive-topic-results-heading">
+              {topicDetails[directory.category].label} 아카이브
+            </h2>
+            <p className="mt-1 text-body-sm text-secondary">선택한 주제의 공개 아카이브입니다.</p>
+          </div>
+          {archivesQuery.isPending ? <ArchiveGridSkeleton count={6} /> : null}
+          {archivesQuery.isError ? <ArchiveErrorState isRetrying={archivesQuery.isFetching} onRetry={() => void archivesQuery.refetch()} /> : null}
+          {!archivesQuery.isPending && !archivesQuery.isError && archives.length === 0 ? (
+            <ArchiveEmptyState hasFilters hasSearch={false} />
+          ) : null}
+          {archives.length > 0 ? (
+            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-6">
+              {archives.map((archive) => <ArchiveCard archive={archive} key={archive.id} />)}
+            </div>
+          ) : null}
+        </section>
+      ) : null}
+    </section>
   );
 }
 
@@ -162,24 +185,6 @@ function ArchiveSearchResults({ directory, participantLabel }: {
         </div>
       ) : null}
     </section>
-  );
-}
-
-function ArchiveHeaderActions({ isSignedIn }: { isSignedIn: boolean }) {
-  const href = isSignedIn ? "/archives/new" : "/login?returnTo=%2Farchives%2Fnew";
-
-  return (
-    <div className="flex flex-wrap gap-2 self-start sm:self-auto">
-      {isSignedIn ? (
-        <Link className={buttonVariants({ variant: "outline" })} href="/my/archives">
-          내 아카이브
-        </Link>
-      ) : null}
-      <Link className={buttonVariants()} href={href}>
-        {isSignedIn ? <Plus aria-hidden="true" /> : <LogIn aria-hidden="true" />}
-        아카이브 만들기
-      </Link>
-    </div>
   );
 }
 

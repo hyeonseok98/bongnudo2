@@ -29,7 +29,10 @@ const summarySchema = z.object({
 });
 
 export async function getArchiveDiscoverySummary(seasonId: number) {
-  const result = await getSupabaseAdminClient().rpc("get_archive_discovery_summary", { p_season_id: seasonId });
+  const [result, days] = await Promise.all([
+    getSupabaseAdminClient().rpc("get_archive_discovery_summary", { p_season_id: seasonId }),
+    getSeasonDayArchiveCounts(seasonId),
+  ]);
   const parsed = summarySchema.safeParse(result.data);
   if (result.error || !parsed.success) {
     throw new ArchiveRequestError("아카이브 탐색 정보를 불러오지 못함.", 500, { cause: result.error });
@@ -37,12 +40,75 @@ export async function getArchiveDiscoverySummary(seasonId: number) {
 
   return {
     ...parsed.data,
+    days,
     people: parsed.data.people.map(({ rpImageKey, streamerImageKey, ...person }) => ({
       ...person,
       rpProfileImageUrl: getR2PublicUrl(rpImageKey),
       streamerProfileImageUrl: getR2PublicUrl(streamerImageKey),
     })),
   };
+}
+
+async function getSeasonDayArchiveCounts(seasonId: number) {
+  const supabase = getSupabaseAdminClient();
+  const daysResult = await supabase
+    .from("season_days")
+    .select("id, day_number, session_date")
+    .eq("season_id", seasonId)
+    .order("day_number", { ascending: true });
+
+  if (daysResult.error) {
+    throw new ArchiveRequestError("운영 일차를 불러오지 못함.", 500, { cause: daysResult.error });
+  }
+
+  const dayIds = daysResult.data.map((day) => day.id);
+  if (dayIds.length === 0) return [];
+
+  const relationsResult = await supabase
+    .from("archive_day_relations")
+    .select("archive_id, season_day_id")
+    .eq("season_id", seasonId)
+    .in("season_day_id", dayIds);
+
+  if (relationsResult.error) {
+    throw new ArchiveRequestError("일차별 아카이브를 불러오지 못함.", 500, { cause: relationsResult.error });
+  }
+
+  const archiveIds = [...new Set(relationsResult.data.map((relation) => relation.archive_id))];
+  if (archiveIds.length === 0) {
+    return daysResult.data.map((day) => ({
+      archiveCount: 0,
+      dayNumber: day.day_number,
+      id: day.id,
+      sessionDate: day.session_date,
+    }));
+  }
+
+  const archivesResult = await supabase
+    .from("archives")
+    .select("id")
+    .in("id", archiveIds)
+    .eq("season_id", seasonId)
+    .eq("visibility", "public")
+    .is("deleted_at", null);
+
+  if (archivesResult.error) {
+    throw new ArchiveRequestError("공개 아카이브를 불러오지 못함.", 500, { cause: archivesResult.error });
+  }
+
+  const publicArchiveIds = new Set(archivesResult.data.map((archive) => archive.id));
+  const countByDayId = new Map<string, number>();
+  for (const relation of relationsResult.data) {
+    if (!publicArchiveIds.has(relation.archive_id)) continue;
+    countByDayId.set(relation.season_day_id, (countByDayId.get(relation.season_day_id) ?? 0) + 1);
+  }
+
+  return daysResult.data.map((day) => ({
+    archiveCount: countByDayId.get(day.id) ?? 0,
+    dayNumber: day.day_number,
+    id: day.id,
+    sessionDate: day.session_date,
+  }));
 }
 
 export async function getArchiveCardRelations(archiveIds: string[]) {

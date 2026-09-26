@@ -129,14 +129,12 @@ export function ArchivePeopleView() {
       ) : null}
       {visibleSections.length > 0 || peopleQuery.hasNextPage ? (
         <div className="space-y-10">
-          <div className="flex min-h-5 justify-end">
+          {peopleQuery.isFetching && !peopleQuery.isFetchingNextPage ? <div className="flex justify-end">
             <LoaderCircle
               aria-label="인물별 아카이브를 업데이트하는 중입니다."
-              className={peopleQuery.isFetching && !peopleQuery.isFetchingNextPage
-                ? "size-4 animate-spin text-tertiary"
-                : "invisible size-4"}
+              className="size-4 animate-spin text-tertiary"
             />
-          </div>
+          </div> : null}
           {visibleSections.map((section) => (
             <ArchivePersonSection
               archives={section.archives}
