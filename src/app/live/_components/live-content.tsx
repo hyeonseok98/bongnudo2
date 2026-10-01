@@ -23,6 +23,7 @@ import {
 import { LiveFilters } from "./live-filters";
 import { LiveGrid, LiveGridSkeleton } from "./live-grid";
 import { Skeleton } from "@/components/ui/skeleton";
+import { SurgingLiveSection } from "./surging-live-section";
 
 export function LiveContent() {
   const directory = useLiveDirectory();
@@ -155,6 +156,8 @@ export function LiveContent() {
         onRemoveJob={directory.removeJob}
         onRemoveStreamerAffiliation={directory.removeStreamerAffiliation}
       />
+
+      <SurgingLiveSection characters={characters} />
 
       <section aria-labelledby="live-results-heading" className="space-y-4">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">

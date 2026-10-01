@@ -7,3 +7,7 @@ import { liveQueries } from "@/queries/live-queries";
 export function useLiveBroadcasts() {
   return useQuery(liveQueries.list());
 }
+
+export function useSurgingLiveBroadcasts() {
+  return useQuery(liveQueries.surging());
+}

@@ -9,6 +9,18 @@ export interface LiveBroadcast {
   channelName: string;
 }
 
+export interface SurgingLiveBroadcast extends LiveBroadcast {
+  baselineViewerCount: number;
+  viewerDelta: number;
+  viewerRate: number;
+  surgeScore: number;
+}
+
+export interface SurgingLiveStream {
+  broadcast: SurgingLiveBroadcast;
+  character: LiveStreamCharacter;
+}
+
 export interface LiveBroadcastsResponse {
   broadcasts: LiveBroadcast[];
   refreshedAt: string | null;

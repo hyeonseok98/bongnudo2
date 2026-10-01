@@ -9,12 +9,31 @@ import type {
   LiveSort,
   LiveStream,
   LiveStreamCharacter,
+  SurgingLiveBroadcast,
+  SurgingLiveStream,
 } from "@/features/live/live-stream";
 
 export function buildLiveStreams(
   broadcasts: LiveBroadcast[],
   characters: CharacterListItem[],
 ): LiveStream[] {
+  const charactersByChannelId = new Map(
+    characters
+      .filter(hasChzzkChannelId)
+      .map((character) => [character.chzzkChannelId, character]),
+  );
+
+  return broadcasts.flatMap((broadcast) => {
+    const character = charactersByChannelId.get(broadcast.channelId);
+
+    return character ? [{ broadcast, character }] : [];
+  });
+}
+
+export function buildSurgingLiveStreams(
+  broadcasts: SurgingLiveBroadcast[],
+  characters: CharacterListItem[],
+): SurgingLiveStream[] {
   const charactersByChannelId = new Map(
     characters
       .filter(hasChzzkChannelId)
