@@ -4,10 +4,9 @@ import type {
   Organization,
   OrganizationMember,
 } from "@/features/organizations/organization";
+import { BONGNUDO2_SEASON_SLUG } from "@/features/seasons/season-config";
 import { getR2PublicUrl } from "@/lib/r2";
 import { getSupabaseBrowserClient } from "@/lib/supabase/client";
-
-const BONGNUDO2_SEASON_SLUG = "bongnudo-2";
 
 function createOrganizationsQuery() {
   return getSupabaseBrowserClient()

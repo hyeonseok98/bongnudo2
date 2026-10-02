@@ -5,5 +5,5 @@ export function isBongnudoServerHours(date: Date): boolean {
   const hour = kstDate.getUTCHours();
   const minute = kstDate.getUTCMinutes();
 
-  return hour >= 17 || hour < 4 || (hour === 4 && minute === 0);
+  return hour >= 18 || hour < 4 || (hour === 4 && minute === 0);
 }

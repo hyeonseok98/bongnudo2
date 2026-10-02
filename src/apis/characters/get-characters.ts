@@ -12,10 +12,9 @@ import {
   type CharacterStreamerAffiliation,
   type CharacterStreamerAffiliationType,
 } from "@/features/characters/character";
+import { BONGNUDO2_SEASON_SLUG } from "@/features/seasons/season-config";
 import { getR2PublicUrl } from "@/lib/r2";
 import { getSupabaseBrowserClient } from "@/lib/supabase/client";
-
-const BONGNUDO2_SEASON_SLUG = "bongnudo-2";
 
 function createCharactersQuery() {
   return getSupabaseBrowserClient()

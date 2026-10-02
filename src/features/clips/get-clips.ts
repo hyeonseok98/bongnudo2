@@ -19,13 +19,10 @@ import { getR2PublicUrl } from "@/lib/r2";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
 import type { Database } from "@/lib/supabase/database.types";
 import { getKstDateRange, getKstDateRangeBetween } from "@/features/seasons/season-date";
+import { getBongnudo2SeasonId } from "@/features/seasons/season-resolver";
 import { matchesKoreanSearch } from "@/utils/korean-search";
 
 const PAGE_SIZE = 24;
-
-function createActiveSeasonQuery(client: SupabaseClient<Database>) {
-  return client.from("seasons").select("id").eq("is_active", true).limit(2);
-}
 
 function createParticipantCandidatesQuery(client: SupabaseClient<Database>) {
   return client.from("season_participants").select(`
@@ -119,7 +116,7 @@ interface CareerEventsByParticipant {
 
 export async function getClipOptions(): Promise<ClipOptions> {
   const client = getSupabaseServerClient();
-  const seasonId = await getActiveSeasonId(client);
+  const seasonId = await getBongnudo2SeasonId(client);
   const { data, error } = await client
     .from("season_days")
     .select("id, day_number, session_date")
@@ -340,16 +337,6 @@ export async function getClipNeighborsForArchiveParticipant(
   return rows.map((row) => toClipItem(row, careerEventsByParticipant, viewer));
 }
 
-async function getActiveSeasonId(client: SupabaseClient<Database>): Promise<number> {
-  const { data, error } = await createActiveSeasonQuery(client);
-
-  if (error || data.length !== 1) {
-    throw new Error("활성 시즌을 확인하지 못함.", { cause: error });
-  }
-
-  return data[0].id;
-}
-
 async function resolveClipParticipantIds(
   client: SupabaseClient<Database>,
   filters: ClipListFilters,
@@ -360,7 +347,7 @@ async function resolveClipParticipantIds(
     return filters.participantIds.length > 0 ? filters.participantIds : null;
   }
 
-  const seasonId = await getActiveSeasonId(client);
+  const seasonId = await getBongnudo2SeasonId(client);
   const { data, error } = await createParticipantCandidatesQuery(client)
     .eq("season_id", seasonId);
 

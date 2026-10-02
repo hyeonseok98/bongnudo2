@@ -18,6 +18,7 @@ import { ThemeProvider } from "@/providers/theme-provider";
 import { GoogleAnalytics } from "@next/third-parties/google";
 import { Analytics } from "@vercel/analytics/next";
 import type { Metadata } from "next";
+import type { ReactNode } from "react";
 import localFont from "next/font/local";
 import { cookies } from "next/headers";
 import { NuqsAdapter } from "nuqs/adapters/next/app";
@@ -45,7 +46,11 @@ export const metadata: Metadata = {
     "봉누도2의 인물과 조직, 실시간 현황, 다시보기와 클립을 한곳에서 확인할 수 있는 봉누도2 정보 사이트입니다.",
 };
 
-export default async function RootLayout({ children }: LayoutProps<"/">) {
+interface RootLayoutProps {
+  children: ReactNode;
+}
+
+export default async function RootLayout({ children }: RootLayoutProps) {
   const cookieStore = await cookies();
 
   const initialIsOpen = cookieStore.get(SIDEBAR_COOKIE_NAME)?.value !== "false";

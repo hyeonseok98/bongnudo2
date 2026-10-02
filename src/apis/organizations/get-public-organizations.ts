@@ -2,10 +2,9 @@ import "server-only";
 
 import type { QueryData } from "@supabase/supabase-js";
 
+import { BONGNUDO2_SEASON_SLUG } from "@/features/seasons/season-config";
 import { getR2PublicUrl } from "@/lib/r2";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
-
-const BONGNUDO2_SEASON_SLUG = "bongnudo-2";
 
 export interface OrganizationSummary {
   id: string;

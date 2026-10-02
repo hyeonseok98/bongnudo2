@@ -2,9 +2,8 @@ import "server-only";
 
 import type { QueryData } from "@supabase/supabase-js";
 
+import { BONGNUDO2_SEASON_SLUG } from "@/features/seasons/season-config";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
-
-const BONGNUDO2_SEASON_SLUG = "bongnudo-2";
 
 function createCharacterMetadataQuery() {
   return getSupabaseServerClient()

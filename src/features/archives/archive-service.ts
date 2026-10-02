@@ -11,6 +11,10 @@ import type { ClipCursor, ClipPage, ClipSort } from "@/features/clips/clip";
 import type { Database, Json } from "@/lib/supabase/database.types";
 import { getR2PublicUrl } from "@/lib/r2";
 import { getSupabaseAdminClient } from "@/lib/supabase/server";
+import {
+  getActiveSeasonId,
+  getBongnudo2SeasonId,
+} from "@/features/seasons/season-resolver";
 
 import type {
   ArchiveCategory,
@@ -253,7 +257,7 @@ export async function getPublicArchivePage(
 }
 
 export async function getArchiveDiscoveryHome(viewer: ArchiveRecommendationViewer): Promise<ArchiveDiscoveryHome> {
-  const seasonId = await getArchivePeopleSeasonId();
+  const seasonId = await getArchiveRecordSeasonId();
   const filters: ArchiveListFilters = {
     category: null, participantId: null, query: "", status: null, type: "user", sort: "recommended",
   };
@@ -628,7 +632,7 @@ export async function getArchivePeoplePage(
   limit = ARCHIVE_PEOPLE_PAGE_SIZE,
 ): Promise<ArchivePeoplePage> {
   const supabase = getSupabaseAdminClient();
-  const seasonId = await getArchivePeopleSeasonId();
+  const seasonId = await getArchiveRecordSeasonId();
   const participantIds = await resolveArchivePeopleParticipantIds(supabase, seasonId, filters);
 
   if (participantIds?.length === 0) {
@@ -674,20 +678,14 @@ export async function getArchivePeoplePage(
   };
 }
 
-async function getArchivePeopleSeasonId(): Promise<number> {
-  const result = await getSupabaseAdminClient()
-    .from("seasons")
-    .select("id")
-    .eq("is_active", true)
-    .limit(2);
-
-  if (result.error || result.data.length !== 1) {
-    throw new ArchiveRequestError("활성 시즌을 확인하지 못했습니다.", 500, {
-      cause: result.error ?? undefined,
+async function getArchiveRecordSeasonId(): Promise<number> {
+  try {
+    return await getBongnudo2SeasonId(getSupabaseAdminClient());
+  } catch (error) {
+    throw new ArchiveRequestError("봉누도2 시즌을 확인하지 못했습니다.", 500, {
+      cause: error,
     });
   }
-
-  return result.data[0].id;
 }
 
 async function resolveArchivePeopleParticipantIds(
@@ -1391,19 +1389,15 @@ export async function getArchiveDetail(
 
 export async function getArchiveEditorOptions(): Promise<ArchiveEditorOptions> {
   const supabase = getSupabaseAdminClient();
-  const seasonResult = await supabase
-    .from("seasons")
-    .select("id")
-    .eq("is_active", true)
-    .limit(2);
+  let seasonId: number;
 
-  if (seasonResult.error || seasonResult.data.length !== 1) {
+  try {
+    seasonId = await getActiveSeasonId(supabase);
+  } catch (error) {
     throw new ArchiveRequestError("현재 시즌 정보를 불러오지 못했습니다.", 500, {
-      cause: seasonResult.error ?? undefined,
+      cause: error,
     });
   }
-
-  const seasonId = seasonResult.data[0].id;
   const seasonDaysResult = await supabase
     .from("season_days")
     .select("id, day_number, session_date, starts_at, ends_at")

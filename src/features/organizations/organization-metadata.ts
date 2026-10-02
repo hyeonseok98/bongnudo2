@@ -1,8 +1,7 @@
 import "server-only";
 
+import { BONGNUDO2_SEASON_SLUG } from "@/features/seasons/season-config";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
-
-const BONGNUDO2_SEASON_SLUG = "bongnudo-2";
 
 export async function getOrganizationMetadata(slug: string) {
   const result = await getSupabaseServerClient()

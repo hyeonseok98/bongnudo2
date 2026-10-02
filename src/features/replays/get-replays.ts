@@ -8,6 +8,7 @@ import {
   type CharacterCareerEventType,
 } from "@/features/characters/character-career";
 import { getKstDateRange } from "@/features/seasons/season-date";
+import { getBongnudo2SeasonId } from "@/features/seasons/season-resolver";
 import { getR2PublicUrl } from "@/lib/r2";
 import type { Database } from "@/lib/supabase/database.types";
 import { getSupabaseAdminClient, getSupabaseServerClient } from "@/lib/supabase/server";
@@ -23,10 +24,6 @@ import type {
 } from "./replay";
 
 const PAGE_SIZE = 24;
-
-function createActiveSeasonQuery(client: SupabaseClient<Database>) {
-  return client.from("seasons").select("id").eq("is_active", true).limit(2);
-}
 
 function createParticipantCandidatesQuery(client: SupabaseClient<Database>) {
   return client.from("season_participants").select(`
@@ -112,7 +109,7 @@ interface CareerEventsByParticipant {
 
 export async function getReplayOptions(): Promise<ReplayOptions> {
   const client = getSupabaseServerClient();
-  const seasonId = await getActiveSeasonId(client);
+  const seasonId = await getBongnudo2SeasonId(client);
   const { data, error } = await client
     .from("season_days")
     .select("id, day_number, session_date")
@@ -137,7 +134,7 @@ export async function getReplayPage(
   cursor: ReplayCursor | null,
 ): Promise<ReplayPage> {
   const client = getSupabaseAdminClient();
-  const seasonId = await getActiveSeasonId(client);
+  const seasonId = await getBongnudo2SeasonId(client);
   const participantIds = await resolveParticipantIds(client, seasonId, filters);
 
   if (participantIds?.length === 0) {
@@ -208,16 +205,6 @@ export async function getReplayPage(
       ? { id: lastSession.session_id, sortAt: lastSession.sort_at }
       : null,
   };
-}
-
-async function getActiveSeasonId(client: SupabaseClient<Database>): Promise<number> {
-  const { data, error } = await createActiveSeasonQuery(client);
-
-  if (error || data.length !== 1) {
-    throw new Error("활성 시즌을 확인하지 못함.", { cause: error });
-  }
-
-  return data[0].id;
 }
 
 async function resolveParticipantIds(

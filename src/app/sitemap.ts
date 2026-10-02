@@ -2,6 +2,7 @@ import "server-only";
 
 import type { MetadataRoute } from "next";
 
+import { getBongnudo2SeasonIdOrNull } from "@/features/seasons/season-resolver";
 import { getSiteOrigin } from "@/features/seo/site-origin";
 import { getSupabaseAdminClient } from "@/lib/supabase/server";
 
@@ -37,19 +38,18 @@ export const revalidate = 3600;
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const supabase = getSupabaseAdminClient();
-  const seasonResult = await supabase
-    .from("seasons")
-    .select("id")
-    .eq("is_active", true)
-    .limit(2);
+  const seasonId = await getBongnudo2SeasonIdOrNull(supabase);
+  const siteOrigin = getSiteOrigin();
+  const sitemapEntries = new Map<string, MetadataRoute.Sitemap[number]>();
 
-  if (seasonResult.error || seasonResult.data.length !== 1) {
-    throw new Error("Sitemap에서 현재 시즌을 확인하지 못함.", {
-      cause: seasonResult.error ?? undefined,
-    });
+  for (const route of PUBLIC_STATIC_ROUTES) {
+    sitemapEntries.set(route, { url: `${siteOrigin}${route}` });
   }
 
-  const seasonId = seasonResult.data[0].id;
+  if (seasonId === null) {
+    return [...sitemapEntries.values()];
+  }
+
   const [participants, organizations, archives] = await Promise.all([
     getAllSitemapRows<SitemapParticipant>(async (from, to) =>
       await supabase
@@ -78,13 +78,6 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
         .range(from, to),
     ),
   ]);
-
-  const siteOrigin = getSiteOrigin();
-  const sitemapEntries = new Map<string, MetadataRoute.Sitemap[number]>();
-
-  for (const route of PUBLIC_STATIC_ROUTES) {
-    sitemapEntries.set(route, { url: `${siteOrigin}${route}` });
-  }
 
   const streamerSlugs = new Set<string>();
 

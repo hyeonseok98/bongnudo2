@@ -1,11 +1,10 @@
-import type { QueryData } from "@supabase/supabase-js";
 import { z } from "zod";
 
+import { getBongnudo2SeasonId } from "@/features/seasons/season-resolver";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
 
 import type { LiveBroadcast } from "./live-stream";
 
-const BONGNUDO2_SEASON_SLUG = "bongnudo-2";
 const CHZZK_API_URL = "https://openapi.chzzk.naver.com/open/v1/lives";
 const CHZZK_PAGE_SIZE = 20;
 
@@ -45,20 +44,25 @@ export interface CurrentLiveStreamsMetrics {
   totalLiveCount: number;
 }
 
-function createParticipantChannelQuery() {
-  return getSupabaseServerClient()
+async function createParticipantChannelQuery() {
+  const client = getSupabaseServerClient();
+  const seasonId = await getBongnudo2SeasonId(client);
+
+  return client
     .from("season_participants")
     .select(`
       id,
-      seasons!season_participants_season_id_fkey!inner (),
       streamer:streamers!inner (chzzk_channel_id)
     `)
-    .eq("seasons.slug", BONGNUDO2_SEASON_SLUG);
+    .eq("season_id", seasonId);
 }
 
-type ParticipantChannelQueryData = QueryData<
-  ReturnType<typeof createParticipantChannelQuery>
->;
+interface ParticipantChannelQueryData {
+  id: string;
+  streamer: {
+    chzzk_channel_id: string | null;
+  };
+}
 
 export async function getCurrentLiveStreams({
   onMetrics,
@@ -91,7 +95,7 @@ async function getParticipantIdsByChannel(): Promise<Map<string, string>> {
 }
 
 function toParticipantChannelEntry(
-  participant: ParticipantChannelQueryData[number],
+  participant: ParticipantChannelQueryData,
 ): [string, string][] {
   return participant.streamer.chzzk_channel_id
     ? [[participant.streamer.chzzk_channel_id, participant.id]]

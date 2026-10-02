@@ -1,6 +1,7 @@
 import "server-only";
 
 import { getCurrentUser } from "@/features/auth/session";
+import { getBongnudo2SeasonId } from "@/features/seasons/season-resolver";
 import { getSupabaseAdminClient } from "@/lib/supabase/server";
 
 export type CollectedMediaKind = "clip" | "replay";
@@ -32,15 +33,13 @@ export async function setCollectedMediaExclusion(
   }
 
   const supabase = getSupabaseAdminClient();
-  const { data: seasons, error: seasonError } = await supabase
-    .from("seasons")
-    .select("id")
-    .eq("is_active", true)
-    .limit(2);
+  let seasonId: number;
 
-  if (seasonError || seasons.length !== 1) {
-    throw new CollectedMediaRequestError("활성 시즌을 확인하지 못했습니다.", 500, {
-      cause: seasonError,
+  try {
+    seasonId = await getBongnudo2SeasonId(supabase);
+  } catch (error) {
+    throw new CollectedMediaRequestError("봉누도2 시즌을 확인하지 못했습니다.", 500, {
+      cause: error,
     });
   }
 
@@ -53,14 +52,14 @@ export async function setCollectedMediaExclusion(
       .from("clips")
       .update(values)
       .eq("id", mediaId)
-      .eq("season_id", seasons[0].id)
+      .eq("season_id", seasonId)
       .select("id")
       .maybeSingle()
     : await supabase
       .from("replays")
       .update(values)
       .eq("id", mediaId)
-      .eq("season_id", seasons[0].id)
+      .eq("season_id", seasonId)
       .select("id")
       .maybeSingle();
 
