@@ -1,6 +1,12 @@
 import { createHash } from "node:crypto";
+import { readFile } from "node:fs/promises";
+import { createRequire } from "node:module";
 
 import ExcelJS from "exceljs";
+
+const require = createRequire(import.meta.url);
+const excelJsRequire = createRequire(require.resolve("exceljs"));
+const JSZip = excelJsRequire("jszip");
 
 const EXPECTED_PERSON_HEADERS = [
   "이름",
@@ -80,7 +86,7 @@ const CAREER_EVENT_TYPES = new Set([
 
 export async function readBongnudo2Excel(workbookPath) {
   const workbook = new ExcelJS.Workbook();
-  await workbook.xlsx.readFile(workbookPath);
+  await workbook.xlsx.load(await normalizePrefixedWorkbookXml(workbookPath));
 
   const personRows = readRows(workbook, "인물");
   const streamerAffiliationRows = readRows(workbook, "스트리머소속");
@@ -108,12 +114,7 @@ export async function readBongnudo2Excel(workbookPath) {
   const streamerAffiliations = streamerAffiliationRows.rows.map(
     normalizeStreamerAffiliation,
   );
-  const organizations = organizationRows.rows.map((row) => ({
-    row: row.__row,
-    name: toText(row.organization),
-    category: toText(row.category),
-    slug: toText(row["organization_key (선택)"]),
-  }));
+  const organizations = organizationRows.rows.map(normalizeOrganization);
 
   const organizationNames = new Set(
     organizations.map((organization) => organization.name),
@@ -183,6 +184,25 @@ export async function readBongnudo2Excel(workbookPath) {
       careerEvents,
     }),
   };
+}
+
+async function normalizePrefixedWorkbookXml(workbookPath) {
+  const zip = await JSZip.loadAsync(await readFile(workbookPath));
+  const xmlEntries = Object.values(zip.files).filter(
+    (entry) => !entry.dir && entry.name.endsWith(".xml"),
+  );
+
+  for (const entry of xmlEntries) {
+    const xml = await entry.async("string");
+    if (!xml.includes("<x:")) continue;
+
+    zip.file(
+      entry.name,
+      xml.replaceAll("<x:", "<").replaceAll("</x:", "</").replaceAll("xmlns:x=", "xmlns="),
+    );
+  }
+
+  return zip.generateAsync({ type: "nodebuffer" });
 }
 
 export function createStableSlug(prefix, name) {
@@ -299,6 +319,17 @@ function normalizeStreamerAffiliation(row) {
   };
 }
 
+function normalizeOrganization(row) {
+  const name = toText(row.organization);
+  return {
+    row: row.__row,
+    name,
+    category: toText(row.category),
+    slug: toText(row["organization_key (선택)"]),
+    parentName: toText(row["상위 조직"]) || (name === "뉴렉카" ? "유렉카" : null),
+  };
+}
+
 function normalizePerson(row, organizationNames) {
   const hasStatedAge = row.stated_age !== null && toText(row.stated_age) !== "";
   const affiliations = [
@@ -323,6 +354,10 @@ function normalizePerson(row, organizationNames) {
     const startDate = toDateText(row[`start_date ${slot}`]);
     const endDate = toDateText(row[`end_date ${slot}`]);
     const leader = toBoolean(row[`leader ${slot}`]);
+
+    if (toText(row["RP 이름"]) === "모해요" && organization === "뉴렉카") {
+      continue;
+    }
 
     if (
       !organization &&
@@ -610,18 +645,6 @@ function validateWorkbook(data) {
       }
     }
 
-    if (
-      person.primaryOrganization &&
-      !currentOrganizations.has(person.primaryOrganization)
-    ) {
-      addError(
-        errors,
-        "인물",
-        person.row,
-        "대표 RP 소속에 현재 경력이 없음",
-        person.primaryOrganization,
-      );
-    }
   }
 
   for (const event of data.careerEvents) {
@@ -669,6 +692,18 @@ function validateWorkbook(data) {
         "지원하지 않는 조직 category",
         organization.category,
       );
+    }
+    if (organization.parentName && !organizationNames.has(organization.parentName)) {
+      addError(
+        errors,
+        "조직목록",
+        organization.row,
+        "상위 조직이 조직목록에 없음",
+        organization.parentName,
+      );
+    }
+    if (organization.parentName === organization.name) {
+      addError(errors, "조직목록", organization.row, "조직이 자기 자신을 상위 조직으로 지정함");
     }
   }
 
@@ -1065,6 +1100,17 @@ function toText(value) {
 }
 
 function toDateText(value) {
+  if (typeof value === "number" && Number.isFinite(value) && value >= 1) {
+    const date = new Date(Date.UTC(1899, 11, 30) + Math.floor(value) * 86_400_000);
+    if (!Number.isNaN(date.getTime())) {
+      return [
+        date.getUTCFullYear(),
+        String(date.getUTCMonth() + 1).padStart(2, "0"),
+        String(date.getUTCDate()).padStart(2, "0"),
+      ].join("-");
+    }
+  }
+
   const text = toText(value);
   return text || null;
 }

@@ -7,7 +7,7 @@ export async function loadSyncContext(client, excelData, requestedSeasonId) {
   const [streamersResult, participantsResult, organizationsResult, seasonDaysResult, careerEventsResult, affiliationsResult, affiliationMembershipsResult, organizationMembershipsResult, historiesResult, jobsResult, recruitmentsResult, sessionsResult, applicationsResult] = await Promise.all([
     client.from("streamers").select("id, name, chzzk_channel_id, profile_image_key"),
     client.from("season_participants").select("id, season_id, streamer_id, rp_name, birth_date, stated_age").eq("season_id", season.id),
-    client.from("organizations").select("id, season_id, slug, name, type").eq("season_id", season.id),
+    client.from("organizations").select("id, season_id, slug, name, type, parent_id").eq("season_id", season.id),
     client.from("season_days").select("id, season_id, day_number, session_date, starts_at, ends_at").eq("season_id", season.id),
     client.from("character_career_events").select("id, season_id, participant_id, event_type, from_organization_id, to_organization_id, from_role, to_role, event_date, event_at, sequence_in_day, season_day_id, note, source_url").eq("season_id", season.id),
     client.from("streamer_affiliations").select("id, slug, name, type, parent_affiliation_id, is_filter_visible, is_quick_filter, quick_filter_label, filter_order"),
@@ -201,13 +201,19 @@ export function buildSyncPlan(excelData, context) {
     id: row.id,
     slug: row.slug,
     type: row.type,
+    parentName: row.parent_id
+      ? organizationsById.get(row.parent_id)?.name ?? null
+      : null,
     label: row.name,
   }));
-  const organizations = diffRows(
+  const organizations = diffRowsWithoutDelete(
     currentOrganizations,
     desired.organizations,
     (row) => row.key,
-    (left, right) => left.slug === right.slug && left.type === right.type,
+    (left, right) =>
+      left.slug === right.slug &&
+      left.type === right.type &&
+      (!right.parentName || left.parentName === right.parentName),
   );
 
   const currentOrganizationMemberships = context.organizationMemberships
@@ -227,7 +233,7 @@ export function buildSyncPlan(excelData, context) {
         label: `${findPersonNameByParticipant(context, row.participant_id)} / ${organization.name}`,
       };
     });
-  const organizationMemberships = diffRows(
+  const organizationMemberships = diffRowsWithoutDelete(
     currentOrganizationMemberships,
     desired.organizationMemberships,
     (row) => row.key,
@@ -257,11 +263,9 @@ export function buildSyncPlan(excelData, context) {
       };
     })
     .filter(Boolean);
-  const roleHistories = diffRows(
+  const roleHistories = diffRoleHistoriesWithoutDelete(
     currentHistories,
     desired.roleHistories,
-    (row) => row.key,
-    (left, right) => left.isLeader === right.isLeader,
   );
 
   const seasonDaysById = new Map(context.seasonDays.map((row) => [row.id, row]));
@@ -467,6 +471,82 @@ export function renderSyncPlan(plan, mode) {
     lines.push(`  수정: ${section.update.length}`);
     lines.push(`  삭제: ${section.delete.length}`);
     lines.push(`  유지: ${section.unchanged.length}`);
+    if (section.conflicts?.length) {
+      lines.push(`  충돌: ${section.conflicts.length}`);
+      for (const conflict of section.conflicts) {
+        lines.push(`  - ${conflict.label}`);
+      }
+    }
+  }
+  const membershipRoleUpdates = plan.sections.organizationMemberships.update.filter(
+    ({ current, desired }) => current.role !== desired.role,
+  );
+  const membershipClosures = plan.sections.organizationMemberships.update.filter(
+    ({ current, desired }) => current.leftAt === null && desired.leftAt !== null,
+  );
+  const roleHistoryClosures = plan.sections.roleHistories.update.filter(
+    (item) => item.updateById,
+  );
+  const roleConflictMembershipKeys = new Set(
+    plan.sections.roleHistories.conflicts
+      .map((conflict) =>
+        plan.desired.roleHistories.find((history) => history.key === conflict.key)
+          ?.membershipKey,
+      )
+      .filter(Boolean),
+  );
+  const conflictedCurrentRoleUpdates = membershipRoleUpdates.filter((item) =>
+    roleConflictMembershipKeys.has(item.key),
+  );
+  const desiredConflictRoles = plan.sections.roleHistories.conflicts
+    .map((conflict) =>
+      plan.desired.roleHistories.find((history) => history.key === conflict.key),
+    )
+    .filter(Boolean);
+  const plannedMembershipRoleByKey = new Map();
+  for (const item of plan.sections.organizationMemberships.create) {
+    plannedMembershipRoleByKey.set(item.key, item.desired.role);
+  }
+  for (const item of plan.sections.organizationMemberships.update) {
+    plannedMembershipRoleByKey.set(item.key, item.desired.role);
+  }
+  for (const item of plan.sections.organizationMemberships.unchanged) {
+    plannedMembershipRoleByKey.set(
+      item.key,
+      item.desired?.role ?? item.current.role,
+    );
+  }
+  const conflictRolesMatchingMembership = desiredConflictRoles.filter(
+    (history) =>
+      plannedMembershipRoleByKey.get(history.membershipKey) === history.role,
+  ).length;
+  const currentOrganizationsByName = new Map(
+    plan.context.organizations.map((row) => [row.name, row]),
+  );
+  const desiredParentLinks = plan.desired.organizations.filter((organization) => {
+    if (!organization.parentName) return false;
+    const currentParentId = currentOrganizationsByName.get(organization.name)?.parent_id;
+    const desiredParentId = currentOrganizationsByName.get(organization.parentName)?.id;
+    return !currentParentId || currentParentId !== desiredParentId;
+  });
+  const deleteCount = Object.values(plan.sections).reduce(
+    (total, section) => total + section.delete.length,
+    0,
+  );
+  lines.push(
+    "",
+    "[요청 항목별 Dry-run 집계]",
+    `조직 insert/update: ${plan.sections.organizations.create.length}/${plan.sections.organizations.update.length}`,
+    `멤버십 insert/close/conflict: ${plan.sections.organizationMemberships.create.length}/${membershipClosures.length}/${plan.sections.organizationMemberships.conflicts?.length ?? 0}`,
+    `직책 이력 insert/close/conflict: ${plan.sections.roleHistories.create.length}/${roleHistoryClosures.length}/${plan.sections.roleHistories.conflicts.length}`,
+    `membership.role update: ${membershipRoleUpdates.length} (직책 충돌 중 최종 직책 반영 ${conflictedCurrentRoleUpdates.length})`,
+    `직책 충돌별 계획 직책과 Excel 일치: ${conflictRolesMatchingMembership}/${desiredConflictRoles.length}`,
+    `rp_name update: ${plan.sections.people.update.filter(({ current, desired }) => current.rpName !== desired.rpName).length}`,
+    `parent_id 설정/갱신: ${desiredParentLinks.length}`,
+    `DELETE: ${deleteCount}`,
+  );
+  if (desiredParentLinks.length > 0) {
+    lines.push(...desiredParentLinks.map((organization) => `  - ${organization.name} → ${organization.parentName}`));
   }
   const changes = Object.values(plan.sections)
     .flatMap((section) => [
@@ -479,6 +559,9 @@ export function renderSyncPlan(plan, mode) {
     lines.push("", "[주요 변경]");
     for (const { kind, item } of changes) {
       lines.push(`${kind}: ${item.desired?.label ?? item.current?.label ?? item.label}`);
+      if (item.desired?.parentName) {
+        lines.push(`  상위 조직: ${item.desired.parentName}`);
+      }
       if (kind === "수정") {
         lines.push(`  기존: ${describe(item.current)}`);
         lines.push(`  변경: ${describe(item.desired)}`);
@@ -510,6 +593,12 @@ export async function applySyncPlan(client, plan, force) {
   );
   const refreshedPlan = buildSyncPlan(plan.excelData, refreshedContext);
   refreshedPlan.excelData = plan.excelData;
+  if (
+    renderSyncPlan(plan, "Apply Plan") !==
+    renderSyncPlan(refreshedPlan, "Apply Plan")
+  ) {
+    throw new Error("Apply 계획이 조회 중 변경됨. DB 쓰기를 중단함.");
+  }
   const refreshedWarnings = getDeleteSafetyWarnings(refreshedPlan);
   if (refreshedWarnings.length > 0 && !force) {
     throw new Error("대량 삭제 위험: --force 없이 실행할 수 없음. dry-run에서 삭제 예정 내역을 확인해주세요.");
@@ -563,14 +652,22 @@ export async function applySyncPlan(client, plan, force) {
   await deleteRows(client, "streamer_affiliations", sections.affiliations.delete.map((item) => item.current.id));
 
   await applyOrganizations(client, sectionDesired(sections.organizations), context.season.id);
-  const organizations = await selectSeasonRows(client, "organizations", "id, name, slug, type", context.season.id);
+  const organizations = await selectSeasonRows(client, "organizations", "id, name, slug, type, parent_id", context.season.id);
   const organizationsByName = new Map(organizations.map((row) => [row.name, row]));
+  await applyOrganizationParents(
+    client,
+    sectionDesired(sections.organizations),
+    organizationsByName,
+  );
   await applyOrganizationMemberships(client, sections.organizationMemberships, organizationsByName, context.season.id);
   const memberships = await selectAll(client, "organization_memberships", "id, participant_id, organization_id");
   const membershipIds = new Map(memberships.map((row) => [membershipKey(row.participant_id, findOrganizationName(organizationsByName, row.organization_id)), row]));
-  await deleteRows(client, "organization_role_histories", sections.roleHistories.delete.map((item) => item.current.id));
-  await upsertRows(client, "organization_role_histories", sectionDesired(sections.roleHistories), "membership_id,role,start_date,end_date", (row) => ({ membership_id: membershipIds.get(row.membershipKey).id, role: row.role, start_date: row.startDate, end_date: row.endDate, is_leader: row.isLeader }));
-  await deleteRows(client, "organization_memberships", sections.organizationMemberships.delete.map((item) => item.current.id));
+  const roleHistoryClosures = sections.roleHistories.update.filter((item) => item.updateById);
+  await updateRoleHistoryRows(client, roleHistoryClosures);
+  await upsertRows(client, "organization_role_histories", sectionDesired({
+    ...sections.roleHistories,
+    update: sections.roleHistories.update.filter((item) => !item.updateById),
+  }), "membership_id,role,start_date,end_date", (row) => ({ membership_id: membershipIds.get(row.membershipKey).id, role: row.role, start_date: row.startDate, end_date: row.endDate, is_leader: row.isLeader }));
   const seasonDays = await selectSeasonRows(
     client,
     "season_days",
@@ -693,7 +790,7 @@ async function createMissingPeople(client, plan) {
 
 function buildDesiredState(excelData, context) {
   const people = context.people.map(({ person, streamer, participant }) => ({ key: participant.id, label: person.name, rpName: person.rpName, birthDate: person.birthDate, statedAge: person.statedAge, profileImageKey: person.profileImageKey, source: person, streamerId: streamer.id, participantId: participant.id }));
-  const organizations = excelData.organizations.map((organization) => ({ key: organization.name, label: organization.name, name: organization.name, slug: organization.slug, type: organization.type, category: organization.category }));
+  const organizations = excelData.organizations.map((organization) => ({ key: organization.name, label: organization.name, name: organization.name, slug: organization.slug, type: organization.type, category: organization.category, parentName: organization.parentName }));
   const affiliations = excelData.streamerAffiliations.map((affiliation) => ({
     key: affiliationKey(affiliation.type, affiliation.name),
     label: `${affiliation.name} / ${affiliation.type}`,
@@ -803,31 +900,144 @@ function diffRows(current, desired, getKey, isEqual) {
 }
 
 function diffRowsWithoutDelete(current, desired, getKey, isEqual) {
-  const currentByKey = new Map(current.map((row) => [getKey(row), row]));
-  const desiredKeys = new Set(desired.map(getKey));
+  const currentByKey = groupRows(current, getKey);
+  const desiredByKey = groupRows(desired, getKey);
   const create = [];
   const update = [];
   const unchanged = [];
+  const conflicts = [];
 
-  for (const desiredRow of desired) {
-    const key = getKey(desiredRow);
-    const currentRow = currentByKey.get(key);
-    if (!currentRow) {
-      create.push({ key, desired: desiredRow });
-    } else if (isEqual(currentRow, desiredRow)) {
+  for (const key of new Set([...currentByKey.keys(), ...desiredByKey.keys()])) {
+    const currentRows = currentByKey.get(key) ?? [];
+    const desiredRows = desiredByKey.get(key) ?? [];
+    if (currentRows.length > 1 || desiredRows.length > 1) {
+      conflicts.push({
+        key,
+        label: desiredRows[0]?.label ?? currentRows[0]?.label ?? key,
+      });
+      unchanged.push(...currentRows.map((row) => ({ key, current: row })));
+    } else if (currentRows.length === 0) {
+      create.push({ key, desired: desiredRows[0] });
+    } else if (desiredRows.length === 0) {
+      unchanged.push({ key, current: currentRows[0] });
+    } else if (isEqual(currentRows[0], desiredRows[0])) {
+      unchanged.push({ key, current: currentRows[0], desired: desiredRows[0] });
+    } else {
+      update.push({ key, current: currentRows[0], desired: desiredRows[0] });
+    }
+  }
+
+  return { create, update, delete: [], unchanged, conflicts, currentCount: current.length };
+}
+
+function diffRoleHistoriesWithoutDelete(current, desired) {
+  const currentByKey = groupRows(current, (row) => row.key);
+  const desiredByKey = groupRows(desired, (row) => row.key);
+  const usedCurrent = new Set();
+  const usedDesired = new Set();
+  const create = [];
+  const update = [];
+  const unchanged = [];
+  const conflicts = [];
+
+  for (const key of new Set([...currentByKey.keys(), ...desiredByKey.keys()])) {
+    const currentRows = currentByKey.get(key) ?? [];
+    const desiredRows = desiredByKey.get(key) ?? [];
+    if (currentRows.length === 0 || desiredRows.length === 0) continue;
+
+    if (currentRows.length !== 1 || desiredRows.length !== 1) {
+      conflicts.push({ key, label: desiredRows[0]?.label ?? currentRows[0]?.label ?? key });
+      currentRows.forEach((row) => usedCurrent.add(row));
+      desiredRows.forEach((row) => usedDesired.add(row));
+      continue;
+    }
+
+    const currentRow = currentRows[0];
+    const desiredRow = desiredRows[0];
+    usedCurrent.add(currentRow);
+    usedDesired.add(desiredRow);
+    if (currentRow.isLeader === desiredRow.isLeader) {
       unchanged.push({ key, current: currentRow, desired: desiredRow });
     } else {
-      update.push({ key, current: currentRow, desired: desiredRow });
+      update.push({ key, current: currentRow, desired: desiredRow, updateById: false });
     }
   }
 
-  for (const [key, currentRow] of currentByKey) {
-    if (!desiredKeys.has(key)) {
-      unchanged.push({ key, current: currentRow });
+  const currentByPeriod = groupRows(
+    current.filter((row) => !usedCurrent.has(row)),
+    roleHistoryPeriodKey,
+  );
+  const desiredByPeriod = groupRows(
+    desired.filter((row) => !usedDesired.has(row)),
+    roleHistoryPeriodKey,
+  );
+
+  for (const key of new Set([...currentByPeriod.keys(), ...desiredByPeriod.keys()])) {
+    const currentRows = currentByPeriod.get(key) ?? [];
+    const desiredRows = desiredByPeriod.get(key) ?? [];
+    if (currentRows.length === 0 || desiredRows.length === 0) continue;
+
+    if (currentRows.length !== 1 || desiredRows.length !== 1) {
+      conflicts.push({ key, label: desiredRows[0]?.label ?? currentRows[0]?.label ?? key });
+      currentRows.forEach((row) => usedCurrent.add(row));
+      desiredRows.forEach((row) => usedDesired.add(row));
+      continue;
+    }
+
+    const currentRow = currentRows[0];
+    const desiredRow = desiredRows[0];
+    usedCurrent.add(currentRow);
+    usedDesired.add(desiredRow);
+    if (
+      currentRow.endDate === desiredRow.endDate &&
+      currentRow.isLeader === desiredRow.isLeader
+    ) {
+      unchanged.push({ key: desiredRow.key, current: currentRow, desired: desiredRow });
+    } else {
+      update.push({
+        key: desiredRow.key,
+        current: currentRow,
+        desired: desiredRow,
+        updateById: currentRow.endDate !== desiredRow.endDate,
+      });
     }
   }
 
-  return { create, update, delete: [], unchanged, currentCount: current.length };
+  for (const row of desired) {
+    if (usedDesired.has(row)) continue;
+    const openCurrentRows = current.filter(
+      (currentRow) =>
+        !usedCurrent.has(currentRow) &&
+        currentRow.membershipKey === row.membershipKey &&
+        currentRow.endDate === null,
+    );
+    if (!row.endDate && openCurrentRows.length > 0) {
+      conflicts.push({
+        key: row.key,
+        label: `${row.label} (과거 role_history 날짜 미확정)`,
+      });
+      continue;
+    }
+    create.push({ key: row.key, desired: row });
+  }
+  for (const row of current) {
+    if (!usedCurrent.has(row)) unchanged.push({ key: row.key, current: row });
+  }
+
+  return { create, update, delete: [], unchanged, conflicts, currentCount: current.length };
+}
+
+function groupRows(rows, getKey) {
+  const grouped = new Map();
+  for (const row of rows) {
+    const key = getKey(row);
+    grouped.set(key, [...(grouped.get(key) ?? []), row]);
+  }
+  return grouped;
+}
+
+function roleHistoryPeriodKey(row) {
+  return [row.membershipKey, row.role ?? "", row.startDate ?? ""].join("\u0000");
 }
 
 function createOnlySection(rows) {
@@ -880,6 +1090,23 @@ async function applyOrganizations(client, rows, seasonId) {
   }
 }
 
+async function applyOrganizationParents(client, rows, organizationsByName) {
+  for (const row of rows) {
+    if (!row.parentName) continue;
+    const organization = organizationsByName.get(row.name);
+    const parent = organizationsByName.get(row.parentName);
+    if (!organization || !parent) {
+      throw new Error(`조직 상하 관계를 찾지 못함: ${row.name} / ${row.parentName}`);
+    }
+    if (organization.parent_id === parent.id) continue;
+    const { error } = await client
+      .from("organizations")
+      .update({ parent_id: parent.id })
+      .eq("id", organization.id);
+    assertNoError(error, "RP 조직 상하 관계 동기화");
+  }
+}
+
 async function applyOrganizationMemberships(client, section, organizationsByName) {
   const rows = sectionDesired(section);
   const falsePrimary = [...section.update, ...section.delete]
@@ -888,6 +1115,21 @@ async function applyOrganizationMemberships(client, section, organizationsByName
   await updateRows(client, "organization_memberships", falsePrimary, { is_primary: false });
   // role, joined_at, left_at는 frontend 전환 전 호환성을 위한 legacy field임.
   await upsertRows(client, "organization_memberships", rows, "participant_id,organization_id", (row) => ({ participant_id: row.participantId, organization_id: organizationsByName.get(row.organizationName).id, role: row.role, joined_at: row.joinedAt, left_at: row.leftAt, is_primary: row.isPrimary, display_order: row.displayOrder }));
+}
+
+async function updateRoleHistoryRows(client, rows) {
+  for (const item of rows) {
+    const { error } = await client
+      .from("organization_role_histories")
+      .update({
+        role: item.desired.role,
+        start_date: item.desired.startDate,
+        end_date: item.desired.endDate,
+        is_leader: item.desired.isLeader,
+      })
+      .eq("id", item.current.id);
+    assertNoError(error, "RP 직책 경력 종료/수정");
+  }
 }
 
 async function upsertRows(client, table, rows, onConflict, mapRow) {
