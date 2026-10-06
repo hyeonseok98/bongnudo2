@@ -59,6 +59,8 @@ describe("toCharacterListItem", () => {
           id: "secondary",
           is_primary: false,
           display_order: 1,
+          left_at: null,
+          role: null,
           organization: {
             id: "secondary-organization",
             slug: "secondary-organization",
@@ -79,6 +81,8 @@ describe("toCharacterListItem", () => {
           id: "primary-second",
           is_primary: true,
           display_order: 2,
+          left_at: null,
+          role: null,
           organization: {
             id: "primary-second-organization",
             slug: "primary-second-organization",
@@ -99,6 +103,8 @@ describe("toCharacterListItem", () => {
           id: "primary-first",
           is_primary: true,
           display_order: 1,
+          left_at: null,
+          role: null,
           organization: {
             id: "primary-first-organization",
             slug: "primary-first-organization",
@@ -123,9 +129,33 @@ describe("toCharacterListItem", () => {
           ],
         },
         {
+          id: "role-conflict",
+          is_primary: false,
+          display_order: 3,
+          left_at: null,
+          role: "Excel 최종 직책",
+          organization: {
+            id: "role-conflict-organization",
+            slug: "role-conflict-organization",
+            name: "직책 충돌 조직",
+            type: "institution",
+          },
+          role_histories: [
+            {
+              id: "old-open-role",
+              role: "날짜 미확정 과거 직책",
+              start_date: null,
+              end_date: null,
+              is_leader: true,
+            },
+          ],
+        },
+        {
           id: "ended-membership",
           is_primary: false,
           display_order: 2,
+          left_at: "2026-09-01T00:00:00+09:00",
+          role: "종료된 직책",
           organization: {
             id: "ended-organization",
             slug: "ended-organization",
@@ -168,6 +198,7 @@ describe("toCharacterListItem", () => {
       "primary-first-organization",
       "primary-second-organization",
       "secondary-organization",
+      "role-conflict-organization",
     ]);
     expect(character.affiliations[0]).toMatchObject({
       role: "현재 직책",
@@ -175,6 +206,17 @@ describe("toCharacterListItem", () => {
       isPrimary: true,
       displayOrder: 1,
     });
+    expect(character.affiliations[3].role).toBe("Excel 최종 직책");
+    expect(character.affiliations[3].isLeader).toBe(false);
+    expect(character.roleHistories).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          id: "old-open-role",
+          role: "날짜 미확정 과거 직책",
+          endDate: null,
+        }),
+      ]),
+    );
     expect(character.roleHistories).toEqual(
       expect.arrayContaining([
         expect.objectContaining({

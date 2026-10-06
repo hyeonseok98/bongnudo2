@@ -103,6 +103,7 @@ supabase/migrations/*
 !supabase/migrations/20260922100431_add_archive_recommendations.sql
 !supabase/migrations/20260922101439_allow_system_archive_recommendation_count.sql
 !supabase/migrations/20260922102612_archive_discovery_queries.sql
+!supabase/migrations/20261006102239_current_membership_role_precedence.sql
 supabase/.temp/
 
 # test

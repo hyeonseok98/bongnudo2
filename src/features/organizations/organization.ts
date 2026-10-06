@@ -23,6 +23,13 @@ export interface OrganizationRoleGroup {
   members: OrganizationMember[];
 }
 
+export function resolveCurrentMembershipRole(
+  membershipRole: string | null,
+  openRoleHistoryRole: string | null,
+): string | null {
+  return membershipRole ?? openRoleHistoryRole;
+}
+
 const ORGANIZATION_TYPE_OPTIONS = [
   { type: "institution", label: "공무직" },
   { type: "business", label: "사업체" },

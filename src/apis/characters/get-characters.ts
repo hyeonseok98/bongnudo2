@@ -12,6 +12,7 @@ import {
   type CharacterStreamerAffiliation,
   type CharacterStreamerAffiliationType,
 } from "@/features/characters/character";
+import { resolveCurrentMembershipRole } from "@/features/organizations/organization";
 import { BONGNUDO2_SEASON_SLUG } from "@/features/seasons/season-config";
 import { getR2PublicUrl } from "@/lib/r2";
 import { getSupabaseBrowserClient } from "@/lib/supabase/client";
@@ -48,6 +49,8 @@ function createCharactersQuery() {
         id,
         is_primary,
         display_order,
+        left_at,
+        role,
         organization:organizations!inner (
           id,
           slug,
@@ -184,8 +187,12 @@ function toCurrentCharacterAffiliation(
     (roleHistory) => roleHistory.end_date === null,
   );
   const category = getOrganizationCategory(membership.organization.type);
+  const role = resolveCurrentMembershipRole(
+    membership.role,
+    currentRole?.role ?? null,
+  );
 
-  if (!currentRole || category === null) {
+  if (membership.left_at !== null || category === null) {
     return [];
   }
 
@@ -195,10 +202,10 @@ function toCurrentCharacterAffiliation(
       slug: membership.organization.slug,
       name: membership.organization.name,
       category,
-      role: currentRole.role,
+      role,
       isPrimary: membership.is_primary,
       displayOrder: membership.display_order,
-      isLeader: currentRole.is_leader,
+      isLeader: currentRole?.role === role && currentRole.is_leader,
     },
   ];
 }

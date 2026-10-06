@@ -1,8 +1,9 @@
 import type { QueryData } from "@supabase/supabase-js";
 
-import type {
-  Organization,
-  OrganizationMember,
+import {
+  resolveCurrentMembershipRole,
+  type Organization,
+  type OrganizationMember,
 } from "@/features/organizations/organization";
 import { BONGNUDO2_SEASON_SLUG } from "@/features/seasons/season-config";
 import { getR2PublicUrl } from "@/lib/r2";
@@ -77,14 +78,18 @@ function toCurrentMember(
   const currentRole = membership.role_histories.find(
     (history) => history.end_date === null,
   );
+  const role = resolveCurrentMembershipRole(
+    membership.role,
+    currentRole?.role ?? null,
+  );
 
   return [{
     id: membership.participant.id,
     displayOrder: membership.display_order,
-    isLeader: currentRole?.is_leader ?? false,
+    isLeader: currentRole?.role === role && currentRole.is_leader,
     profileImageUrl: null,
-    role: currentRole?.role ?? membership.role,
-    roleStartedAt: currentRole?.start_date ?? null,
+    role,
+    roleStartedAt: currentRole?.role === role ? currentRole.start_date : null,
     rpName: membership.participant.rp_name,
   }];
 }
